@@ -1,0 +1,56 @@
+name: TITLE.BIN (overlay 6)
+sha1: 426bd6b57825e0128d70efc4cbf45571c2c9f8c3
+options:
+  platform: ps2
+  compiler: MWCCPS2
+  base_path: ..
+  target_path: extract/TITLE.bin
+  basename: TITLE
+  asm_path: asm/TITLE
+  src_path: src/TITLE
+  build_path: build
+  ld_script_path: linker/TITLE.ld
+  symbol_addrs_path:
+    - config/symbol_addrs.txt
+    - config/symbol_addrs_TITLE_auto.txt
+    - config/symbol_addrs_TITLE.txt
+  undefined_funcs_auto_path: linker/TITLE_undefined_funcs_auto.txt
+  undefined_syms_auto_path: linker/TITLE_undefined_syms_auto.txt
+  ld_bss_is_noload: True
+  gp_value: 0x3E7270
+  section_order: [".text", ".data", ".rodata", ".bss"]
+  string_encoding: SHIFT-JIS
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  disasm_unknown: True
+  named_regs_for_c_funcs: False
+  find_file_boundaries: False
+  subalign: 4
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+segments:
+  - name: title
+    type: code
+    start: 0x0
+    vram: 0x45EC80
+    bss_size: 0x600
+    subsegments:
+      - [0x0, asm, text_45EC80]
+      - [0x70, c, func_0045ECF0]
+      - [0x80, c, func_0045ED00]
+      - [0x90, c, func_0045ED10]
+      - [0xA0, c, func_0045ED20]
+      - [0xB0, c, func_0045ED30]
+      - [0xC0, asm, text_45ED40]
+      - [0xC00, c, func_0045F880]
+      - [0xC10, c, func_0045F890]
+      - [0xC20, c, func_0045F8A0]
+      - [0xC30, asm, text_45F8B0]
+      - [0x4C90, c, func_00463910]
+      - [0x4CA0, c, func_00463920]
+      - [0x4CB0, c, func_00463930]
+      - [0x4CC0, c, func_00463940]
+      - [0x4CD0, asm, text_463950]
+      - [0x4D40, data, data_4639C0]
+      - { start: 0x5440, type: bss, name: bss }
+  - [0x5440]

@@ -1,0 +1,105 @@
+name: CASINO.BIN (overlay 1)
+sha1: 3d048b715c8a0f83f4b63fa08793f4fe2f337d16
+options:
+  platform: ps2
+  compiler: MWCCPS2
+  base_path: ..
+  target_path: extract/CASINO.bin
+  basename: CASINO
+  asm_path: asm/CASINO
+  src_path: src/CASINO
+  build_path: build
+  ld_script_path: linker/CASINO.ld
+  symbol_addrs_path:
+    - config/symbol_addrs.txt
+    - config/symbol_addrs_CASINO_auto.txt
+    - config/symbol_addrs_CASINO.txt
+  undefined_funcs_auto_path: linker/CASINO_undefined_funcs_auto.txt
+  undefined_syms_auto_path: linker/CASINO_undefined_syms_auto.txt
+  ld_bss_is_noload: True
+  gp_value: 0x3E7270
+  section_order: [".text", ".data", ".rodata", ".bss"]
+  string_encoding: SHIFT-JIS
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  disasm_unknown: True
+  named_regs_for_c_funcs: False
+  find_file_boundaries: False
+  subalign: 4
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+segments:
+  - name: casino
+    type: code
+    start: 0x0
+    vram: 0x45EC80
+    bss_size: 0x1380
+    subsegments:
+      - [0x0, asm, text_45EC80]
+      - [0x230, c, func_0045EEB0]
+      - [0x270, asm, text_45EEF0]
+      - [0x1640, c, func_004602C0]
+      - [0x1650, c, func_004602D0]
+      - [0x1660, c, func_004602E0]
+      - [0x1670, asm, text_4602F0]
+      - [0x1A10, c, func_00460690]
+      - [0x1A30, c, func_004606B0]
+      - [0x1A50, asm, text_4606D0]
+      - [0x1A90, c, func_00460710]
+      - [0x1AA0, asm, text_460720]
+      - [0x1AD0, c, func_00460750]
+      - [0x1AE0, asm, text_460760]
+      - [0x1F40, c, func_00460BC0]
+      - [0x1F50, c, func_00460BD0]
+      - [0x1F60, c, func_00460BE0]
+      - [0x1F70, c, func_00460BF0]
+      - [0x1F80, asm, text_460C00]
+      - [0x1FF0, c, func_00460C70]
+      - [0x2050, asm, text_460CD0]
+      - [0x2250, c, func_00460ED0]
+      - [0x2260, asm, text_460EE0]
+      - [0x22F0, c, func_00460F70]
+      - [0x2320, asm, text_460FA0]
+      - [0x24D0, c, func_00461150]
+      - [0x2500, asm, text_461180]
+      - [0x2F30, c, func_00461BB0]
+      - [0x2F40, asm, text_461BC0]
+      - [0x3620, c, func_004622A0]
+      - [0x3630, c, func_004622B0]
+      - [0x3640, c, func_004622C0]
+      - [0x3650, asm, text_4622D0]
+      - [0x8A60, c, func_004676E0]
+      - [0x8A70, c, func_004676F0]
+      - [0x8A90, asm, text_467710]
+      - [0xCB40, c, func_0046B7C0]
+      - [0xCB60, c, func_0046B7E0]
+      - [0xCB80, asm, text_46B800]
+      - [0x10270, asm, text_46EEF0]
+      - [0x13450, c, func_004720D0]
+      - [0x13460, asm, text_4720E0]
+      - [0x13470, c, func_004720F0]
+      - [0x13480, c, func_00472100]
+      - [0x13490, c, func_00472110]
+      - [0x134A0, c, func_00472120]
+      - [0x134B0, c, func_00472130]
+      - [0x134C0, c, func_00472140]
+      - [0x134D0, c, func_00472150]
+      - [0x134E0, c, func_00472160]
+      - [0x134F0, c, func_00472170]
+      - [0x13500, c, func_00472180]
+      - [0x13510, c, func_00472190]
+      - [0x13520, asm, text_4721A0]
+      - [0x13540, c, func_004721C0]
+      - [0x13550, c, func_004721D0]
+      - [0x13560, asm, text_4721E0]
+      - [0x13E10, c, func_00472A90]
+      - [0x13E40, asm, text_472AC0]
+      - [0x14F40, c, func_00473BC0]
+      - [0x14F70, asm, text_473BF0]
+      - [0x16310, c, func_00474F90]
+      - [0x16320, asm, text_474FA0]
+      - [0x16A00, c, func_00475680]
+      - [0x16A30, asm, text_4756B0]
+      - [0x1BAC0, data, data_47A740]
+      - { start: 0x20740, type: bss, name: bss }
+  - [0x20740]

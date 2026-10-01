@@ -1,0 +1,1 @@
+// Symbols shared by all binaries (none yet).

@@ -1,0 +1,14 @@
+// Symbols shared by the main executable and overlays.
+// Format: name = 0xADDRESS; // type:func size:0x...
+_start = 0x100008; // type:func
+main = 0x15FB90; // type:func
+_gp = 0x3E7270;
+
+// Sony libc/libkernl printf: varargs, DI -> format via callback -> EI; used by libpad2 messages.
+scePrintf = 0x119508; // type:func
+// Debug prints compiled out in the release build (empty varargs bodies). Original names unknown.
+DebugPrintf = 0x145C00; // type:func
+DebugPrintf2 = 0x3292F0; // type:func
+
+// Decompiled (src/SLES_539.74/game_359C90.cpp). Name invented.
+FindEntry__FP5Entryii = 0x359C90; // type:func

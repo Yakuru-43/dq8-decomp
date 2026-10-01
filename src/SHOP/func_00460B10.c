@@ -1,0 +1,12 @@
+// range: 0x460B10 0x460B50
+// auto: m2c draft, verified byte-exact
+#include "common.h"
+
+M2C_UNK func_00460AB0();                            /* extern */
+extern M2C_UNK D_3DEF80 __attribute__((section(".data")));
+
+M2C_UNK **func_00460B10(M2C_UNK **arg0) {
+    func_00460AB0();
+    *arg0 = &D_3DEF80;
+    return arg0;
+}
