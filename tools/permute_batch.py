@@ -94,7 +94,9 @@ def candidates(binary):
         name, _, why = line.partition("\t")
         latest[name] = why
     want = {n for n, w in latest.items() if w in ("mismatch", "size", "repaired")}
-    funcs = [f for f in a.functions(binary) if f[0] in want]
+    # a function with a global `alabel` entry point inside it cannot become C
+    # at all, whatever order its statements end up in
+    funcs = [f for f in a.functions(binary) if f[0] in want and not a.ALABEL.search(f[3])]
     return sorted(funcs, key=lambda f: f[2] - f[1])
 
 

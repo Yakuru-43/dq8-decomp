@@ -34,6 +34,7 @@ CFLAGS = ["-O3", "-nostdinc", "-stderr", f"-I{ROOT / 'include'}"]
 VRAM = {"SLES_539.74": 0x100000}
 
 GLABEL = re.compile(r"^glabel (\w+)", re.M)
+ALABEL = re.compile(r"^[ \t]*alabel ", re.M)
 ANY_LABEL = re.compile(r"^(?:glabel|dlabel|jlabel|alabel) (\w+)\n\s+/\* \w+ ([0-9A-F]{8}) ", re.M)
 INSN_ADDR = re.compile(r"^\s+/\* \w+ ([0-9A-F]{8}) [0-9A-F]{8} \*/", re.M)
 HILO = re.compile(r"%(?:hi|lo)\((\w+)")
@@ -276,6 +277,41 @@ def structify(c):
     return c[:m.start()] + "\n".join(defs) + "\n" + c[m.start():] if m else None
 
 
+def block_end(text, open_i):
+    """Index of the `}` closing the brace that opens at open_i, or None."""
+    depth = 0
+    for i in range(open_i, len(text)):
+        depth += (text[i] == "{") - (text[i] == "}")
+        if depth == 0:
+            return i
+    return None
+
+
+def guard_form(c, name):
+    """Rewrite `if (cond) { rest of the function }` as an early return.
+
+    The two spellings generate different branches — one tests and jumps *into*
+    the body, the other tests and jumps *around* it — and CodeWarrior does not
+    pick one: it follows the source. m2c guesses.
+    """
+    decl = re.search(rf"^void\s+{name}\([^)]*\)\s*\{{", c, re.M)
+    if not decl:
+        return None
+    body_end = block_end(c, decl.end() - 1)
+    if body_end is None:
+        return None
+    body = c[decl.end():body_end]
+    m = re.search(r"^[ \t]*if[ \t]*\((.*)\)[ \t]*\{", body, re.M)
+    if not m or block_end(body, m.end() - 1) != len(body.rstrip()) - 1:
+        return None  # something after the if would also run in the original
+    inner = body[m.end():len(body.rstrip()) - 1]
+    if "\n" not in inner:
+        return None  # a one-liner: CodeWarrior inlines the branch either way
+    dedented = re.sub(r"^    ", "", inner, flags=re.M)
+    guard = f"\n    if (!({m.group(1)})) {{\n        return;\n    }}\n{dedented}"
+    return c[:decl.end()] + body[:m.start()] + guard + c[body_end:]
+
+
 def candidates(name, asm):
     """Yield (kind, source) attempts, most likely first."""
     seen = set()
@@ -291,6 +327,11 @@ def candidates(name, asm):
             if v not in seen:
                 seen.add(v)
                 yield "m2c", v
+        for b in (c, unproto):  # the same body with the test inverted
+            g = guard_form(b, name)
+            if g and g not in seen:
+                seen.add(g)
+                yield "m2c", g
     if VU0.search(asm):
         c = asm_function(name, asm)
         if c:
@@ -331,6 +372,12 @@ def try_function(job):
     binary, name, start, end, asm, syms_ld, orig = job
     if "jtbl" in asm:
         return name, None, "jumptable"
+    if ALABEL.search(asm):
+        # `alabel` marks a global entry point inside the body: other code calls
+        # that address, and a C file cannot name a point in the middle of one of
+        # its functions, so this range cannot become one file (the callers would
+        # lose their target when the label goes away)
+        return name, None, "entry inside"
     why = "m2c"
     mismatched = []
     uncompiled = []
