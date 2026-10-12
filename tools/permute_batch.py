@@ -4,7 +4,9 @@
     permute_batch.py [--hours 10] [--per-func 180] [--parallel 7] [-j 2]
 
 Candidates come from build/autodecomp_<bin>.tsv (latest result per function:
-mismatch/size), smallest first, for every binary. Each function gets
+mismatch/size/repaired), smallest first, for every binary. A `repaired`
+function is permuted from build/repair/<bin>/<func>.c, the draft that
+tools/repair.py made compile, instead of from a fresh m2c draft. Each function gets
 --per-func seconds; a score-0 result is re-verified exactly like autodecomp
 (linked at its real address, byte-compared) before src/<bin>/<func>.c is written.
 Resumable: finished functions are recorded in build/permute_batch.done; just
@@ -88,14 +90,23 @@ def candidates(binary):
     for line in tsv.read_text().splitlines():
         name, _, why = line.partition("\t")
         latest[name] = why
-    want = {n for n, w in latest.items() if w in ("mismatch", "size")}
+    want = {n for n, w in latest.items() if w in ("mismatch", "size", "repaired")}
     funcs = [f for f in a.functions(binary) if f[0] in want]
     return sorted(funcs, key=lambda f: f[2] - f[1])
 
 
-def setup(binary, func, asm):
+def base_source(binary, func, asm):
+    """(source, note): what to permute, and how to describe it in src/."""
+    saved = ROOT / "build" / "repair" / binary / f"{func}.c"
+    if saved.exists():  # m2c draft whose types tools/repair.py fixed for CodeWarrior
+        return saved.read_text(), "m2c draft with casts added"
     draft = next(a.candidates(func, asm), None)
-    if not draft:
+    return (draft[1], "m2c draft") if draft else (None, None)
+
+
+def setup(binary, func, asm):
+    source, _ = base_source(binary, func, asm)
+    if not source:
         return None
     d = WORK / binary / func
     shutil.rmtree(d, ignore_errors=True)
@@ -103,7 +114,7 @@ def setup(binary, func, asm):
     common = (ROOT / "include/common.h").read_text()
     # pycparser can't parse __attribute__; keep it out of the permuted source and
     # restore it in compile.sh with a marker macro
-    c = draft[1].replace('#include "common.h"', common)
+    c = source.replace('#include "common.h"', common)
     c = c.replace('__attribute__((section(".data")))', "DATA_SECTION")
     c = "#ifndef DATA_SECTION\n#define DATA_SECTION\n#endif\n" + c
     (d / "base.c").write_text(c)
@@ -133,7 +144,9 @@ def finalize(binary, func, start, end, d, syms, orig):
         if a.verify(src, start, end, syms, orig) == "match":
             dest = ROOT / "src" / binary / f"{func}.c"
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(f"// range: 0x{start:X} 0x{end:X}\n// auto: m2c draft + decomp-permuter, "
+            saved = (ROOT / "build" / "repair" / binary / f"{func}.c").exists()
+            dest.write_text(f"// range: 0x{start:X} 0x{end:X}\n// auto: m2c draft"
+                            f"{' with casts added' if saved else ''} + decomp-permuter, "
                             "verified byte-exact\n" + src)
             return True
     return False

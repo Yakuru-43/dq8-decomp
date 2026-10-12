@@ -295,17 +295,46 @@ def try_function(job):
         return name, None, "jumptable"
     why = "m2c"
     mismatched = []
+    uncompiled = []
     for kind, c in candidates(name, asm):
         why = verify(c, start, end, syms_ld, orig)
         if why == "match":
             return name, (kind, c, ()), f"match_{kind}"
         if why in ("mismatch", "size", "padding"):
             mismatched.append((kind, c))
+        elif why == "compile":
+            uncompiled.append(c)
     # some files may have been built with other optimization settings
     for flags in (("-O4",), ("-O2",)):
         for kind, c in mismatched:
             if verify(c, start, end, syms_ld, orig, flags) == "match":
                 return name, (kind, c, flags), f"match_{kind}{flags[0]}"
+    if uncompiled:
+        from repair import repair  # imports us: only import it when needed
+        # repair the plainest draft first: the structified and swapped variants
+        # are derived from it, and a repair inserts casts where m2c's types are
+        plain = sorted(set(uncompiled),
+                       key=lambda s: ("typedef struct" in s, SWAP_CMP.sub(r"\3 \2 \1", s) != s))
+        for source in plain[:2]:
+            c = repair(source)
+            if not c:
+                continue
+            variants = [c]
+            swapped = SWAP_CMP.sub(r"\3 \2 \1", c)
+            if swapped != c:
+                variants.append(swapped)
+            for variant in variants:
+                if verify(variant, start, end, syms_ld, orig) == "match":
+                    return name, ("repair", variant, ()), "match_repair"
+                for flags in (("-O2",), ("-O4",)):
+                    if verify(variant, start, end, syms_ld, orig, flags) == "match":
+                        return name, ("repair", variant, flags), f"match_repair{flags[0]}"
+            # it compiles now but the bytes differ: hand it to the permuter, which
+            # searches source orders for exactly this kind of difference
+            saved = ROOT / "build" / "repair" / binary / f"{name}.c"
+            saved.parent.mkdir(parents=True, exist_ok=True)
+            saved.write_text(c)
+            return name, None, "repaired"
     return name, None, why
 
 
@@ -353,7 +382,9 @@ def main():
                 s, e = ranges[name]
                 if flags:
                     c = f"// flags: {' '.join(flags)}\n" + c
-                note = {"m2c": "m2c draft", "asm": "asm function (hand-written VU0 code; m2c can't express it)"}[kind]
+                note = {"m2c": "m2c draft",
+                        "repair": "m2c draft, with the casts CodeWarrior asks for",
+                        "asm": "asm function (hand-written VU0 code; m2c can't express it)"}[kind]
                 # asm functions carry the original instructions verbatim: they go in
                 # asmfunc/, which .gitignore keeps out of the repository
                 dest = srcdir / "asmfunc" if kind == "asm" else srcdir
