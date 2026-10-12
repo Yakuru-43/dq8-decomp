@@ -9,6 +9,9 @@ function is permuted from build/repair/<bin>/<func>.c, the draft that
 tools/repair.py made compile, instead of from a fresh m2c draft. Each function gets
 --per-func seconds; a score-0 result is re-verified exactly like autodecomp
 (linked at its real address, byte-compared) before src/<bin>/<func>.c is written.
+A draft whose own score is above --max-base is dropped after a few seconds
+(`hopeless=N` in the done file): reordering cannot close a draft that is that
+far from the target, and it would otherwise eat the whole budget.
 Resumable: finished functions are recorded in build/permute_batch.done; just
 run the same command again after a reboot. Functions interrupted by shutdown
 (SIGTERM/SIGINT/SIGHUP) are not recorded and get redone.
@@ -152,7 +155,35 @@ def finalize(binary, func, start, end, d, syms, orig):
     return False
 
 
-def run_one(job, per_func, jobs, deadline):
+BASE_SCORE = re.compile(r"base score = (\d+)")
+
+
+def watch(p, out_path, budget, max_base):
+    """Follow the permuter's log until it starts permuting.
+
+    Its first line of real work is the score of the unpermuted draft. A draft
+    that is already far from the target cannot be closed by reordering, and
+    spending the whole budget on it is the main waste here, so it gets killed
+    and recorded instead.
+    """
+    start = time.time()
+    while True:
+        text = ""
+        try:
+            text = Path(out_path).read_text(errors="replace")
+        except OSError:
+            pass
+        m = BASE_SCORE.search(text)
+        if m and int(m.group(1)) > max_base:
+            return "hopeless", int(m.group(1))
+        if p.poll() is not None:
+            return "exit", None
+        if STOPPING.is_set() or time.time() - start > budget:
+            return "wait", None
+        time.sleep(3)
+
+
+def run_one(job, per_func, jobs, deadline, max_base):
     binary, (func, start, end, asm, _), syms, orig = job
     if STOPPING.is_set() or STOP.exists() or time.time() > deadline:
         return func, "skipped"
@@ -169,14 +200,18 @@ def run_one(job, per_func, jobs, deadline):
     with CHILDREN_LOCK:
         CHILDREN.add(p)
     try:
-        p.wait(timeout=budget)
-    except subprocess.TimeoutExpired:
-        os.killpg(p.pid, signal.SIGKILL)
-        p.wait()
+        status, score = watch(p, d / "permuter.out", budget, max_base)
+        if status in ("hopeless", "wait"):
+            os.killpg(p.pid, signal.SIGKILL)
+            p.wait()
     finally:
         with CHILDREN_LOCK:
             CHILDREN.discard(p)
         out.close()
+    if status == "hopeless" and not STOPPING.is_set():
+        record_done(binary, func, f"hopeless={score}")
+        shutil.rmtree(d, ignore_errors=True)
+        return func, f"hopeless({score})"
     if STOPPING.is_set():
         # interrupted (shutdown): don't record, so a resumed run redoes it
         shutil.rmtree(d, ignore_errors=True)
@@ -201,6 +236,8 @@ def main():
     ap.add_argument("--per-func", type=int, default=180)
     ap.add_argument("--parallel", type=int, default=7)
     ap.add_argument("-j", type=int, default=2)
+    ap.add_argument("--max-base", type=int, default=400,
+                    help="give up on drafts whose unpermuted score is above this")
     args = ap.parse_args()
 
     if PIDFILE.exists():
@@ -233,7 +270,8 @@ def main():
 
     matches = 0
     with ThreadPoolExecutor(args.parallel) as pool:
-        futs = [pool.submit(run_one, j, args.per_func, args.j, deadline) for j in jobs]
+        futs = [pool.submit(run_one, j, args.per_func, args.j, deadline, args.max_base)
+                for j in jobs]
         for i, fut in enumerate(futs, 1):
             func, result = fut.result()
             if result == "skipped":
