@@ -99,12 +99,32 @@ def candidates(binary):
 
 
 def base_source(binary, func, asm):
-    """(source, note): what to permute, and how to describe it in src/."""
+    """(source, note): what to permute, and how to describe it in src/.
+
+    The permuter parses the draft with pycparser and cannot work on one that
+    does not compile, so pick the first variant CodeWarrior accepts: the saved
+    repaired draft if we have one, otherwise the plainest m2c candidate that
+    compiles, and failing that repair one now.
+    """
     saved = ROOT / "build" / "repair" / binary / f"{func}.c"
     if saved.exists():  # m2c draft whose types tools/repair.py fixed for CodeWarrior
         return saved.read_text(), "m2c draft with casts added"
-    draft = next(a.candidates(func, asm), None)
-    return (draft[1], "m2c draft") if draft else (None, None)
+    from repair import compile_src, repair  # imports autodecomp; do it on demand
+    plain = sorted((c for _, c in a.candidates(func, asm)),
+                   key=lambda s: ("typedef struct" in s, a.SWAP_CMP.sub(r"\3 \2 \1", s) != s))
+    for source in plain[:3]:
+        ok, _ = compile_src(source)
+        if ok:
+            return source, "m2c draft"
+    for source in plain[:1]:
+        fixed = repair(source)
+        if not fixed:
+            continue
+        dest = ROOT / "build" / "repair" / binary / f"{func}.c"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(fixed)
+        return fixed, "m2c draft with casts added"
+    return None, None
 
 
 TYPEDEF_BLOCK = re.compile(r"^typedef (?:struct|union)[^;{]*\{[^}]*\}\s*\w+\s*;\n", re.M | re.S)
