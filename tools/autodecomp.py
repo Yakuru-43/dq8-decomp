@@ -20,6 +20,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from functools import lru_cache
 from multiprocessing import Pool
 from pathlib import Path
 
@@ -39,7 +40,7 @@ ANY_LABEL = re.compile(r"^(?:glabel|dlabel|jlabel|alabel) (\w+)\n\s+/\* \w+ ([0-
 INSN_ADDR = re.compile(r"^\s+/\* \w+ ([0-9A-F]{8}) [0-9A-F]{8} \*/", re.M)
 HILO = re.compile(r"%(?:hi|lo)\((\w+)")
 GPREL = re.compile(r"%gp_rel\((\w+)")
-EXTERN = re.compile(r"^extern (.+?) (\w+)(\[\])?;", re.M)
+EXTERN = re.compile(r"^extern (.+?)\s+(\*{0,2})(\w+)(\[\])?;", re.M)
 
 
 def functions(binary):
@@ -158,9 +159,11 @@ def fix_externs(c, asm):
     hilo, gprel = set(HILO.findall(asm)), set(GPREL.findall(asm))
 
     def repl(m):
-        typ, sym, arr = m.group(1), m.group(2), m.group(3) or ""
+        typ, stars, sym, arr = m.group(1), m.group(2), m.group(3), m.group(4) or ""
         if sym in hilo and not arr:
-            return f'extern {typ} {sym} __attribute__((section(".data")));'
+            # `extern T *p;` is as absolute as `extern T p;`: the star belongs
+            # to the name, and m2c writes both forms
+            return f'extern {typ} {stars}{sym} __attribute__((section(".data")));'
         if sym in gprel and arr:
             return None  # unknown-size array can't be $gp-relative
         return m.group(0)
@@ -338,6 +341,33 @@ def candidates(name, asm):
             yield "asm", c
 
 
+ADDR_SYM = re.compile(r"\b((?:func|jtbl|D)_[0-9A-F]{8})\b")
+
+
+@lru_cache(maxsize=8)
+def known_symbols(path):
+    """Names the link already defines."""
+    return frozenset(re.findall(r"^(\w+) =", Path(path).read_text(), re.M))
+
+
+def symbol_script_for(c, syms_ld, tmp):
+    """A script that also defines the address-named symbols m2c had to invent.
+
+    m2c calls anything without a real name after its address (`D_0034B220`).
+    splat labels an address only where its heuristics found something, so a
+    draft can point at a name no object defines -- inside a data blob, or at a
+    function another one was merged over -- and the link fails. The name *is*
+    the address, so defining it there is exactly what the real link does.
+    """
+    missing = sorted(set(ADDR_SYM.findall(c)) - known_symbols(str(syms_ld)))
+    if not missing:
+        return syms_ld
+    out = Path(tmp) / "syms.ld"
+    out.write_text(Path(syms_ld).read_text()
+                   + "".join(f"{n} = 0x{n.split('_', 1)[1]};\n" for n in missing))
+    return out
+
+
 def verify(c, start, end, syms_ld, orig, flags=()):
     """'match' if `c` compiles to exactly the original bytes, else the failure reason."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -355,7 +385,8 @@ def verify(c, start, end, syms_ld, orig, flags=()):
         subprocess.run([sys.executable, ROOT / "tools/set_abi.py", obj], check=True)
         r = subprocess.run([BIN / "mips64-linux-gnu-ld", "-EL", "-m", "elf32ltsmip", "--no-check-sections",
                             "-nostdlib", "--unresolved-symbols=report-all", "-Ttext", hex(start),
-                            "-T", syms_ld, "-e", hex(start), obj, "-o", elf], capture_output=True, text=True)
+                            "-T", symbol_script_for(c, syms_ld, tmp), "-e", hex(start),
+                            obj, "-o", elf], capture_output=True, text=True)
         if r.returncode:
             return "link"
         subprocess.run([BIN / "mips64-linux-gnu-objcopy", "-O", "binary", "-j", ".text", elf, out], check=True)
