@@ -18,13 +18,13 @@ moved into matching C one at a time. Porting that code to PC is the long-term go
 <!-- progress:start -->
 ```
                  functions                              code bytes
-SLES_539.74      [██████░░░░░░░░░░░░░░]  28.4%  2728/9595       [█░░░░░░░░░░░░░░░░░░░]  5.1%    123/2397 KB
+SLES_539.74      [██████░░░░░░░░░░░░░░]  30.0%  2874/9595       [█░░░░░░░░░░░░░░░░░░░]  5.3%    127/2397 KB
 TITLE (overlay)  [█████░░░░░░░░░░░░░░░]  24.5%    12/49         [█░░░░░░░░░░░░░░░░░░░]  1.0%      0/19 KB
-SHOP (overlay)   [████░░░░░░░░░░░░░░░░]  22.2%   100/451        [█░░░░░░░░░░░░░░░░░░░]  6.7%      4/60 KB
-MENU (overlay)   [████░░░░░░░░░░░░░░░░]  21.5%    92/428        [█░░░░░░░░░░░░░░░░░░░]  4.3%      4/103 KB
-CASINO (overlay) [███░░░░░░░░░░░░░░░░░]  15.5%    48/309        [█░░░░░░░░░░░░░░░░░░░]  1.0%      1/107 KB
-BATTLE (overlay) [████░░░░░░░░░░░░░░░░]  20.0%   149/744        [█░░░░░░░░░░░░░░░░░░░]  3.2%      5/143 KB
-ALL game code    [█████░░░░░░░░░░░░░░░]  27.0%  3129/11576      [█░░░░░░░░░░░░░░░░░░░]  4.9%    138/2828 KB
+SHOP (overlay)   [█████░░░░░░░░░░░░░░░]  23.0%   104/452        [█░░░░░░░░░░░░░░░░░░░]  6.9%      4/60 KB
+MENU (overlay)   [████░░░░░░░░░░░░░░░░]  22.4%    96/428        [█░░░░░░░░░░░░░░░░░░░]  4.4%      5/103 KB
+CASINO (overlay) [███░░░░░░░░░░░░░░░░░]  15.9%    49/309        [█░░░░░░░░░░░░░░░░░░░]  1.1%      1/107 KB
+BATTLE (overlay) [████░░░░░░░░░░░░░░░░]  20.4%   152/744        [█░░░░░░░░░░░░░░░░░░░]  3.2%      5/143 KB
+ALL game code    [██████░░░░░░░░░░░░░░]  28.4%  3287/11577      [█░░░░░░░░░░░░░░░░░░░]  5.0%    142/2828 KB
 ```
 _(refreshed 2026-10-12 by `tools/readme_progress.py`; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->
@@ -142,14 +142,21 @@ They are correct but not yet readable: naming types and fields is manual work.
 
 ### Tail-call thunks
 
-`tools/thunkify.py [--bin X]` handles the other shape m2c gets wrong: functions
-that are just `j target` with setup in the delay slot. The original source is a
-C tail call (`return target(...)`), which CodeWarrior compiles to a jump; m2c
-drafts `jal` + `return v0` instead, which never matches. The tool recognises
-the shape, generates candidate C for each delay-slot variant — argument
-pointer offsets, constants, null pointers, pass-throughs, pointer loads, store
-side effects, gp-relative globals, `andi` masks, `neg.s`/`swc1` float forms —
-and keeps only what `autodecomp.verify()` calls byte-exact.
+`tools/thunkify.py [--bin X]` handles the other shape m2c gets wrong: tail
+calls. The original source is `return target(...)`, which CodeWarrior compiles
+to a jump; m2c drafts `jal` + `return v0` instead, which never matches. CodeWarrior
+schedules argument setup *before* the jump and fills the delay slot, so the body
+is a run of argument shuffles ending in `j target`.
+
+The tool walks that run instruction by instruction, keeping a register map of
+C expressions: moves (`daddu $a1, $a0, $zero`), constants, null pointers,
+`addiu`/`ori`/`andi` offsets and masks, loads through an argument, loads of
+`%gp_rel` globals, and stores (including `swc1`/`sq`). Anything it cannot
+express — a real sum of two live values, an absolute `%hi/%lo` reference, a
+branch — rejects the function. The map is then inlined into
+`return target(arg0, ...)`, so no temporaries appear, and only what
+`autodecomp.verify()` calls byte-exact is kept. 134 of the 226 recognised
+shapes matched first try.
 
 Not handled yet: functions with jump tables or their own constants (switches,
 float literals), which need their `.rodata` placed with them; functions whose

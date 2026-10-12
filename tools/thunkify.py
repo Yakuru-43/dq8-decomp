@@ -24,7 +24,8 @@ INSN = re.compile(r"/\* \w+ ([0-9A-F]{8}) ([0-9A-F]{8}) \*/\s+(\S.*)")
 REG = re.compile(r"^\$(\w+)$")
 ARG = re.compile(r"^\$a([0-3])$")
 
-LOAD_TYPE = {"lw": "s32", "lwu": "u32", "lh": "s16", "lhu": "u16", "lb": "s8", "lbu": "u8"}
+LOAD_TYPE = {"lw": "s32", "lwu": "u32", "lh": "s16", "lhu": "u16", "lb": "s8", "lbu": "u8",
+             "ld": "s64", "lq": "s128", "lwc1": "float", "ldc1": "double"}
 
 
 def parse_imm(s):
@@ -241,6 +242,173 @@ def candidates(name, target, slot):
             return
 
 
+def tail_jump(ops):
+    """(setup, target, slot) for straight-line code ending in `j target` (+ slot).
+
+    The jump need not be the first instruction: CodeWarrior schedules argument
+    setup before a tail call, and m2c cannot express any of it.
+    """
+    for i, (mn, o) in enumerate(ops):
+        if mn.startswith("b") or mn in ("jr", "jal", "jalr", "ret"):
+            return None, None, None
+        if mn == "j" and o and re.fullmatch(r"\w+", o[0]):
+            if len(ops) - i > 2:
+                return None, None, None
+            return ops[:i], o[0], ops[i + 1:i + 2]
+    return None, None, None
+
+
+STORE_TYPE = {"sw": "s32", "sh": "s16", "sb": "u8", "sd": "s64", "sq": "s128",
+              "swc1": "float", "sdc1": "double"}
+
+
+def operand_mem(op):
+    """(offset, register) or (None, global symbol) for a memory operand."""
+    m = re.match(r"^(-?0x[0-9A-Fa-f]+|\d+)\((\$\w+)\)$", op)
+    if m:
+        return parse_imm(m.group(1)), m.group(2)
+    m = re.match(r"^%gp_rel\((\w+)\)\(\$gp\)$", op)
+    if m:
+        return None, m.group(1)
+    return None, None
+
+
+def ptr_off(expr, off):
+    """`expr` offset by `off` bytes; parenthesised so a `*` cast can wrap it."""
+    base = f"(char *) ({expr})"
+    return f"{base} + 0x{off:X}" if off >= 0 else f"{base} - 0x{-off:X}"
+
+
+def apply_insn(mn, ops, regs, stmts, externs, touched):
+    """One straight-line instruction into the register map; False if not C."""
+    def name(op):
+        m = REG.match(op)
+        return m.group(1) if m else None
+
+    def src(op):
+        m = REG.match(op)
+        if not m:
+            return op.strip()
+        k = m.group(1)
+        if k == "zero":
+            return "0"
+        if re.fullmatch(r"a\d", k):
+            touched.add(int(k[1]))  # the function received this argument
+        return regs.get(k)
+
+    dst = name(ops[0]) if ops else None
+    if dst and re.fullmatch(r"a\d", dst):
+        touched.add(int(dst[1]))
+
+    if mn in ("move",) and len(ops) == 2 and dst:
+        v = src(ops[1])
+        if v is None:
+            return False
+        regs[dst] = v
+        return True
+
+    if mn in ("daddu", "dadd", "addu", "add") and len(ops) == 3 and dst:
+        s, t = src(ops[1]), src(ops[2])
+        if s is None or t is None:
+            return False
+        if t == "0":
+            regs[dst] = s
+        elif s == "0":
+            regs[dst] = t
+        else:
+            return False  # a real sum, not an argument shuffle
+        return True
+
+    if mn == "or" and len(ops) == 3 and dst and src(ops[2]) == "0":
+        v = src(ops[1])
+        if v is None:
+            return False
+        regs[dst] = v
+        return True
+
+    if mn in ("addiu", "daddiu", "ori", "li") and dst and is_imm(ops[-1]):
+        # from $zero (or `li`) this is a constant argument; otherwise an offset
+        base = src(ops[1]) if len(ops) == 3 else "0"
+        if base is None:
+            return False
+        if base != "0":
+            if mn == "ori":
+                regs[dst] = f"(u32) {base} | 0x{parse_imm(ops[-1]):X}"
+            else:
+                regs[dst] = ptr_off(base, parse_imm(ops[-1]))
+        else:
+            regs[dst] = str(parse_imm(ops[-1]))
+        return True
+
+    if mn == "andi" and len(ops) == 3 and dst and is_imm(ops[2]):
+        v = src(ops[1])
+        if v is None:
+            return False
+        regs[dst] = f"(u32) {v} & 0x{parse_imm(ops[2]):X}"
+        return True
+
+    if mn in LOAD_TYPE and len(ops) == 2 and dst:
+        off, base = operand_mem(ops[1])
+        if base is None:
+            return False
+        if off is None:  # a global
+            externs.append(f"extern {LOAD_TYPE[mn]} {base};")
+            regs[dst] = base
+        else:
+            v = src(base)
+            if v is None:
+                return False
+            regs[dst] = f"*({LOAD_TYPE[mn]} *) ({ptr_off(v, off)})"
+        return True
+
+    if mn in STORE_TYPE and len(ops) == 2:
+        off, base = operand_mem(ops[1])
+        v = src(ops[0])
+        if base is None or v is None:
+            return False
+        ty = STORE_TYPE[mn]
+        if off is None:
+            externs.append(f"extern {ty} {base};")
+            stmts.append(f"{base} = {v};")
+        else:
+            b = src(base)
+            if b is None:
+                return False
+            stmts.append(f"*({ty} *) ({ptr_off(b, off)}) = {v};")
+        return True
+
+    if mn == "neg.s" and len(ops) == 2 and dst:
+        v = src(ops[1])
+        if v is None:
+            return False
+        regs[dst] = f"-({v})"
+        return True
+
+    return False
+
+
+def walk_source(name, target, body):
+    """C for `setup... ; j target` : argument shuffles and stores, then a tail call."""
+    regs = {f"a{i}": f"arg{i}" for i in range(4)}
+    stmts, externs, touched = [], [], set()
+    for mn, ops in body:
+        if not apply_insn(mn, ops, regs, stmts, externs, touched):
+            return None
+    arg_regs = {int(m.group(1)) for r in regs if (m := re.fullmatch(r"a(\d)", r))}
+    n = max(arg_regs | touched, default=-1) + 1
+    args = [regs.get(f"a{i}", f"arg{i}") for i in range(n)]
+    params = ", ".join(f"void *arg{i}" for i in range(n)) or "void"
+    seen, ext = set(), []
+    for e in externs + [f"extern int {target}();"]:
+        if e not in seen:
+            seen.add(e)
+            ext.append(e)
+    return ('#include "common.h"\n\n' + "".join(e + "\n" for e in ext) +
+            f"\nint {name}({params}) {{\n" +
+            "".join(f"    {s}\n" for s in stmts) +
+            f"    return {target}({', '.join(args)});\n}}\n")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bin", default="SLES_539.74")
@@ -263,18 +431,19 @@ def main():
     log = open(ROOT / "build" / f"autodecomp_{a_.bin}.tsv", "a")
     for name, s, e, asm_text, _ in funcs:
         ops = disasm_ops(asm_text)
-        if not ops or ops[0][0] != "j":
+        setup, target, slot = tail_jump(ops)
+        if not target:
             continue
-        target = ops[0][1][0] if ops[0][1] else None
-        if not target or not re.match(r"^\w+$", target):
-            continue
-        slot = ops[1:]
         found += 1
         if a_.list:
-            print(f"{name} 0x{s:X} -> {target} [{' ; '.join(m + ' ' + ','.join(o) for m, o in slot)}]")
+            print(f"{name} 0x{s:X} -> {target} "
+                  f"[{' ; '.join(m + ' ' + ','.join(o) for m, o in setup + slot)}]")
             continue
         matched = None
-        for c in candidates(name, target, slot):
+        tries = ([c for c in candidates(name, target, slot)] if not setup
+                 else [walk_source(name, target, setup + slot)])
+        tries = [c for c in tries if c]  # a body we cannot express in C
+        for c in tries:
             if a.verify(c, s, e, syms_ld, data[s - base:e - base]) == "match":
                 matched = c
                 break
