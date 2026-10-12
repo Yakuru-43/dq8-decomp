@@ -1,0 +1,4 @@
+
+
+// --- labels kept for calls from decompiled code (tools/keep_funcs.py) ---
+func_0046A510 = 0x46A510; // type:func

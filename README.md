@@ -18,15 +18,15 @@ moved into matching C one at a time. Porting that code to PC is the long-term go
 <!-- progress:start -->
 ```
                  functions                              code bytes
-SLES_539.74      [██████░░░░░░░░░░░░░░]  30.0%  2874/9595       [█░░░░░░░░░░░░░░░░░░░]  5.3%    127/2397 KB
+SLES_539.74      [██████░░░░░░░░░░░░░░]  30.0%  2876/9595       [█░░░░░░░░░░░░░░░░░░░]  5.3%    127/2397 KB
 TITLE (overlay)  [█████░░░░░░░░░░░░░░░]  24.5%    12/49         [█░░░░░░░░░░░░░░░░░░░]  1.0%      0/19 KB
-SHOP (overlay)   [█████░░░░░░░░░░░░░░░]  23.0%   104/452        [█░░░░░░░░░░░░░░░░░░░]  6.9%      4/60 KB
+SHOP (overlay)   [█████░░░░░░░░░░░░░░░]  23.2%   105/452        [█░░░░░░░░░░░░░░░░░░░]  7.0%      4/60 KB
 MENU (overlay)   [████░░░░░░░░░░░░░░░░]  22.4%    96/428        [█░░░░░░░░░░░░░░░░░░░]  4.4%      5/103 KB
-CASINO (overlay) [███░░░░░░░░░░░░░░░░░]  15.9%    49/309        [█░░░░░░░░░░░░░░░░░░░]  1.1%      1/107 KB
-BATTLE (overlay) [████░░░░░░░░░░░░░░░░]  20.4%   152/744        [█░░░░░░░░░░░░░░░░░░░]  3.2%      5/143 KB
-ALL game code    [██████░░░░░░░░░░░░░░]  28.4%  3287/11577      [█░░░░░░░░░░░░░░░░░░░]  5.0%    142/2828 KB
+CASINO (overlay) [███░░░░░░░░░░░░░░░░░]  16.8%    52/309        [█░░░░░░░░░░░░░░░░░░░]  1.2%      1/107 KB
+BATTLE (overlay) [████░░░░░░░░░░░░░░░░]  20.6%   153/744        [█░░░░░░░░░░░░░░░░░░░]  3.3%      5/143 KB
+ALL game code    [██████░░░░░░░░░░░░░░]  28.5%  3294/11577      [█░░░░░░░░░░░░░░░░░░░]  5.0%    142/2828 KB
 ```
-_(refreshed 2026-10-12 by `tools/readme_progress.py`; run `tools/progress.py` for the per-region table)_
+_(refreshed 2026-10-13 by `tools/readme_progress.py`; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->
 
 The SDK regions of the main executable (`sdk_*`, `lib*`, GCC-built) are
