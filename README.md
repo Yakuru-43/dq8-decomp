@@ -178,6 +178,26 @@ So an `asm` body can only reach data through `$gp` or a hardcoded number; the
 `%hi`/`%lo` functions need real C (`&sym` compiles to exactly that pair) or a
 draft that m2c refused to produce.
 
+### What a range may cover
+
+`// range:` claims those bytes belong to one translation unit, and splat
+re-disassembles the *neighbours* with its own heuristics every time the split
+runs. Two ways that bites:
+
+- **A label the callers still need.** Truncating an asm chunk can merge two of
+  its functions into one and drop the glabel between them; the decompiled
+  files calling it then fail to link, although no byte changed.
+  `tools/keep_funcs.py` asks the linker script which objects make up each
+  binary, takes the function symbols the compiled objects want and nothing
+  provides, and pins them in `config/symbol_addrs_<bin>.txt` so the label
+  survives every re-split.
+- **An entry point inside the body.** splat writes `alabel` for an address
+  other code calls, and that is global. A C file cannot name a point in the
+  middle of one of its own functions, so autodecomp refuses the range
+  (`entry inside` in the tsv) instead of matching it and deleting a label its
+  callers jump to. 137 functions are in that class; they have to be cut apart
+  by hand before any of them can become C.
+
 ## Layout notes
 
 - **Compiler**: Metrowerks CodeWarrior for PS2 **3.0.1 build 145 or 151** (Feb/Mar 2005), `-O3`, C++.
@@ -213,7 +233,9 @@ draft that m2c refused to produce.
    `tools/try_match.py --show scratch/f.cpp <symbol> <vram> -- -O3`
 2. Put it in `src/SLES_539.74/` with a `// range:` first line; for C++, add the
    mangled name to `config/symbol_addrs_SLES_539.74.txt`.
-3. `make split && make -j` — the build must still print OK for every binary.
+3. `make split && make -j` — the build must still print OK for every binary. If
+   one fails with `undefined reference to func_XXXXXXXX` that no src file
+   defines, run `tools/keep_funcs.py` and split again.
 
 ## Known source files
 
