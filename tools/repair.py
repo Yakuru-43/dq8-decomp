@@ -102,10 +102,15 @@ def operand_at(line, col):
 
 def unary_operand(line, i):
     """Index just past the primary expression that starts at i."""
-    m = re.match(r"[A-Za-z_]\w*", line[i:])
-    if not m:
+    if line[i:i + 1] == "(":  # `*(a + b)`: the operand is the parenthesised group
+        end = match_paren(line, i)
+    else:
+        m = re.match(r"[A-Za-z_]\w*", line[i:])
+        if not m:
+            return None
+        end = i + m.end()
+    if end is None:
         return None
-    end = i + m.end()
     while end < len(line):
         if line[end] == "(":
             close = match_paren(line, end)
@@ -118,6 +123,78 @@ def unary_operand(line, i):
             break
         end += m.end()
     return end
+
+
+def base_span(text):
+    """(start, end) of the primary expression that ends `text` (after rstrip)."""
+    t = text.rstrip()
+    if not t:
+        return None
+    start = len(t) - 1
+    if t[-1] == ")":
+        depth = 0
+        while start >= 0:
+            depth += (t[start] == ")") - (t[start] == "(")
+            if depth == 0:
+                break
+            start -= 1
+        if start < 0:
+            return None
+    m = re.search(r"[A-Za-z_]\w*(?:(?:->|\.)[A-Za-z_]\w*)*$", t[:start] if t[-1] == ")" else t)
+    if t[-1] != ")":
+        return (m.start(), len(t)) if m else None
+    return (m.start() if m else start, len(t))
+
+
+def enclosing_arg(line, col):
+    """(start, end) of the call argument (or whole expression) holding `col`."""
+    i, depth = min(col, len(line)), 0
+    start = 0
+    while i > 0:
+        i -= 1
+        ch = line[i]
+        if ch in ")]":
+            depth += 1
+        elif ch in "([":
+            if depth == 0:
+                start = i + 1
+                break
+            depth -= 1
+        elif ch == "," and depth == 0:
+            start = i + 1
+            break
+    depth, end = 0, start
+    while end < len(line):
+        ch = line[end]
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            if depth == 0:
+                break
+            depth -= 1
+        elif ch == "," and depth == 0:
+            break
+        end += 1
+    body = line[start:end].strip().rstrip(";")
+    if not body:
+        return None
+    return line.index(body, start), line.index(body, start) + len(body)
+
+
+def cast_pointer_bases(line):
+    """Variants with the base of `base + n` cast to `char *`.
+
+    m2c types a pointer field as `char **` and then does `field + 8`; only
+    `char *` may be offset in standard C, which is what CodeWarrior enforces.
+    """
+    out = []
+    for i, ch in enumerate(line):
+        if ch not in "+-" or not binary_at(line, i):
+            continue
+        span = base_span(line[:i])
+        if span:
+            out.append(line[:span[0]] + "(char *) " + line[span[0]:])
+    return out[:3]
 
 
 def deref_positions(line):
@@ -246,6 +323,17 @@ def rule_conversion(c, lineno, col, msg, line):
         spans.append(span)
     cast = "s32" if not is_ptr(to_t) else to_t.strip()
     variants = []
+    if not rhs and is_ptr(from_t) != is_ptr(to_t):
+        # the value is a call argument: cast the whole argument, not the
+        # operand under the caret (which is usually just one side of a `+`)
+        arg = enclosing_arg(line, col)
+        if arg:
+            variants.append(wrap(line, arg, cast))
+    # a `char **` field being offset: retype the base, keep the raw offset.
+    # This is the fix when the value is a call argument and there is no
+    # assignment to cast.
+    if is_ptr(from_t):
+        variants += cast_pointer_bases(line)
     # `ptr - int` is scaled pointer arithmetic; the original is a plain difference
     if rhs and is_ptr(from_t) and not is_ptr(to_t):
         for op, idx in top_ops(rhs[2], ["-", "+"]):
@@ -259,7 +347,7 @@ def rule_conversion(c, lineno, col, msg, line):
 
 def rule_mismatch(c, lineno, col, msg, line):
     """`type mismatch 'A' and 'B'` / `illegal operands 'A' - 'B'`."""
-    variants = []
+    variants = cast_pointer_bases(line)
     span = operand_at(line, col)
     if span:
         variants += [wrap(line, span, "char *"), wrap(line, span, "s32")]
@@ -326,6 +414,20 @@ def tidy(c):
     return re.sub(r"(?<=\S)\([ \t]+", "(", c)
 
 
+PLACEHOLDER = r"\(?\s*(?:second half of f64|carry bit)\s*\)?"
+
+
+def drop_placeholders(c):
+    """Remove m2c's `second half of f64` argument markers.
+
+    A `double` argument occupies a register pair; m2c lists the second half as
+    a pseudo-argument that is not C. The value is already passed by the
+    argument in front of it, so the marker simply goes away.
+    """
+    c = re.sub(r",\s*" + PLACEHOLDER, "", c)
+    return re.sub(PLACEHOLDER + r"\s*,\s*", "", c)
+
+
 def repair(c, max_rounds=10, budget=24):
     """Rewrite `c` until CodeWarrior accepts it, or give up.
 
@@ -335,6 +437,7 @@ def repair(c, max_rounds=10, budget=24):
     """
     if c is None:
         return None
+    c = drop_placeholders(c)
     ok, stderr = compile_src(c)
     for _ in range(max_rounds):
         if ok or budget <= 0:
