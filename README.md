@@ -18,13 +18,13 @@ moved into matching C one at a time. Porting that code to PC is the long-term go
 <!-- progress:start -->
 ```
                  functions                              code bytes
-SLES_539.74      [██████░░░░░░░░░░░░░░]  28.1%  2692/9595       [█░░░░░░░░░░░░░░░░░░░]  5.0%    121/2397 KB
+SLES_539.74      [██████░░░░░░░░░░░░░░]  28.4%  2728/9595       [█░░░░░░░░░░░░░░░░░░░]  5.1%    123/2397 KB
 TITLE (overlay)  [█████░░░░░░░░░░░░░░░]  24.5%    12/49         [█░░░░░░░░░░░░░░░░░░░]  1.0%      0/19 KB
-SHOP (overlay)   [████░░░░░░░░░░░░░░░░]  22.0%    99/451        [█░░░░░░░░░░░░░░░░░░░]  6.7%      4/60 KB
+SHOP (overlay)   [████░░░░░░░░░░░░░░░░]  22.2%   100/451        [█░░░░░░░░░░░░░░░░░░░]  6.7%      4/60 KB
 MENU (overlay)   [████░░░░░░░░░░░░░░░░]  21.5%    92/428        [█░░░░░░░░░░░░░░░░░░░]  4.3%      4/103 KB
 CASINO (overlay) [███░░░░░░░░░░░░░░░░░]  15.5%    48/309        [█░░░░░░░░░░░░░░░░░░░]  1.0%      1/107 KB
-BATTLE (overlay) [████░░░░░░░░░░░░░░░░]  19.4%   144/744        [█░░░░░░░░░░░░░░░░░░░]  2.8%      4/143 KB
-ALL game code    [█████░░░░░░░░░░░░░░░]  26.7%  3087/11576      [█░░░░░░░░░░░░░░░░░░░]  4.8%    135/2828 KB
+BATTLE (overlay) [████░░░░░░░░░░░░░░░░]  20.0%   149/744        [█░░░░░░░░░░░░░░░░░░░]  3.2%      5/143 KB
+ALL game code    [█████░░░░░░░░░░░░░░░]  27.0%  3129/11576      [█░░░░░░░░░░░░░░░░░░░]  4.9%    138/2828 KB
 ```
 _(refreshed 2026-10-12 by `tools/readme_progress.py`; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->
@@ -116,10 +116,26 @@ Per function it tries, in order:
    - callees left unprototyped (m2c disagrees with itself on argument counts),
    - `==`/`!=` operands swapped (CodeWarrior keeps source order);
 2. the same at `-O4` and `-O2`;
-3. for functions using VU0 instructions, a CodeWarrior `asm` function with the
+3. the draft repaired by `tools/repair.py` (see below), plus its swapped-compare
+   variant and `-O4`/`-O2`;
+4. for functions using VU0 instructions, a CodeWarrior `asm` function with the
    original instructions (this vector code was hand-written; m2c can't express it);
    the `asm` body declares its `j`/`jal`/branch targets as `extern` — mwccps2
    otherwise reports them as undefined labels (most VU0 code calls back into C).
+
+### Repairing m2c's types (`tools/repair.py`)
+
+CodeWarrior is strict where GCC is lenient, so most drafts that fail to compile
+are otherwise correct: a pointer used where an `int` is wanted, an `int`
+dereferenced as a pointer, a callee whose parameter list m2c guessed wrong.
+`repair()` compiles the draft, reads CodeWarrior's first error — it echoes the
+line with a caret one past the offending expression — and rewrites that spot,
+keeping whichever candidate compiles and moving on to the next error. The rules
+are casts, so they cannot change the generated code: `temp_t0 - M2C_FIELD(…)`
+becomes `(s32) ((char *) temp_t0 - (char *) M2C_FIELD(…))`, `*var_a3` becomes
+`*( s32 *) var_a3`. About a third of the `compile` failures turn into compiling
+C this way; when the bytes still differ the source is saved to
+`build/repair/<bin>/` and `permute_batch.py` permutes that instead of a raw draft.
 
 Files it writes say `// auto:` and use m2c names (`arg0`, `unk10`, `func_XXXXXXXX`).
 They are correct but not yet readable: naming types and fields is manual work.
@@ -138,8 +154,22 @@ and keeps only what `autodecomp.verify()` calls byte-exact.
 Not handled yet: functions with jump tables or their own constants (switches,
 float literals), which need their `.rodata` placed with them; functions whose
 m2c draft compiles but differs (control-flow shape, register allocation), which
-need manual matching (`tools/try_match.py --show`) or a permuter; and VU0 `asm`
-bodies containing `%hi`/`%lo` relocations, which the `asm` form cannot express.
+need manual matching (`tools/try_match.py --show`) or a permuter; and functions
+that address data absolutely (`lui $at, %hi(sym)` + `%lo(sym)($at)`), which the
+`asm` form cannot express — CodeWarrior's inline assembler has no relocation
+syntax at all:
+
+| operand | result |
+|---|---|
+| `lui v0, %hi(D_x)`, `%lo(D_x)(v1)`, `hi()`, `@hi()`, `D_x@ha` | rejected |
+| `li v0, D_x`, `addiu v0, zero, D_x` | "illegal constant expression" |
+| `lw v0, D_x` | `lw v0, 0(gp)` — `R_MIPS_GPREL16`, silently small-data |
+| `lw v0, D_x(v1)` | `lw v0, 0(gp)` — the register is silently dropped |
+| `lw v0, 0x2F50(v1)` | correct, but the address is a literal |
+
+So an `asm` body can only reach data through `$gp` or a hardcoded number; the
+`%hi`/`%lo` functions need real C (`&sym` compiles to exactly that pair) or a
+draft that m2c refused to produce.
 
 ## Layout notes
 
@@ -206,9 +236,11 @@ Assert/`__FILE__` strings place functions in these translation units (`.h` hits 
    are written to `src/`. Follow with `make split && make -j`.
 2. **Jump tables and constants**: place a function's `.rodata` with it so switches can match.
    `build/autodecomp_*.tsv` marks these `jumptable` (~130 functions).
-3. **VU0 functions with data relocations**: the `asm` candidate rejects `%hi`/`%lo`
-   bodies; they are most of the remaining `compile` failures (~1800). Needs either a
-   CodeWarrior-asm syntax that takes them, or splitting the load out of the `asm` body.
+3. **Absolute data references (`lui %hi` + `ori %lo`)**: the CodeWarrior `asm` form
+   cannot express them at all (table above), so the ~1800 `m2c`/`compile` failures
+   that are VU0 wrappers need C that computes the address with `&sym` — which means
+   teaching m2c, or a hand-written generator, to emit those. Hardcoding the two
+   16-bit halves would match bytes but loses the symbol and breaks if data moves.
 4. **Readability**: auto files use m2c names. Recovering real types (structs shared across
    functions, C++ classes) is what makes the code portable later.
 5. Identify the remaining SDK functions (most have no strings): call-graph from the named

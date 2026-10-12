@@ -320,6 +320,12 @@ def add_decl(c, decl):
     return "\n".join(lines[:i]) + "\n" + decl + "\n" + "\n".join(lines[i:]) + "\n"
 
 
+def tidy(c):
+    """Undo the spacing the rewrites leave behind: `x =(y)`, `( y`."""
+    c = re.sub(r"[ \t]*=[ \t]*\(", "= (", c)
+    return re.sub(r"(?<=\S)\([ \t]+", "(", c)
+
+
 def repair(c, max_rounds=10, budget=24):
     """Rewrite `c` until CodeWarrior accepts it, or give up.
 
@@ -356,7 +362,7 @@ def repair(c, max_rounds=10, budget=24):
             break
         else:
             return None
-    return c if ok else None
+    return tidy(c) if ok else None
 
 
 def main():

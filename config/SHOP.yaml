@@ -88,6 +88,8 @@ segments:
       - [0x6530, asm, text_4651B0]
       - [0x6B70, c, func_004657F0]
       - [0x6B80, asm, text_465800]
+      - [0x6E10, c, func_00465A90]
+      - [0x6E20, asm, text_465AA0]
       - [0x7170, c, func_00465DF0]
       - [0x7180, c, func_00465E00]
       - [0x7190, c, func_00465E10]
