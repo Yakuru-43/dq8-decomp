@@ -13,6 +13,25 @@ moved into matching C one at a time. Porting that code to PC is the long-term go
 | `SLES_539.74` | main executable | `0x100000` |
 | `BIN/TITLE.BIN`, `SHOP.BIN`, `MENU.BIN`, `CASINO.BIN`, `BATTLE.BIN` | overlays (`MWo3` header) | `0x45EC80` |
 
+## Progress
+
+<!-- progress:start -->
+```
+                 functions                              code bytes
+SLES_539.74      [█████░░░░░░░░░░░░░░░]  27.1%  2598/9595       [█░░░░░░░░░░░░░░░░░░░]  4.8%    115/2397 KB
+TITLE (overlay)  [█████░░░░░░░░░░░░░░░]  24.5%    12/49         [█░░░░░░░░░░░░░░░░░░░]  1.0%      0/19 KB
+SHOP (overlay)   [████░░░░░░░░░░░░░░░░]  21.5%    97/451        [█░░░░░░░░░░░░░░░░░░░]  6.6%      4/60 KB
+MENU (overlay)   [████░░░░░░░░░░░░░░░░]  21.5%    92/428        [█░░░░░░░░░░░░░░░░░░░]  4.3%      4/103 KB
+CASINO (overlay) [███░░░░░░░░░░░░░░░░░]  15.5%    48/309        [█░░░░░░░░░░░░░░░░░░░]  1.0%      1/107 KB
+BATTLE (overlay) [████░░░░░░░░░░░░░░░░]  18.8%   140/744        [█░░░░░░░░░░░░░░░░░░░]  2.7%      4/143 KB
+ALL game code    [█████░░░░░░░░░░░░░░░]  25.8%  2987/11576      [█░░░░░░░░░░░░░░░░░░░]  4.6%    129/2828 KB
+```
+_(refreshed 2026-10-12 by `tools/readme_progress.py`; run `tools/progress.py` for the per-region table)_
+<!-- progress:end -->
+
+The SDK regions of the main executable (`sdk_*`, `lib*`, GCC-built) are
+tracked separately by `tools/progress.py` and not shown above.
+
 ## How this is made
 
 I use an LLM agent to do the decompilation work. Concretely:
@@ -98,15 +117,29 @@ Per function it tries, in order:
    - `==`/`!=` operands swapped (CodeWarrior keeps source order);
 2. the same at `-O4` and `-O2`;
 3. for functions using VU0 instructions, a CodeWarrior `asm` function with the
-   original instructions (this vector code was hand-written; m2c can't express it).
+   original instructions (this vector code was hand-written; m2c can't express it);
+   the `asm` body declares its `j`/`jal`/branch targets as `extern` — mwccps2
+   otherwise reports them as undefined labels (most VU0 code calls back into C).
 
 Files it writes say `// auto:` and use m2c names (`arg0`, `unk10`, `func_XXXXXXXX`).
 They are correct but not yet readable: naming types and fields is manual work.
 
+### Tail-call thunks
+
+`tools/thunkify.py [--bin X]` handles the other shape m2c gets wrong: functions
+that are just `j target` with setup in the delay slot. The original source is a
+C tail call (`return target(...)`), which CodeWarrior compiles to a jump; m2c
+drafts `jal` + `return v0` instead, which never matches. The tool recognises
+the shape, generates candidate C for each delay-slot variant — argument
+pointer offsets, constants, null pointers, pass-throughs, pointer loads, store
+side effects, gp-relative globals, `andi` masks, `neg.s`/`swc1` float forms —
+and keeps only what `autodecomp.verify()` calls byte-exact.
+
 Not handled yet: functions with jump tables or their own constants (switches,
-float literals), which need their `.rodata` placed with them; and functions
-whose m2c draft compiles but differs (control-flow shape, register allocation),
-which need manual matching (`tools/try_match.py --show`) or a permuter.
+float literals), which need their `.rodata` placed with them; functions whose
+m2c draft compiles but differs (control-flow shape, register allocation), which
+need manual matching (`tools/try_match.py --show`) or a permuter; and VU0 `asm`
+bodies containing `%hi`/`%lo` relocations, which the `asm` form cannot express.
 
 ## Layout notes
 
@@ -172,10 +205,14 @@ Assert/`__FILE__` strings place functions in these translation units (`.h` hits 
    `touch build/permute_batch.stop`); score-0 results are re-verified before they
    are written to `src/`. Follow with `make split && make -j`.
 2. **Jump tables and constants**: place a function's `.rodata` with it so switches can match.
-3. **Readability**: auto files use m2c names. Recovering real types (structs shared across
+   `build/autodecomp_*.tsv` marks these `jumptable` (~130 functions).
+3. **VU0 functions with data relocations**: the `asm` candidate rejects `%hi`/`%lo`
+   bodies; they are most of the remaining `compile` failures (~1800). Needs either a
+   CodeWarrior-asm syntax that takes them, or splitting the load out of the `asm` body.
+4. **Readability**: auto files use m2c names. Recovering real types (structs shared across
    functions, C++ classes) is what makes the code portable later.
-4. Identify the remaining SDK functions (most have no strings): call-graph from the named
+5. Identify the remaining SDK functions (most have no strings): call-graph from the named
    ones, or byte signatures from a matching Sony SDK release.
-5. Share symbols between the main executable and overlays (overlays still see `func_*`).
-6. **Porting** needs the whole game in C plus replacements for the PS2 hardware it drives
+6. Share symbols between the main executable and overlays (overlays still see `func_*`).
+7. **Porting** needs the whole game in C plus replacements for the PS2 hardware it drives
    (GS, VU0/VU1 microcode, IOP sound modules, CD/DVD streaming, memory card, pads).

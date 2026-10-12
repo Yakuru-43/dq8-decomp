@@ -148,6 +148,8 @@ def sections(obj):
 VU0 = re.compile(r"\b(lqc2|sqc2|qmtc2|qmfc2|ctc2|cfc2|v[a-z0-9]+\.[xyzw]+|vsqrt|vdiv|vrsqrt|vwaitq|vnop|vcallms\w*)\b")
 ASM_INSN = re.compile(r"^\s+/\* \w+ [0-9A-F]{8} [0-9A-F]{8} \*/\s+(.*)$")
 ASM_LABEL = re.compile(r"^\s*\.L([0-9A-F]+):")
+ASM_JUMP = re.compile(r"^(?:j|jal|bal)\s+(\w+)\s*$")
+ASM_BRANCH = re.compile(r"^b\w*\s+.*,\s*(\w+)\s*$")
 
 
 def asm_function(name, asm):
@@ -156,6 +158,7 @@ def asm_function(name, asm):
     Used for hand-written VU0 code, which m2c cannot express.
     """
     out = [f"asm void {name}(void)", "{"]
+    targets = []
     for line in asm.splitlines():
         m = ASM_LABEL.match(line)
         if m:
@@ -168,9 +171,14 @@ def asm_function(name, asm):
         if ins.startswith(".") or "%" in ins or ">>" in ins:
             return None  # data words / relocations: not handled
         ins = re.sub(r"\.L([0-9A-F]+)", r"L_\1", ins).replace("$", "")
+        # jump/branch targets must be declared or mwccps2 calls them undefined labels
+        m2 = ASM_JUMP.match(ins) or ASM_BRANCH.match(ins)
+        if m2 and not m2.group(1).startswith("L_") and m2.group(1) not in targets:
+            targets.append(m2.group(1))
         out.append(f"    {ins}")
     out.append("}")
-    return '#include "common.h"\n\n' + "\n".join(out) + "\n"
+    decls = "".join(f"extern void {t}(void);\n" for t in targets)
+    return '#include "common.h"\n\n' + decls + ("\n" if decls else "") + "\n".join(out) + "\n"
 
 
 # `a == b` -> `b == a`: CodeWarrior keeps source operand order in compares
