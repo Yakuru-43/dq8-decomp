@@ -1,0 +1,15 @@
+// range: 0x271860 0x2718A0
+// auto: m2c draft, verified byte-exact
+#include "common.h"
+
+f32 func_002675D0(f32);                             /* extern */
+
+typedef struct {
+    f32 unk0;
+    char pad4[0x8C];
+    f32 unk90;
+} S_arg1;
+
+void func_00271860(s32 arg0, S_arg1 *arg1) {
+    arg1->unk90 = (f32) (arg1->unk90 * func_002675D0(arg1->unk0));
+}
