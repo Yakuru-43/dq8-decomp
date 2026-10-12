@@ -107,10 +107,32 @@ def base_source(binary, func, asm):
     return (draft[1], "m2c draft") if draft else (None, None)
 
 
+TYPEDEF_BLOCK = re.compile(r"^typedef (?:struct|union)[^;{]*\{[^}]*\}\s*\w+\s*;\n", re.M | re.S)
+
+
+def hoist_typedefs(c):
+    """Move struct/union definitions above the externs that use them.
+
+    m2c emits `extern S_D_x *D_...;` before the `typedef struct {...} S_D_x;`,
+    which CodeWarrior accepts (the tag is implicit) and pycparser — the
+    permuter's parser — rejects outright.
+    """
+    blocks = [m.group(0) for m in TYPEDEF_BLOCK.finditer(c)]
+    if not blocks:
+        return c
+    first = re.search(r"^extern ", c, re.M)
+    if not first:
+        return c
+    c = TYPEDEF_BLOCK.sub("", c)
+    first = re.search(r"^extern ", c, re.M)
+    return c[: first.start()] + "".join(blocks) + c[first.start():]
+
+
 def setup(binary, func, asm):
     source, _ = base_source(binary, func, asm)
     if not source:
         return None
+    source = hoist_typedefs(source)
     d = WORK / binary / func
     shutil.rmtree(d, ignore_errors=True)
     d.mkdir(parents=True)
