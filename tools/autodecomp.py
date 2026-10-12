@@ -110,9 +110,47 @@ def draft(name, asm, target="mips-gcc-c"):
     c = re.sub(rf"^(\S.*\b{name})\(([^)]*)\) \{{", fill_params, c, count=1, flags=re.M)
     # m2c relies on GCC's void-pointer arithmetic; CodeWarrior rejects it
     c = re.sub(r"\bvoid \*", "char *", c)
-    if re.search(r"\b(sp[0-9A-F]+|subroutine_arg\d+)\b", c) and not re.search(r"\b[su](8|16|32|64) sp[0-9A-F]+;", c):
-        return None  # m2c lost track of the stack
-    return c
+    if re.search(r"\bsubroutine_arg\d+\b", c):
+        return None  # an incoming stack argument: no C for a caller's frame slot
+    return declare_stack_locals(c)
+
+
+SP_SLOT = re.compile(r"\bsp[0-9A-F]{2,}\b")
+
+
+def declare_stack_locals(c):
+    """Type the stack slots m2c used but never declared.
+
+    m2c names a slot after its offset from $sp and declares the ones it tracked
+    through stores; a slot that only ever gets loaded appears bare. The type
+    decides which load CodeWarrior emits, so guess float where the slot is used
+    next to a float and int everywhere else — a wrong guess costs a mismatch,
+    never a wrong match.
+    """
+    declared = {m.group(1) for m in
+                re.finditer(r"^\s*\w[\w \t*]*?\b(sp[0-9A-F]{2,})\s*(?:\[[^]]*\])?;", c, re.M)}
+    missing = sorted(set(SP_SLOT.findall(c)) - declared)
+    if not missing:
+        return c
+    floats = set(re.findall(r"^\s*f(?:32|64)\s+(\w+)\s*(?:=|;)", c, re.M))
+    lines = c.splitlines()
+    decls = []
+    for slot in sorted(missing, key=lambda s: int(s[2:], 16)):
+        use = re.compile(rf"\b{slot}\b")
+        is_float = any(use.search(line) and (floats & set(re.findall(r"\b\w+\b", line)) or
+                                             re.search(r"[-+*/<>=]=?\s*-?\s*\d*\.\d", line))
+                       for line in lines if use.search(line))
+        decls.append(f"    {'f32' if is_float else 's32'} {slot};")
+    # after the declarations the draft already has: CodeWarrior lays the frame
+    # out in declaration order, so appending to that block keeps the offsets
+    i = next((n for n, line in enumerate(lines) if line.rstrip().endswith("{")), None)
+    if i is None:
+        return c
+    while i + 1 < len(lines) and re.fullmatch(r"\s*(\w[\w \t*]*\s+\w+\s*(\[[^]]*\])?|)\s*(=[^;]*)?;",
+                                              lines[i + 1]):
+        i += 1
+    lines[i + 1:i + 1] = decls
+    return "\n".join(lines) + "\n"
 
 
 def fix_externs(c, asm):
