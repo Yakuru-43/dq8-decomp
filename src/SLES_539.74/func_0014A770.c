@@ -1,0 +1,11 @@
+// range: 0x14A770 0x14A7A0
+// auto: m2c draft, verified byte-exact
+#include "common.h"
+
+void func_0014A770(char *arg0, char *arg1) {
+    M2C_FIELD(arg0, s128 *, 0x60) = (s128) M2C_FIELD(arg1, s128 *, 0);
+    M2C_FIELD(arg0, s128 *, 0x70) = (s128) M2C_FIELD(arg1, s128 *, 0x10);
+    M2C_FIELD(arg0, s128 *, 0x80) = (s128) M2C_FIELD(arg1, s128 *, 0x20);
+    M2C_FIELD(arg0, s128 *, 0x90) = (s128) M2C_FIELD(arg1, s128 *, 0x30);
+    M2C_FIELD(arg0, s8 *, 0x29) = 1;
+}

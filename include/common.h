@@ -11,6 +11,9 @@ typedef signed long long s64;
 typedef unsigned long long u64;
 typedef float f32;
 typedef double f64;
+/* m2c names 128-bit quad values (lq/sq) s128/u128; CodeWarrior PS2 has __int128 */
+typedef __int128 s128;
+typedef unsigned __int128 u128;
 
 #define NULL 0
 
