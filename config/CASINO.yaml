@@ -65,6 +65,8 @@ segments:
       - [0x2260, asm, text_460EE0]
       - [0x22F0, c, func_00460F70]
       - [0x2320, asm, text_460FA0]
+      - [0x23B0, c, func_00461030]
+      - [0x23F0, asm, text_461070]
       - [0x24D0, c, func_00461150]
       - [0x2500, asm, text_461180]
       - [0x2F30, c, func_00461BB0]
