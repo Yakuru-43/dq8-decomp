@@ -17,16 +17,16 @@ moved into matching C one at a time. Porting that code to PC is the long-term go
 
 <!-- progress:start -->
 ```
-                 functions                              code bytes
-SLES_539.74      [███████░░░░░░░░░░░░░]  33.6%  3220/9595       [█░░░░░░░░░░░░░░░░░░░]  6.2%    148/2397 KB
-TITLE (overlay)  [█████░░░░░░░░░░░░░░░]  24.5%    12/49         [█░░░░░░░░░░░░░░░░░░░]  1.0%      0/19 KB
-SHOP (overlay)   [█████░░░░░░░░░░░░░░░]  24.1%   109/452        [█░░░░░░░░░░░░░░░░░░░]  7.3%      4/60 KB
-MENU (overlay)   [█████░░░░░░░░░░░░░░░]  22.7%    97/428        [█░░░░░░░░░░░░░░░░░░░]  4.4%      5/103 KB
-CASINO (overlay) [███░░░░░░░░░░░░░░░░░]  17.2%    53/309        [█░░░░░░░░░░░░░░░░░░░]  1.3%      1/107 KB
-BATTLE (overlay) [████░░░░░░░░░░░░░░░░]  21.4%   159/744        [█░░░░░░░░░░░░░░░░░░░]  3.5%      5/143 KB
-ALL game code    [██████░░░░░░░░░░░░░░]  31.5%  3650/11577      [█░░░░░░░░░░░░░░░░░░░]  5.8%    163/2828 KB
+                 code bytes                                     functions
+SLES_539.74      [█░░░░░░░░░░░░░░░░░░░]  5.7%    136/ 2397 KB   [██████░░░░░░░░░░░░░░]  32.3%  3101/9595 
+TITLE (overlay)  [█░░░░░░░░░░░░░░░░░░░]  1.0%      0/   19 KB   [█████░░░░░░░░░░░░░░░]  24.5%    12/49   
+SHOP (overlay)   [█░░░░░░░░░░░░░░░░░░░]  7.3%      4/   60 KB   [█████░░░░░░░░░░░░░░░]  24.1%   109/452  
+MENU (overlay)   [█░░░░░░░░░░░░░░░░░░░]  4.4%      5/  103 KB   [█████░░░░░░░░░░░░░░░]  22.7%    97/428  
+CASINO (overlay) [█░░░░░░░░░░░░░░░░░░░]  1.3%      1/  107 KB   [███░░░░░░░░░░░░░░░░░]  17.2%    53/309  
+BATTLE (overlay) [█░░░░░░░░░░░░░░░░░░░]  3.5%      5/  143 KB   [████░░░░░░░░░░░░░░░░]  21.4%   159/744  
+ALL game code    [█░░░░░░░░░░░░░░░░░░░]  5.3%    151/ 2828 KB   [██████░░░░░░░░░░░░░░]  30.5%  3531/11577
 ```
-_(refreshed 2026-10-13 by `tools/readme_progress.py`; run `tools/progress.py` for the per-region table)_
+_(refreshed 2026-10-13 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->
 
 The SDK regions of the main executable (`sdk_*`, `lib*`, GCC-built) are

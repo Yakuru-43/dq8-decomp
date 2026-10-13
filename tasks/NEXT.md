@@ -5,7 +5,7 @@ it, run its check, then tick it `- [x]` and log it in `notes/weekly/`.
 Each task ends in its own commit through `tools/gate.sh`. Don't push.
 
 ## Phase 0: clean-up (week of 13 Oct)
-- [ ] 0.1 Honest progress in the README: `tasks/0.1-readme-progress.md`
+- [x] 0.1 Honest progress in the README: `tasks/0.1-readme-progress.md`
 - [ ] 0.2 `tools/watch.py` counts like the README: `tasks/0.2-watch-progress.md`
 - [ ] 0.3 Tag the 43 files with contrived C: `tasks/0.3-tag-permuter-artifacts.md`
 
