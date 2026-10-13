@@ -2,6 +2,7 @@
 """build/funcdb.tsv: one row per game function, with size, status and blocker.
 
     tools/funcdb.py            # writes build/funcdb.tsv
+    tools/funcdb.py --queue    # and build/queue.tsv, the factory's work queue
 
 A function starts where `progress_stats()` says one does -- a `glabel` in
 asm/<bin>/*.s, or the `// range:` line of a src/<bin>/**/*.c* file (tracked or
@@ -12,10 +13,15 @@ next start - START otherwise, so the row count and byte total per binary equal
 
 Columns come from COLUMNS; a row is a dict, so a new column is one name in
 that list and one key in the row.
+
+`--queue` writes the factory's work queue next to it: the same rows minus the
+matched ones, with a state and the day it last changed. `write_queue()` reads
+the queue back first, so a rebuild never loses a state someone set.
 """
 import re
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,6 +34,11 @@ from readme_progress import RANGE, tracked_src  # noqa: E402
 OUT = ROOT / "build" / "funcdb.tsv"
 COLUMNS = ["binary", "func", "addr", "size", "status", "last_result", "blocker",
            "callers", "callees", "strings", "tu"]
+QUEUE = ROOT / "build" / "queue.tsv"
+QCOLUMNS = ["state", "since", "binary", "func", "addr", "size", "blocker", "tu"]
+# the states a queue row holds, and the order the factory works the blockers in
+STATES = ("todo", "claimed", "matched", "stuck", "needs-claude")
+BLOCKERS = ["none", "jumptable", "entry-inside", "hilo"]
 MAIN = "SLES_539.74"
 
 # a function in the disassembly, with the optional `nonmatching` marker splat
@@ -212,24 +223,98 @@ def line(row):
     return "\t".join(str(row.get(c, "-")) for c in COLUMNS)
 
 
-def main():
+def read_queue():
+    """(binary, func) -> {state, since} for the rows of an existing queue.tsv."""
+    out = {}
+    if QUEUE.exists():
+        for ln in QUEUE.read_text(errors="replace").splitlines()[1:]:
+            cols = ln.split("\t")
+            if len(cols) >= len(QCOLUMNS):
+                out[(cols[2], cols[3])] = {"state": cols[0], "since": cols[1]}
+    return out
+
+
+def stale(since, today):
+    """True if a `since` date is more than a day old; an unreadable one is too."""
+    try:
+        return date.fromisoformat(since) < today - timedelta(days=1)
+    except ValueError:
+        return True
+
+
+def queue_row(r, old, today):
+    """The queue row for one funcdb row: the state it had, or a fresh `todo`."""
+    prev = old.get((r["binary"], r["func"]), {})
+    state = prev.get("state", "todo")
+    since = prev.get("since", today.isoformat())
+    if state == "claimed" and stale(since, today):
+        state, since = "todo", today.isoformat()  # a claim nobody finished is free
+    return {**r, "state": state, "since": since}
+
+
+def plain_tu(row):
+    """The translation unit without its `?`: a guessed group joins its real one."""
+    tu = row["tu"]
+    return tu[:-1] if tu.endswith("?") else tu
+
+
+def queue_sort(row, first):
+    """TU group (by where it starts), then unblocked, then smallest."""
+    tu = plain_tu(row)
+    return (tu == "-", first[tu],
+            BLOCKERS.index(row["blocker"]) if row["blocker"] in BLOCKERS else len(BLOCKERS),
+            row["size"], row["binary"], row["_addr"])
+
+
+def write_queue(rows, today):
+    """build/queue.tsv: every function the factory still owes, in the order to take it."""
+    rows = [queue_row(r, read_queue(), today) for r in rows if r["status"] != "matched"]
+    first = {}
+    for r in rows:
+        t = plain_tu(r)
+        first[t] = min(first.get(t, r["_addr"]), r["_addr"])
+    rows.sort(key=lambda r: queue_sort(r, first))
+
+    lines = ["\t".join(QCOLUMNS)]
+    lines += ["\t".join(str(r[c]) for c in QCOLUMNS) for r in rows]
+    tmp = QUEUE.with_name(QUEUE.name + ".tmp")
+    tmp.write_text("\n".join(lines) + "\n")  # write-then-rename: never half a queue
+    tmp.replace(QUEUE)
+    count = Counter(r["state"] for r in rows)
+    detail = ", ".join(f"{s} {count[s]}" for s in STATES)
+    print(f"queue: {len(rows)} rows ({detail})")
+
+
+def build():
+    """Every function of every binary, all columns filled in."""
     tracked = tracked_src()
     rows_by_bin = {b: rows_for(b, tracked) for b in BINARIES}
     strs = {b: load_strings(b) for b in BINARIES}
     link_calls(rows_by_bin)
     for b in BINARIES:
         add_strings(rows_by_bin[b], strs[b])
+    named = sum(1 for s in strs[MAIN].values() if s.endswith((".c", ".cpp")))
+    print(f"strings: {len(strs[MAIN])} in {MAIN}, {named} of them named .c/.cpp")
+    return rows_by_bin
 
+
+def write_funcdb(rows_by_bin):
+    """build/funcdb.tsv, one line per row, binaries in BINARIES order."""
     out = ["\t".join(COLUMNS)]
     for b in BINARIES:
         rows = rows_by_bin[b]
         out += [line(r) for r in rows]
         print(f"{b} {len(rows)} rows, {sum(r['size'] for r in rows)} bytes")
-    named = sum(1 for s in strs[MAIN].values() if s.endswith((".c", ".cpp")))
-    print(f"strings: {len(strs[MAIN])} in {MAIN}, {named} of them named .c/.cpp")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(out) + "\n")
     print(f"{OUT.relative_to(ROOT)}: {len(out) - 1} rows")
+
+
+def main():
+    rows_by_bin = build()
+    write_funcdb(rows_by_bin)
+    if "--queue" in sys.argv:
+        write_queue([r for b in BINARIES for r in rows_by_bin[b]], date.today())
 
 
 if __name__ == "__main__":
