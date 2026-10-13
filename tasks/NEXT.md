@@ -12,3 +12,15 @@ Each task ends in its own commit through `tools/gate.sh`. Don't push.
 When all three are ticked, stop and write "Phase 0 done" with the README's
 new numbers in `notes/weekly/`. Claude writes the Phase 1 tasks next
 (function database and queue); don't start the factory before they exist.
+
+## Phase 1: function database and work queue (weeks 1–2)
+All four tasks build one script, `tools/funcdb.py`; do them in order. Its
+outputs (`build/funcdb.tsv`, `build/queue.tsv`) are git-ignored; only the
+script is committed, once per task.
+- [ ] 1.1 One row per game function: `tasks/1.1-funcdb-rows.md`
+- [ ] 1.2 Callers, callees, strings, translation unit: `tasks/1.2-funcdb-calls-strings.md`
+- [ ] 1.3 The work queue: `tasks/1.3-queue.md`
+- [ ] 1.4 The Phase 1 check: `tasks/1.4-funcdb-check.md`
+
+When 1.4 passes, stop: Claude picks the 50 pilot functions next (Phase 2).
+Don't start the factory until `tasks/pilot.md` exists.
