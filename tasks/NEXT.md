@@ -24,3 +24,9 @@ script is committed, once per task.
 
 When 1.4 passes, stop: Claude picks the 50 pilot functions next (Phase 2).
 Don't start the factory until `tasks/pilot.md` exists.
+
+## Phase 2: pilot (weeks 2–3)
+- [ ] 2.1 Qwen's 40 pilot functions, measured: `tasks/pilot.md`
+
+Claude does the other 10 (prompt C4) and then reviews the whole pilot (C5).
+After 2.1, stop: the factory starts only when Claude has re-estimated the plan.
