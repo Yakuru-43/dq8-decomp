@@ -7,7 +7,7 @@ Each task ends in its own commit through `tools/gate.sh`. Don't push.
 ## Phase 0: clean-up (week of 13 Oct)
 - [x] 0.1 Honest progress in the README: `tasks/0.1-readme-progress.md`
 - [x] 0.2 `tools/watch.py` counts like the README: `tasks/0.2-watch-progress.md`
-- [ ] 0.3 Tag the 43 files with contrived C: `tasks/0.3-tag-permuter-artifacts.md`
+- [x] 0.3 Tag the 43 files with contrived C: `tasks/0.3-tag-permuter-artifacts.md`
 
 When all three are ticked, stop and write "Phase 0 done" with the README's
 new numbers in `notes/weekly/`. Claude writes the Phase 1 tasks next
