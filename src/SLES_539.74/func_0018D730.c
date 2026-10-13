@@ -1,4 +1,5 @@
 // range: 0x18D730 0x18D740
+// permuter-artifact: contrived C, rewrite as real C++ (see CLAUDE.md)
 // auto: tail-call thunk, verified byte-exact
 #include "common.h"
 

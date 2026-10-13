@@ -1,4 +1,5 @@
 // range: 0x2060F0 0x206130
+// permuter-artifact: contrived C, rewrite as real C++ (see CLAUDE.md)
 // auto: m2c draft + decomp-permuter, verified byte-exact
 
 typedef signed char s8;

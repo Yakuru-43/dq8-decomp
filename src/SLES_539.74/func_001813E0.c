@@ -1,4 +1,5 @@
 // range: 0x1813E0 0x181420
+// permuter-artifact: contrived C, rewrite as real C++ (see CLAUDE.md)
 // auto: m2c draft, with the casts CodeWarrior asks for, verified byte-exact
 #include "common.h"
 
