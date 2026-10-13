@@ -46,3 +46,6 @@ scratch/
 __pycache__/
 *.pyc
 placeholder.txt
+
+# --- PDF
+*.pdf
