@@ -17,12 +17,13 @@ Picked at `3f372cc` from `build/funcdb.tsv` with a fixed random seed.
 2. Work your functions in `id` order. Before starting one, set its row in
    `build/queue.tsv` to `claimed`; when done, set it to `matched` or `needs-claude`.
 3. **An attempt** is one compile-and-compare run, i.e. one
-   `tools/try_match.py <file> <func> <addr> -O3 --show [--bin <binary>]`
+   `tools/try_match.py <file> <func> <addr> --show [--bin <binary>] -- -O3`
    (overlays need `--bin`).
 4. **Minutes** are wall-clock time from claiming the function to writing its
    log row, including reading the asm.
 5. **Best diff score** is the lowest you reached:
-   `*` lines in the `--show` output + |your size − original size| / 4.
+   `*` lines in the `--show` output, not counting relocation-only lines
+   (see the skill, step 4), + |your size − original size| / 4.
    `0` = match. Write `NC` if no draft ever compiled.
 6. **Too big to read**: if the function's asm doesn't fit in your context,
    don't force it. Log `result` = `too-big` with the minutes spent, then move on.

@@ -1,0 +1,6 @@
+id	owner	func	bucket	size	attempts	minutes	result	best_score	permuter	commit	notes
+P03	Claude	func_00182130	<=64 B	48	14	2	match	0	no	8298b36	branch-likely null check needs an integer: getter returns u32, not a pointer (new idiom); usage n/a, run inside the planning session
+P08	Claude	func_0029D750	<=64 B	64	3	1	match	0	no	8298b36	guard clauses instead of nested ifs (new idiom); usage n/a
+P13	Claude	func_0030FE50	65-256 B	112	1	1	match	0	no	8298b36	m2c draft dropped arg0 from the first call; plain C matched first try; usage n/a
+P18	Claude	func_0029BB90	65-256 B	208	2	1	match	0	no	8298b36	s0/s1 swapped until the locals were declared in the other order (new idiom); usage n/a
+P23	Claude	func_00145C30	257 B-1 KB	320	1	1	match	0	no	8298b36	two asserts (mg_draw.cpp lines 104, 106), strings by D_ symbol; matched first try; usage n/a

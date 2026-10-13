@@ -47,7 +47,7 @@ every day Qwen runs the factory.
 
 ## Tools
 - `tools/verify.py <src file>`: the match test (`autodecomp.verify()`).
-- `tools/try_match.py <file> <func> <vram> -O3 --show`: side-by-side diff.
+- `tools/try_match.py <file> <func> <vram> --show [--bin <bin>] -- -O3`: side-by-side diff.
 - `tools/lint_contrived.py <files>`: the no-contrived-C rules.
 - `tools/gate.sh`: clean build of the staged tree, six SHA-1s, forbidden
   paths, lint. `--head` checks HEAD (before a push).

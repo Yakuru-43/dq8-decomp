@@ -27,8 +27,12 @@ a function counts only when `tools/verify.py` says MATCH and the gate passes.
    Start from the m2c draft if there is one (`build/repair/<bin>/<func>.c`,
    or `.venv/bin/m2c` on the asm), then clean it: real types, structs from
    `include/game/` headers, no casts the compiler doesn't need.
-4. **Compare.** `tools/try_match.py src/<bin>/<func>.c func_XXXXXXXX 0xSTART -O3 --show`
-   prints both disassemblies; `*` marks differing lines. Change the C, not
+4. **Compare.** `tools/try_match.py src/<bin>/<func>.c func_XXXXXXXX 0xSTART --show -- -O3`
+   (overlays: add `--bin <bin>` before the `--`; the `--` is required)
+   prints both disassemblies; `*` marks differing lines. A `*` on a `jal`,
+   `lui` or `%lo` line whose only difference is the address (`func_000000`,
+   `0x0`) is an unresolved relocation: the real compare masks it, ignore it.
+   The last line says `MATCH` or the first real difference. Change the C, not
    the flags (a `// flags:` line needs a reason from a neighbouring file).
 5. **Repeat** 3–4. Stop after **30 attempts or 45 minutes**, whichever comes first.
 6. **Finisher, only when close:** if the diff is down to register allocation
@@ -70,3 +74,47 @@ Base *AsBase(Derived *d) { return d; }   // d ? (Base *)((char *)d + 4) : 0
 In C it can only be imitated with a ternary; when the asm has this shape,
 the function belongs to the C++ path (step 7 of the roadmap). Until that
 exists, mark it `needs-claude` with the note "upcast", don't force it.
+
+### Branch-likely null checks: the value is an integer
+`bnel $v0, $zero` with the store in its delay slot, right after a call
+(`if (r) r->field = x;`), comes from testing an **integer**. Testing a
+pointer of any type gives `beqz` + `nop` instead. Such getters returned an
+address as `u32`:
+```c
+extern u32 func_001AE130(void);          /* returns &D_00411A10 */
+u32 work = func_001AE130();
+if (work != 0) { *(s32 *)(work + 0x300) = value; }
+```
+A pointer loaded from memory (`p = *pp; if (!p)`) still gets branch-likely
+code, so this applies to call results. Found in P03, `func_00182130`.
+
+### Guard clauses, not nested ifs
+`beqz a1, epilogue` then straight-line code with `bltz v0, epilogue` is
+early returns. `if (a) { x = f(); if (x >= 0) {...} }` makes CodeWarrior
+invert the first branch and duplicate the epilogue jump:
+```c
+if (key == 0) { return; }
+index = func_00298380(obj, key);
+if (index < 0) { return; }
+obj->slots[index] = 0;
+```
+Found in P08, `func_0029D750`.
+
+### Saved registers follow declaration order
+If the code is right but two locals have swapped `$s0`/`$s1`, swap the order
+of their declarations (and assign after declaring, not in the initializer).
+In P18 (`func_0029BB90`), `s32 i; s32 *cursor;` gave the original
+allocation and `s32 *cursor = ...; s32 i;` gave it swapped.
+
+### Asserts and their strings
+`lui/addiu %hi/%lo(D_x)` for a file name, a line number in `$a1`, a second
+string, then `jal func_0012D4D8` is a failed `assert(expr)`: file, line,
+expression text. Execution continues after it. Until roadmap step 6 lets a
+file own its `.rodata`, refer to the strings by symbol, not as literals
+(a literal adds `.rodata` and `tools/verify.py` reports `DATA`):
+```c
+extern char D_003C1FC0[];   /* "mg_draw.cpp" */
+extern char D_003C1FD0[];   /* "texman" */
+if (texman == NULL) { func_0012D4D8(D_003C1FC0, 104, D_003C1FD0); }
+```
+Found in P23, `func_00145C30`.
