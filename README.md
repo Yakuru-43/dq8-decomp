@@ -88,6 +88,7 @@ make setup   # extract code from the ISO, generate configs, disassemble, auto-na
 tools/autodecomp.py        # optional: regenerate src/*/asmfunc (not in the repo)
 make -j      # assemble, link, verify against checksum.sha1
 tools/progress.py          # how much is built from src/
+tools/watch.py             # the same count as a live bar, plus the permuter's queue
 ```
 
 ## Source files
@@ -262,7 +263,9 @@ Assert/`__FILE__` strings place functions in these translation units (`.h` hits 
    `tools/permute_batch.py --hours 10` runs it unattended over every mismatching
    function (smallest first, resumable via `build/permute_batch.done`, stop with
    `touch build/permute_batch.stop`); score-0 results are re-verified before they
-   are written to `src/`. Follow with `make split && make -j`.
+   are written to `src/`. Follow with `make split && make -j`. `tools/watch.py`
+   follows along: one bar per binary, this run's queue and match count, and how
+   much is still waiting to be folded in.
 2. **Jump tables and constants**: place a function's `.rodata` with it so switches can match.
    `build/autodecomp_*.tsv` marks these `jumptable` (~130 functions).
 3. **Absolute data references (`lui %hi` + `ori %lo`)**: the CodeWarrior `asm` form
