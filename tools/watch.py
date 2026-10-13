@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-"""Live progress bar: functions decompiled, and what the permuter is doing.
+"""Live progress bar: the README's numbers, plus what the permuter is doing.
 
     tools/watch.py [--every 10] [--once]
 
-The top bar counts what is in src/ right now, so it moves while
-permute_batch.py runs (a match is written straight into src/<bin>/). Asm labels
-a new src range swallowed are left out of the total, so the percentage stays
-honest before `make split` reconciles the asm side.
+The bars come from `readme_progress.progress_stats()`, so they mean exactly
+what the README means: code bytes first, functions second, only files the repo
+actually holds, nothing from `src/*/asmfunc/`. Work that is on disk but not
+committed gets its own line and is never folded into the totals.
 
 The lower half reads build/permute_batch.done and build/permute_batch.log; it
 works whether or not a run is in progress.
 """
 import argparse
-import bisect
 import datetime
 import os
 import re
@@ -22,13 +21,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from progress import BINARIES, FUNC, region  # noqa: E402
+from progress import BINARIES  # noqa: E402
+from readme_progress import progress_stats, tracked_src  # noqa: E402
 
-RANGE = re.compile(r"// range: (0x[0-9A-Fa-f]+) (0x[0-9A-Fa-f]+)")
 DONE = ROOT / "build" / "permute_batch.done"
 LOG = ROOT / "build" / "permute_batch.log"
 PIDFILE = ROOT / "build" / "permute_batch.pid"
-WIDTH = 28
+WIDTH = 26
 
 START = re.compile(r"^(\d+):(\d+):(\d+) start \(pid (\d+)\): (\d+) functions left, "
                    r"(\d+) already done, .*?([\d.]+)h budget")
@@ -42,63 +41,39 @@ def bar(done, total, width=WIDTH):
     return "█" * filled + "░" * (width - filled)
 
 
-def asm_starts(binary):
-    """(glabel addresses, newest .s mtime) in asm/<bin>/.
-
-    `make split` rewrites the .s files, so their newest mtime is when asm was
-    last reconciled with src/ -- a src file newer than that is a match the
-    build has not folded in yet. A full scan costs ~0.3 s, so nothing is cached.
-    """
-    out, newest = [], 0.0
-    for f in (ROOT / "asm" / binary).glob("*.s"):
-        out += [int(m.group(2), 16) for m in FUNC.finditer(f.read_text(errors="replace"))]
-        newest = max(newest, f.stat().st_mtime)
-    return out, newest
+def line(label, bn, bt, fn, ft):
+    """One row: code bytes first, functions second (same columns as the README)."""
+    return (f"{label:13}[{bar(bn, bt)}] {100 * bn / bt if bt else 0:4.1f}% "
+            f"{bn / 1024:5.0f}/{bt / 1024:>5.0f} KB  "
+            f"[{bar(fn, ft)}] {100 * fn / ft if ft else 0:5.1f}% {fn:5}/{ft:<5}")
 
 
-def src_ranges(binary):
-    """(start, end, mtime) for every `// range:` file in src/<bin>/."""
-    out = []
+def on_disk(binary):
+    """Every src file this checkout has, tracked or not, as posix paths."""
     d = ROOT / "src" / binary
-    if d.exists():
-        for f in d.rglob("*.c*"):
-            with f.open(errors="replace") as fh:
-                m = RANGE.match(fh.read(200))
-            if m:
-                out.append((int(m.group(1), 16), int(m.group(2), 16), f.stat().st_mtime))
-    return sorted(out)
+    return {f.relative_to(ROOT).as_posix() for f in d.rglob("*.c*")} if d.exists() else set()
 
 
-def tally(binary):
-    """(funcs_done, funcs_total, bytes_done, bytes_total, waiting_for_split).
+def counts():
+    """(rows, totals, uncommitted): repo numbers, and what is only on disk.
 
-    `waiting_for_split` counts src files newer than the newest .s: matches the
-    permuter wrote since `make split` last reconciled the two trees.
+    The second pass hands progress_stats() a "tracked" set that also contains
+    the untracked files, so every untracked C file counts as done; the
+    difference is matches written since the last commit. Generated asmfunc
+    stays invisible on both sides, which is right: it is asm, not work.
     """
-    srcs = src_ranges(binary)
-    asm_list, newest_asm = asm_starts(binary)
-    src_at = {s: e for s, e, _ in srcs}
-    begins = [s for s, _, _ in srcs]
-    ends = [e for _, e, _ in srcs]
-    waiting = sum(1 for _, _, mt in srcs if mt > newest_asm)
-    # a src range covers the asm labels inside it; they are not extra functions
-    keep = []
-    for a in asm_list:
-        i = bisect.bisect_right(begins, a) - 1
-        if not (i >= 0 and begins[i] < a < ends[i]):
-            keep.append(a)
-    starts = sorted(set(keep) | set(begins))
-    fn = ft = bn = bt = 0
-    for a, nxt in zip(starts, starts[1:] + [None]):
-        end = src_at.get(a, nxt)
-        if end is None or end <= a or region(binary, a) not in ("game", "text"):
-            continue
-        ft += 1
-        bt += end - a
-        if a in src_at:
-            fn += 1
-            bn += end - a
-    return fn, ft, bn, bt, waiting
+    tracked = tracked_src()
+    rows = []
+    tf = tt = tb = tbt = 0
+    uf = ub = 0
+    for b in BINARIES:
+        fn, ft, bn, bt = progress_stats(b, tracked)
+        dn, _, dbn, _ = progress_stats(b, tracked | on_disk(b))
+        tf, tt, tb, tbt = tf + fn, tt + ft, tb + bn, tbt + bt
+        uf, ub = uf + (dn - fn), ub + (dbn - bn)
+        rows.append(line(b, bn, bt, fn, ft))
+    rows.append(line("ALL in repo", tb, tbt, tf, tt))
+    return rows, (tf, tt, tb, tbt), (uf, ub)
 
 
 def alive(pid):
@@ -173,28 +148,20 @@ def run_info():
         t1 = h * 3600 + mi * 60 + s
         done_now = i - int(first.group(4)) + 1
         if t1 > t0 and done_now > 0:
-            rate = done_now / (t1 - t0)
-            info["eta_secs"] = (total - i) / rate
+            info["eta_secs"] = (total - i) / (done_now / (t1 - t0))
             info["eta"] = hms(info["eta_secs"])
     return info
 
 
 def frame(once):
-    lines = []
-    now = time.strftime("%H:%M:%S")
-    lines.append(f"DQ8 (SLES-53974) decompilation     {now}")
-    lines.append("")
-    tf = tt = tb = tbt = tw = 0
-    for b in BINARIES:
-        fn, ft, bn, bt, wait = tally(b)
-        tf, tt, tb, tbt, tw = tf + fn, tt + ft, tb + bn, tbt + bt, tw + wait
-        lines.append(f"{b:13}[{bar(fn, ft)}] {100 * fn / ft if ft else 0:5.1f}% "
-                     f"{fn:5}/{ft:<5}")
-    lines.append("")
-    lines.append(f"{'functions':13}[{bar(tf, tt)}] {100 * tf / tt:5.1f}% {tf:5}/{tt:<5}"
-                 f"   {'code':4} {tb / 1024:5.0f}/{tbt / 1024:.0f} KB")
-    if tw:
-        lines.append(f"{'':13}{tw} still to fold in: `make split && make -j`")
+    rows, (tf, tt, tb, tbt), (uf, ub) = counts()
+    at = rows[-1].index("[", rows[-1].index("]") + 1)
+    lines = [f"DQ8 (SLES-53974) decompilation     {time.strftime('%H:%M:%S')}", "",
+             f"{' ' * 13}{'code bytes':<{at - 13}}functions", *rows]
+    if uf or ub:
+        size = f"{ub / 1024:.0f} KB" if ub >= 1024 else f"{ub} B"
+        lines.append(f"{'':13}uncommitted: {uf} function{'' if uf == 1 else 's'}, {size} "
+                     "(matched since the last commit)")
 
     r = run_info()
     lines.append("")
@@ -217,7 +184,7 @@ def frame(once):
     else:
         lines.append(f"permuter: not running   {r.get('done_match', 0)} matches "
                      f"in {r.get('done_total', 0)} screened")
-    text = "\n".join(ln for ln in lines if ln is not None)
+    text = "\n".join(lines)
     sys.stdout.write(("\x1b[H\x1b[J" if not once and sys.stdout.isatty() else "")
                      + text + "\n")
     return text
