@@ -3,6 +3,7 @@
 
     tools/funcdb.py            # writes build/funcdb.tsv
     tools/funcdb.py --queue    # and build/queue.tsv, the factory's work queue
+    tools/funcdb.py --check    # the two files against the README's own count
 
 A function starts where `progress_stats()` says one does -- a `glabel` in
 asm/<bin>/*.s, or the `// range:` line of a src/<bin>/**/*.c* file (tracked or
@@ -17,6 +18,9 @@ that list and one key in the row.
 `--queue` writes the factory's work queue next to it: the same rows minus the
 matched ones, with a state and the day it last changed. `write_queue()` reads
 the queue back first, so a rebuild never loses a state someone set.
+
+`--check` reads both files back, rebuilds nothing, and fails if any function
+is missing from either, or has no blocker class: the Phase 1 gate.
 """
 import re
 import sys
@@ -29,7 +33,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from autodecomp import ALABEL, INSN_ADDR  # noqa: E402
 from keep_funcs import text_ranges  # noqa: E402
 from progress import BINARIES, region  # noqa: E402
-from readme_progress import RANGE, tracked_src  # noqa: E402
+from readme_progress import RANGE, progress_stats, tracked_src  # noqa: E402
 
 OUT = ROOT / "build" / "funcdb.tsv"
 COLUMNS = ["binary", "func", "addr", "size", "status", "last_result", "blocker",
@@ -285,6 +289,90 @@ def write_queue(rows, today):
     print(f"queue: {len(rows)} rows ({detail})")
 
 
+def read_tsv(path):
+    """A build/*.tsv back as a list of dicts keyed by its own header."""
+    lines = path.read_text(errors="replace").splitlines()
+    head = lines[0].split("\t")
+    return [dict(zip(head, ln.split("\t"))) for ln in lines[1:] if ln]
+
+
+def check(db, queue, stats):
+    """Every problem with the two files, as lines; empty means both are right."""
+    out = []
+    owed = set()
+    for b in BINARIES:
+        rows = [r for r in db if r["binary"] == b]
+        f_done, f_total, _, b_total = stats[b]
+        size = sum(int(r["size"]) for r in rows)
+        if (len(rows), size) != (f_total, b_total):
+            out.append(f"{b}: funcdb has {len(rows)} rows / {size} bytes, "
+                       f"progress_stats says {f_total} / {b_total}")
+        matched = sum(1 for r in rows if r["status"] == "matched")
+        if matched != f_done:
+            out.append(f"{b}: {matched} matched rows, progress_stats says {f_done} done")
+        for r in rows:
+            if r["status"] == "matched":
+                want = r["blocker"] == "-"
+            else:
+                owed.add((b, r["func"]))
+                want = r["blocker"] in BLOCKERS
+            if not want:
+                out.append(f"{b} {r['func']}: status {r['status']} with blocker {r['blocker']}")
+    have = Counter((r["binary"], r["func"]) for r in queue)
+    for k in sorted(owed - set(have)):
+        out.append(f"{k[0]} {k[1]}: still owed, no queue row")
+    for k in sorted(set(have) - owed):
+        out.append(f"{k[0]} {k[1]}: queue row for nothing owed")
+    for k, n in sorted(have.items()):
+        if n > 1:
+            out.append(f"{k[0]} {k[1]}: {n} queue rows, one expected")
+    for r in queue:
+        if r["state"] not in STATES:
+            out.append(f"{r['binary']} {r['func']}: state {r['state']} is not one of {STATES}")
+        try:
+            date.fromisoformat(r["since"])
+        except ValueError:
+            out.append(f"{r['binary']} {r['func']}: since {r['since']} is not YYYY-MM-DD")
+    return out
+
+
+def blocker_table(db):
+    """Functions and KB still owed, per blocker class, unblocked first."""
+    totals = defaultdict(lambda: [0, 0])
+    for r in db:
+        if r["status"] != "matched":
+            totals[r["blocker"]][0] += 1
+            totals[r["blocker"]][1] += int(r["size"])
+    order = [b for b in BLOCKERS if b in totals] + sorted(set(totals) - set(BLOCKERS))
+    lines = [f"{'blocker':<13}{'functions':>11}{'KB':>10}"]
+    for b in order + ["total"]:
+        if b == "total":
+            n, size = sum(v[0] for v in totals.values()), sum(v[1] for v in totals.values())
+        else:
+            n, size = totals[b]
+        lines.append(f"{b:<13}{n:>11}{round(size / 1024):>10}")
+    return lines
+
+
+def check_files():
+    """--check: the two build files, against progress_stats and against each other."""
+    if not OUT.exists() or not QUEUE.exists():
+        print("  build/funcdb.tsv or build/queue.tsv is missing: "
+              "run tools/funcdb.py --queue")
+        return 1
+    stats = {b: progress_stats(b) for b in BINARIES}
+    db = read_tsv(OUT)
+    problems = check(db, read_tsv(QUEUE), stats)
+    for p in problems[:20]:  # the list can run to thousands; twenty say it well enough
+        print("  " + p)
+    if len(problems) > 20:
+        print(f"  ... and {len(problems) - 20} more")
+    for ln in blocker_table(db):
+        print(ln)
+    print(f"check: {'PASS' if not problems else 'FAIL'}")
+    return 0 if not problems else 1
+
+
 def build():
     """Every function of every binary, all columns filled in."""
     tracked = tracked_src()
@@ -311,6 +399,8 @@ def write_funcdb(rows_by_bin):
 
 
 def main():
+    if "--check" in sys.argv:
+        sys.exit(check_files())  # reads the two files back, rebuilds nothing
     rows_by_bin = build()
     write_funcdb(rows_by_bin)
     if "--queue" in sys.argv:
