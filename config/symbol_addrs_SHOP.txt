@@ -1,4 +1,5 @@
 
+_gp = 0x3E7270; // data area base (gp-relative addressing, see SLES_539.74)
 
 // --- labels kept for calls from decompiled code (tools/keep_funcs.py) ---
 func_0046A510 = 0x46A510; // type:func
