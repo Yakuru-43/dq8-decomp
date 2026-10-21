@@ -26,7 +26,13 @@ When 1.4 passes, stop: Claude picks the 50 pilot functions next (Phase 2).
 Don't start the factory until `tasks/pilot.md` exists.
 
 ## Phase 2: pilot (weeks 2–3)
-- [ ] 2.1 Qwen's 40 pilot functions, measured: `tasks/pilot.md`
+- [x] 2.1 Qwen's 40 pilot functions, measured: `tasks/pilot.md`
 
 Claude does the other 10 (prompt C4) and then reviews the whole pilot (C5).
 After 2.1, stop: the factory starts only when Claude has re-estimated the plan.
+
+Pilot reviewed 2026-10-21: `notes/pilot-review.md`. 18 of 50 matched; Qwen
+matches about half of the functions up to 256 B and none above 1 KB.
+
+## Phase 3: function factory (from week 3)
+- [ ] 3.1 Factory, unblocked functions up to 1 KB: `tasks/3.1-factory-small.md`

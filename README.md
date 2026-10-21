@@ -18,15 +18,15 @@ moved into matching C one at a time. Porting that code to PC is the long-term go
 <!-- progress:start -->
 ```
                  code bytes                                     functions
-SLES_539.74      [█░░░░░░░░░░░░░░░░░░░]  5.7%    136/ 2397 KB   [██████░░░░░░░░░░░░░░]  32.3%  3101/9595 
-TITLE (overlay)  [█░░░░░░░░░░░░░░░░░░░]  1.0%      0/   19 KB   [█████░░░░░░░░░░░░░░░]  24.5%    12/49   
-SHOP (overlay)   [█░░░░░░░░░░░░░░░░░░░]  7.3%      4/   60 KB   [█████░░░░░░░░░░░░░░░]  24.1%   109/452  
-MENU (overlay)   [█░░░░░░░░░░░░░░░░░░░]  4.4%      5/  103 KB   [█████░░░░░░░░░░░░░░░]  22.7%    97/428  
-CASINO (overlay) [█░░░░░░░░░░░░░░░░░░░]  1.3%      1/  107 KB   [███░░░░░░░░░░░░░░░░░]  17.2%    53/309  
-BATTLE (overlay) [█░░░░░░░░░░░░░░░░░░░]  3.5%      5/  143 KB   [████░░░░░░░░░░░░░░░░]  21.4%   159/744  
-ALL game code    [█░░░░░░░░░░░░░░░░░░░]  5.3%    151/ 2828 KB   [██████░░░░░░░░░░░░░░]  30.5%  3531/11577
+SLES_539.74      [█░░░░░░░░░░░░░░░░░░░]  5.8%    139/ 2397 KB   [███████░░░░░░░░░░░░░]  32.5%  3119/9596 
+TITLE (overlay)  [█░░░░░░░░░░░░░░░░░░░]  1.0%      0/   19 KB   [████░░░░░░░░░░░░░░░░]  21.4%    12/56   
+SHOP (overlay)   [█░░░░░░░░░░░░░░░░░░░]  7.2%      4/   61 KB   [████░░░░░░░░░░░░░░░░]  20.1%   109/541  
+MENU (overlay)   [█░░░░░░░░░░░░░░░░░░░]  4.5%      5/  104 KB   [████░░░░░░░░░░░░░░░░]  17.9%    98/548  
+CASINO (overlay) [█░░░░░░░░░░░░░░░░░░░]  1.3%      1/  107 KB   [███░░░░░░░░░░░░░░░░░]  15.9%    53/333  
+BATTLE (overlay) [█░░░░░░░░░░░░░░░░░░░]  3.5%      5/  144 KB   [███░░░░░░░░░░░░░░░░░]  15.6%   159/1019 
+ALL game code    [█░░░░░░░░░░░░░░░░░░░]  5.4%    154/ 2832 KB   [██████░░░░░░░░░░░░░░]  29.4%  3550/12093
 ```
-_(refreshed 2026-10-13 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
+_(refreshed 2026-10-21 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->
 
 The SDK regions of the main executable (`sdk_*`, `lib*`, GCC-built) are
