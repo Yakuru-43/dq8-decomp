@@ -16,8 +16,13 @@ a function counts only when `tools/verify.py` says MATCH and the gate passes.
    (`grep -l "glabel func_XXXXXXXX" asm/<bin>/`). Note its size, calls, the
    globals it touches, and the struct offsets it uses. Look at its neighbours
    in `src/` (same translation unit): they show types and style.
-3. **Draft.** Write `src/<bin>/func_XXXXXXXX.c` (`.cpp` once the C++ path
-   exists):
+3. **Draft.** Write `src/<bin>/func_XXXXXXXX.c`, or `.cpp` when an idiom
+   below needs C++ (`tools/verify.py` and the build compile `.cpp` as C++;
+   wrap the function and its externs in `extern "C" { ... }` so the names
+   stay `func_XXXXXXXX`). `0xEND` includes the padding `nop`s after the
+   function up to the next 16-byte boundary (objects are 16-aligned; a range
+   that stops at the last real instruction shifts every later address and
+   the build fails its checksum):
    ```c
    // range: 0xSTART 0xEND
    #include "common.h"
@@ -118,3 +123,53 @@ extern char D_003C1FD0[];   /* "texman" */
 if (texman == NULL) { func_0012D4D8(D_003C1FC0, 104, D_003C1FD0); }
 ```
 Found in P23, `func_00145C30`.
+
+### Inline helpers, and their depth limit
+A value computed into a register and then branched on (`sltu`, `xor`/`sltiu`
+before a `beqz`) where plain C folds the compare into the branch often comes
+from a small inline function returning a condition, e.g.
+`inline s32 IsEmpty(Ch *c) { return c->open && c->rd == c->wr; }`. Inline
+functions nest only one level: if `IsBusy(id)` calls `GetChannel(id)`, the
+inner call stays a `jal`. Pass the pointer instead and let the caller write
+`IsBusy(GetChannel(id))`; the original often recomputes the same lookup twice
+exactly like that. A `return b ? b != 0 : 0;` from a `u8` function gives the
+`beql`/`sltu`/`andi 0xFF` tail. Found in P28, `func_0025B760`.
+
+### A bool compared with `false` (C++)
+`sltu`/`slt`/`xori`+`sltiu` into `$v0`, then `beqz`/`bnez`/`beql` on `$v0`,
+is a C++ `bool` compared against `false`, a common style in this codebase:
+```cpp
+if ((record != 0) != false) { return record->id; }   // P02, func_00340E10
+inline bool IsLinking(void) { return D_00410044 == 1; }
+if (IsLinking() != false) { ok = 0; }                  // P33, func_00195CC0
+```
+`== true` compares against 1 instead (`li 1` + `bne`), and in C, or with a
+plain `if (IsLinking())`, the compare folds into the branch. The file must
+be `.cpp`.
+
+### Constant on the left
+`slt $at, $s1, $zero` + `bnez $at` (instead of `bltz $s1`) is `if (0 <= x)`;
+`x >= 0` gives `bltz`. Found in P33.
+
+### One return stub means nested ifs
+Several paths branching to a single `b epilogue; move $v0, $s1` came from one
+`return ret;` at the end with the conditions nested above it. Early
+`return ret;` statements each get their own stub. Found in P33.
+
+### Struct copies show the member types
+A struct assignment copies member by member: a scalar is one `lw`/`sw`, an
+array of 4-byte elements is a loop of 8-byte steps, a struct of floats is
+`lwc1`/`swc1` per float, and a 16-byte vector type is `lq`/`sq` (a loop of
+`lq` pairs for an array). A 16-byte gap before a float group is
+`__attribute__((aligned(16)))` on that member (aligning the type itself
+switches its copy to `lq`). A vector that copies with `lq` alone and in
+arrays: `union Vec { u128 q; struct { f32 x, y, z, w; } v; };` (CodeWarrior
+has no anonymous structs). A `adda.s`/`madd.s` pair is plain float math such
+as `y += 0.5f * h`. Found in P38, `func_002C60C0`.
+
+### `volatile` on data another thread writes
+If a field is loaded twice where C would load it once (`lw $v0` for the test,
+`lw $a0` again for the call), and it is a semaphore id, a flag an interrupt
+sets, or similar, it was `volatile`. Mark the line `// thread-shared` (the
+lint accepts it like `// hw-register`). Never use it to fix a diff on data
+only this thread touches. Found in P28, `func_0025B760`.
