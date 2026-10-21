@@ -84,3 +84,41 @@ Tried, all six producing byte-identical output or worse:
 into the merge and keep a separate empty block for the else (`b F4; b E4`).
 Guesses not tried: an `else` that is an empty compound statement, a `?:` for the
 result, or `register` on `result`.
+
+## Retry 2026-10-21 (Claude, pilot-retry session)
+
+The three guesses above were tried and are **ruled out**; the tail is still 10
+`*` lines (88–96 B of 112). All new shapes keep the first 0x30 bytes identical.
+
+| shape | diff |
+|---|---|
+| baseline (best C above) | 92 B |
+| outer `else { }` empty compound | 84 B, but `result` left unset on the what==0 path (wrong CFG) |
+| `result = 0;` inside the outer body before the inner if (inner has no else; outer keeps its else) | 96 B |
+| `register s32 result;` | 92 B (byte-identical to baseline) |
+| `.cpp`, `bool result` + `true`/`false` | 92 B (identical) |
+| `goto out;` in the else arm / in the then arm | 92 B (identical) |
+| then arm written `result = 1; slot->fC = what;` | 92 B (identical) |
+| inner `switch (slot->f0) { case 4: … default: … }` | 92 B (identical) |
+| nested `switch (what) { case 0 / default }` + inner switch | 92 B (identical) |
+| `result = (slot->f0 == 4) ? 1 : 0;` after the store-if | 88 B — but emits `lw; xori 4; sltiu 1` (a bool materialisation the original never has), so `?:` is NOT the source |
+
+Permuter: never actually run by the pilot (pilot.tsv permuter column `no`).
+The m2c draft in `build/permute/func_001AD6A0/base.c` does not even compile
+(illegal implicit int→struct* on `arg0 + arg1 * 0x10`); hand-fixed base.c to the
+best C → `permuter.py --stop-on-zero`: base score 260, **no improvement**, no
+`output-*` dirs. Block/jump placement is outside what it permutes.
+
+Exact target (BB order matters): after the inner test `beql v1,v0,E0 + sw a3`:
+[else: `b F4; daddu v0,zero,zero`] [then E0: `addiu v0,zero,1`, falls into]
+[merge E4: `b FC; nop`] [guard stub EC: `b FC; daddu v0,zero,zero`]
+[F4: `b E4; nop`] [FC: `jr ra; nop`]. My output always collapses F4 into E4 and
+then places the then-arm last, after the guard stub, jumping backward into the
+merge. So the puzzle is one specific mwcc layout decision: the then-arm stays
+inline after the else-arm, and the else-arm's join node is *not* unified with
+the outer if's join/return stub. Ideas left: an outer `else` that ends in a
+`return result;` of its own (two return stubs that then share FC?), a `continue`
+over a surrounding construct, the result variable being written once per path by
+different means, or something about `$v0` being the compare constant at test time
+that lets the scheduler hoist the else's `daddu` out of its own block into the
+`b` delay slot, leaving F4 alive. Best C this session: build/retry_p14/s1.c.
