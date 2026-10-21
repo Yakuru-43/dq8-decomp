@@ -102,6 +102,7 @@ The three guesses above were tried and are **ruled out**; the tail is still 10
 | inner `switch (slot->f0) { case 4: … default: … }` | 92 B (identical) |
 | nested `switch (what) { case 0 / default }` + inner switch | 92 B (identical) |
 | `result = (slot->f0 == 4) ? 1 : 0;` after the store-if | 88 B — but emits `lw; xori 4; sltiu 1` (a bool materialisation the original never has), so `?:` is NOT the source |
+| `if (what == 0) { return 0; }` guard + body + inner if/else (no outer else) | 92 B (identical to baseline) |
 
 Permuter: never actually run by the pilot (pilot.tsv permuter column `no`).
 The m2c draft in `build/permute/func_001AD6A0/base.c` does not even compile
