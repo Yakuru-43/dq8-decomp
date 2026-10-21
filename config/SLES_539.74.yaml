@@ -36,8 +36,13 @@ segments:
     align: 4
     subsegments:
       - [0x0, asm, text_100000]
+      - [0x260, c, func_00100260]
+      - [0x280, c, func_00100280]
+      - [0x2B0, c, func_001002B0]
+      - [0x2D0, c, func_001002D0]
+      - [0x2F0, c, func_001002F0]
       - [0x320, c, func_00100320]
-      - [0x330, asm, text_100330]
+      - [0x330, c, func_00100330]
       - [0x440, c, func_00100440]
       - [0x450, asm, text_100450]
       - [0x850, c, func_00100850]
