@@ -12,3 +12,8 @@ DebugPrintf2 = 0x3292F0; // type:func
 
 // Decompiled (src/SLES_539.74/game_359C90.cpp). Name invented.
 FindEntry__FP5Entryii = 0x359C90; // type:func
+
+// --- labels kept for calls from decompiled code (tools/keep_funcs.py) ---
+func_0020C360 = 0x20C360; // type:func
+func_0020C3E0 = 0x20C3E0; // type:func
+func_0020CC10 = 0x20CC10; // type:func
