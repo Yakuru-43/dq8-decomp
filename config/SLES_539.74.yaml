@@ -1193,6 +1193,8 @@ segments:
       - [0xB96A0, asm, game_1B96A0]
       - [0xBA6C0, c, func_001BA6C0]
       - [0xBA6D0, asm, game_1BA6D0]
+      - [0xBA940, cpp, func_001BA940]
+      - [0xBA970, asm, game_1BA970]
       - [0xBA9F0, c, func_001BA9F0]
       - [0xBAA20, c, func_001BAA20]
       - [0xBAA50, asm, game_1BAA50]
