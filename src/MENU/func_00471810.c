@@ -2,6 +2,8 @@
 // auto: m2c draft, verified byte-exact
 #include "common.h"
 
-s32 func_00471810(s32 arg0, s32 arg1) {
-    return (arg1 & 0xFF) == 0;
+M2C_UNK func_1DB340();                              /* extern */
+
+void func_00471810(void) {
+    func_1DB340();
 }

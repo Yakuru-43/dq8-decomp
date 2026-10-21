@@ -1,9 +1,9 @@
 // range: 0x472120 0x472130
-// auto: m2c draft, verified byte-exact
+// auto: tail-call thunk, verified byte-exact
 #include "common.h"
 
-M2C_UNK func_281710();                              /* extern */
+extern int func_1EA6C0();
 
-void func_00472120(void) {
-    func_281710();
+int func_00472120(void * arg0) {
+    return func_1EA6C0((char *)arg0 + 0x1C8);
 }

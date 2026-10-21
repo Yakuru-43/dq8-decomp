@@ -416,7 +416,7 @@ def main():
     ap.add_argument("--list", action="store_true", help="only list recognised thunks")
     a_ = ap.parse_args()
 
-    base = a.VRAM.get(a_.bin, 0x45EC80)
+    base = a.VRAM.get(a_.bin, 0x45ECC0)
     data = (ROOT / "extract" / f"{a_.bin}.bin").read_bytes()
     srcdir = ROOT / "src" / a_.bin
     done = {p.stem for p in srcdir.rglob("*.c*")} if srcdir.exists() else set()

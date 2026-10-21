@@ -3,12 +3,12 @@
 #include "common.h"
 
 typedef struct {
-    char pad0[0x30];
-    s32 unk30;
-    s32 unk34;
+    char pad0[0x38];
+    f32 unk38;
+    f32 unk3C;
 } S_arg0;
 
-void func_00460750(S_arg0 *arg0, s32 arg1, s32 arg2) {
-    arg0->unk30 = arg1;
-    arg0->unk34 = arg2;
+void func_00460750(S_arg0 *arg0, f32 fparg0, f32 fparg1) {
+    arg0->unk38 = fparg0;
+    arg0->unk3C = fparg1;
 }

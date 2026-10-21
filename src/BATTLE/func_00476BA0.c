@@ -1,10 +1,12 @@
-// range: 0x476BA0 0x476BD0
+// range: 0x476BA0 0x476BE0
 // auto: m2c draft, verified byte-exact
 #include "common.h"
 
-M2C_UNK func_283F10();                              /* extern */
+M2C_UNK func_00476B00();                            /* extern */
+extern M2C_UNK D_3DF180 __attribute__((section(".data")));
 
-s32 func_00476BA0(s32 arg0) {
-    func_283F10();
+M2C_UNK **func_00476BA0(M2C_UNK **arg0) {
+    func_00476B00();
+    *arg0 = &D_3DF180;
     return arg0;
 }

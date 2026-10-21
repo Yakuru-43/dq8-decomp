@@ -466,7 +466,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="report, don't write src files")
     a = ap.parse_args()
 
-    base = VRAM.get(a.bin, 0x45EC80)
+    base = VRAM.get(a.bin, 0x45ECC0)
     data = (ROOT / "extract" / f"{a.bin}.bin").read_bytes()
     srcdir = ROOT / "src" / a.bin
     done = {p.stem for p in srcdir.rglob("*.c*")} if srcdir.exists() else set()

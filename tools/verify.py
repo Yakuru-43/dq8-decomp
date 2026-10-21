@@ -31,7 +31,7 @@ def check(path, syms):
         syms[binary] = ROOT / "build" / f"{binary}_all_syms.ld"
         syms[binary].parent.mkdir(exist_ok=True)
         symbol_script(binary, syms[binary])
-    base = VRAM.get(binary, 0x45EC80)
+    base = VRAM.get(binary, 0x45ECC0)
     data = (ROOT / "extract" / f"{binary}.bin").read_bytes()
     return verify(c, start, end, syms[binary], data[start - base:end - base],
                   tuple(flags.group(1).split()) if flags else (), path.suffix)

@@ -1,14 +1,9 @@
 // range: 0x460710 0x460720
-// auto: m2c draft, verified byte-exact
+// auto: tail-call thunk, verified byte-exact
 #include "common.h"
 
-typedef struct {
-    char pad0[0x38];
-    f32 unk38;
-    f32 unk3C;
-} S_arg0;
+extern int func_10ADF8();
 
-void func_00460710(S_arg0 *arg0, f32 fparg0, f32 fparg1) {
-    arg0->unk38 = fparg0;
-    arg0->unk3C = fparg1;
+int func_00460710(void *arg0, void *arg1, void *arg2, void *arg3) {
+    return func_10ADF8(arg1, (char *) (arg0) + 0x40, arg2, arg3);
 }

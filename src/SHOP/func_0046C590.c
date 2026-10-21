@@ -1,10 +1,10 @@
-// range: 0x46C590 0x46C600
+// range: 0x46C590 0x46C5D0
 // auto: m2c draft, verified byte-exact
 #include "common.h"
 
-M2C_UNK func_0046B7C0();        /* extern */
-s32 func_370E00();                 /* extern */
-s32 func_3713C0();                   /* extern */
+M2C_UNK func_22AB50(M2C_UNK);                       /* extern */
+M2C_UNK func_370C00(s32, M2C_UNK *, M2C_UNK);       /* extern */
+extern M2C_UNK D_00473B10 __attribute__((section(".data")));
 
 typedef struct {
     char pad0[0x20];
@@ -12,11 +12,7 @@ typedef struct {
 } S_arg0;
 
 s32 func_0046C590(S_arg0 *arg0) {
-    s32 temp_s0;
-
-    temp_s0 = func_370E00(arg0->unk20, M2C_FIELD(M2C_FIELD(arg0, char **, 0x18), s16 *, 0xE), 0);
-    if (func_3713C0(arg0, 1) != 0) {
-        func_0046B7C0(arg0, temp_s0, 1);
-    }
+    func_22AB50(0);
+    func_370C00(arg0->unk20, &D_00473B10, 1);
     return 1;
 }

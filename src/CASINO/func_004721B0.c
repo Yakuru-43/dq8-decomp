@@ -1,9 +1,9 @@
 // range: 0x4721B0 0x4721C0
-// auto: tail-call thunk, verified byte-exact
+// auto: m2c draft, verified byte-exact
 #include "common.h"
 
-extern int func_281CB0();
+M2C_UNK func_281BF0();                              /* extern */
 
-int func_004721B0(void * arg0, void * arg1, void * arg2) {
-    return func_281CB0(arg0, arg1, 1);
+void func_004721B0(void) {
+    func_281BF0();
 }

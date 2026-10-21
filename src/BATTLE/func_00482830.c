@@ -1,9 +1,9 @@
 // range: 0x482830 0x482840
-// auto: m2c draft, verified byte-exact
+// auto: tail-call thunk, verified byte-exact
 #include "common.h"
 
-M2C_UNK func_281BF0();                              /* extern */
+extern int func_281CB0();
 
-void func_00482830(void) {
-    func_281BF0();
+int func_00482830(void * arg0, void * arg1, void * arg2) {
+    return func_281CB0(arg0, arg1, (void *)0);
 }

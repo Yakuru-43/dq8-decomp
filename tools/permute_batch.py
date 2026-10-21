@@ -301,7 +301,7 @@ def main():
 
     jobs = []
     for b in BINARIES:
-        base = a.VRAM.get(b, 0x45EC80)
+        base = a.VRAM.get(b, 0x45ECC0)
         data = (ROOT / "extract" / f"{b}.bin").read_bytes()
         syms = ROOT / "build" / f"{b}_all_syms.ld"
         a.symbol_script(b, syms)

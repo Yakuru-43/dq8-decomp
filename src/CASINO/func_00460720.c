@@ -1,9 +1,14 @@
-// range: 0x460720 0x460730
-// auto: tail-call thunk, verified byte-exact
+// range: 0x460720 0x460740
+// auto: m2c draft, verified byte-exact
 #include "common.h"
 
-extern int func_10ADF8();
+typedef struct {
+    char pad0[0x30];
+    s32 unk30;
+    s32 unk34;
+} S_arg0;
 
-int func_00460720(void * arg0) {
-    return func_10ADF8((char *)arg0 + 0x40);
+void func_00460720(S_arg0 *arg0, s32 *arg1, s32 *arg2) {
+    *arg1 = arg0->unk30;
+    *arg2 = arg0->unk34;
 }

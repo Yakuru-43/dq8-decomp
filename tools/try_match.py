@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TC = ROOT / ".toolchain"
-VRAM = {"SLES_539.74": 0x100000}  # overlays: 0x45EC80
+VRAM = {"SLES_539.74": 0x100000}  # overlays: 0x45ECC0
 
 
 def relocs(obj):
@@ -59,7 +59,7 @@ def main():
     ap.add_argument("flags", nargs="*", default=["-O2"])
     a = ap.parse_args()
 
-    base = VRAM.get(a.bin, 0x45EC80)
+    base = VRAM.get(a.bin, 0x45ECC0)
     orig_all = (ROOT / "extract" / f"{a.bin}.bin").read_bytes()
     with tempfile.TemporaryDirectory() as tmp:
         obj = f"{tmp}/out.o"

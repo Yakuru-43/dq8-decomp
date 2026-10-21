@@ -2,8 +2,8 @@
 // auto: m2c draft, verified byte-exact
 #include "common.h"
 
-M2C_UNK func_281760();                              /* extern */
+M2C_UNK func_281AB0();                              /* extern */
 
 void func_00465ED0(void) {
-    func_281760();
+    func_281AB0();
 }

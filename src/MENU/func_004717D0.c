@@ -1,9 +1,9 @@
 // range: 0x4717D0 0x4717E0
-// auto: m2c draft, verified byte-exact
+// auto: tail-call thunk, verified byte-exact
 #include "common.h"
 
-M2C_UNK func_1DB340();                              /* extern */
+extern int func_281CB0();
 
-void func_004717D0(void) {
-    func_1DB340();
+int func_004717D0(void * arg0, void * arg1, void * arg2) {
+    return func_281CB0(arg0, arg1, (void *)0);
 }

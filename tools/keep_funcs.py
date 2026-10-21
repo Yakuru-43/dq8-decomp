@@ -39,6 +39,7 @@ def text_ranges(binary):
     if binary != "SLES_539.74":
         head = (ROOT / "extract" / f"{binary}.head").read_bytes()
         _, _, vram, text, _, _ = struct.unpack_from("<4sIIIII", head)
+        vram += len(head)  # code follows the 0x40-byte header (gen_configs.overlay_yaml)
         return [(vram, vram + text)]
     return [(start, end) for (start, _), (end, next_prefix)
             in zip(MAIN_TEXT_REGIONS, MAIN_TEXT_REGIONS[1:]) if next_prefix]

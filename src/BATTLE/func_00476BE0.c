@@ -1,10 +1,10 @@
-// range: 0x476BE0 0x476C00
+// range: 0x476BE0 0x476C10
 // auto: m2c draft, verified byte-exact
 #include "common.h"
 
-char *func_00476BE0(char *arg0) {
-    M2C_FIELD(arg0, s32 *, 0) = 0;
-    M2C_FIELD(arg0, s32 *, 4) = 0;
-    M2C_FIELD(arg0, s32 *, 8) = 0;
+M2C_UNK func_283F10();                              /* extern */
+
+s32 func_00476BE0(s32 arg0) {
+    func_283F10();
     return arg0;
 }

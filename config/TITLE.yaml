@@ -32,25 +32,25 @@ segments:
   - name: title
     type: code
     start: 0x0
-    vram: 0x45EC80
+    vram: 0x45ECC0
     bss_size: 0x600
     subsegments:
-      - [0x0, asm, text_45EC80]
-      - [0x70, c, func_0045ECF0]
-      - [0x80, c, func_0045ED00]
-      - [0x90, c, func_0045ED10]
-      - [0xA0, c, func_0045ED20]
-      - [0xB0, c, func_0045ED30]
-      - [0xC0, asm, text_45ED40]
-      - [0xC00, c, func_0045F880]
-      - [0xC10, c, func_0045F890]
-      - [0xC20, c, func_0045F8A0]
-      - [0xC30, asm, text_45F8B0]
-      - [0x4C90, c, func_00463910]
-      - [0x4CA0, c, func_00463920]
-      - [0x4CB0, c, func_00463930]
-      - [0x4CC0, c, func_00463940]
-      - [0x4CD0, asm, text_463950]
-      - [0x4D40, data, data_4639C0]
+      - [0x0, asm, text_45ECC0]
+      - [0x70, c, func_0045ED30]
+      - [0x80, c, func_0045ED40]
+      - [0x90, c, func_0045ED50]
+      - [0xA0, c, func_0045ED60]
+      - [0xB0, c, func_0045ED70]
+      - [0xC0, asm, text_45ED80]
+      - [0xC00, c, func_0045F8C0]
+      - [0xC10, c, func_0045F8D0]
+      - [0xC20, c, func_0045F8E0]
+      - [0xC30, asm, text_45F8F0]
+      - [0x4C90, c, func_00463950]
+      - [0x4CA0, c, func_00463960]
+      - [0x4CB0, c, func_00463970]
+      - [0x4CC0, c, func_00463980]
+      - [0x4CD0, asm, text_463990]
+      - [0x4D40, data, data_463A00]
       - { start: 0x5440, type: bss, name: bss }
   - [0x5440]

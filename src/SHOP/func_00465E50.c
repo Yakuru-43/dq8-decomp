@@ -1,7 +1,9 @@
 // range: 0x465E50 0x465E60
-// auto: m2c draft, verified byte-exact
+// auto: tail-call thunk, verified byte-exact
 #include "common.h"
 
-s32 func_00465E50(void) {
-    return 1;
+extern int func_281CB0();
+
+int func_00465E50(void * arg0, void * arg1, void * arg2) {
+    return func_281CB0(arg0, arg1, 1);
 }

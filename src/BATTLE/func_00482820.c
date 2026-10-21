@@ -3,5 +3,5 @@
 #include "common.h"
 
 s32 func_00482820(void) {
-    return 1;
+    return 0;
 }

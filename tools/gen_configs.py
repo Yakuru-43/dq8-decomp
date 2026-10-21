@@ -168,6 +168,7 @@ def overlay_yaml(name):
     head = (EXTRACT / f"{name}.head").read_bytes()
     data = (EXTRACT / f"{name}.bin").read_bytes()
     _, ovl_id, vram, text, dat, bss = struct.unpack_from("<4sIIIII", head)
+    vram += len(head)  # the 0x40-byte MWo3 header is loaded at `vram` too; code follows it
     lower = name.lower()
     lines = [f"name: {name}.BIN (overlay {ovl_id})", f"sha1: {hashlib.sha1(data).hexdigest()}",
              COMMON.format(name=name).rstrip(), "segments:",

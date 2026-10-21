@@ -1,10 +1,12 @@
-// range: 0x469550 0x469580
+// range: 0x469550 0x469560
 // auto: m2c draft, verified byte-exact
 #include "common.h"
 
-M2C_UNK func_2DEC30();                              /* extern */
+typedef struct {
+    char pad0[0x2C];
+    s32 unk2C;
+} S_arg0;
 
-s32 func_00469550(s32 arg0) {
-    func_2DEC30();
-    return arg0;
+s32 func_00469550(S_arg0 *arg0) {
+    return arg0->unk2C;
 }

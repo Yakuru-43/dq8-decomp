@@ -2,6 +2,8 @@
 // auto: m2c draft, verified byte-exact
 #include "common.h"
 
-s32 func_00472180(void) {
-    return 1;
+M2C_UNK func_281B20();                              /* extern */
+
+void func_00472180(void) {
+    func_281B20();
 }
