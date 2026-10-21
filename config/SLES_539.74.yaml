@@ -1894,6 +1894,8 @@ segments:
       - [0x10C180, c, func_0020C180]
       - [0x10C210, c, func_0020C210]
       - [0x10C240, asm, game_20C240]
+      - [0x10C2D0, c, func_0020C2D0]
+      - [0x10C360, asm, game_20C360]
       - [0x10CC40, c, func_0020CC40]
       - [0x10CC70, asm, game_20CC70]
       - [0x10CDA0, c, func_0020CDA0]
