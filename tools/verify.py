@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check one src file the way autodecomp does: compile, link at its address, compare bytes.
 
-    verify.py src/<bin>/func_XXXXXXXX.c [...]
+    verify.py src/<bin>/func_XXXXXXXX.c|.cpp [...]
 
 The file's `// range: 0xSTART 0xEND` line gives the address and its
 `// flags: ...` line (if any) the extra compiler flags.  Prints MATCH or the
@@ -34,7 +34,7 @@ def check(path, syms):
     base = VRAM.get(binary, 0x45EC80)
     data = (ROOT / "extract" / f"{binary}.bin").read_bytes()
     return verify(c, start, end, syms[binary], data[start - base:end - base],
-                  tuple(flags.group(1).split()) if flags else ())
+                  tuple(flags.group(1).split()) if flags else (), path.suffix)
 
 
 def main():

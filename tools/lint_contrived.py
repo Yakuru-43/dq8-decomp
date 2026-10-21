@@ -7,8 +7,9 @@ A file prints one line per finding (path:line: rule: text) and the exit
 status is 1 if any file has one.  A file that carries `// permuter-artifact`
 in its first lines is known debt waiting for a rewrite and is skipped.
 Rules:
-  volatile        `volatile` outside a hardware register (mark those lines
-                  with a `// hw-register` comment)
+  volatile        `volatile` outside a hardware register or data another
+                  thread/interrupt writes (mark those lines `// hw-register`
+                  or `// thread-shared`)
   while-0         `do { } while (0)` or any other `while (0)`
   comma-expr      a comma operator inside parentheses: `(0, p)`, `if (a, b)`
   pad-local       a local named pad* that nothing reads
@@ -92,7 +93,7 @@ def lint(path):
 
     for m in VOLATILE.finditer(code):
         n = code.count("\n", 0, m.start())
-        if "hw-register" not in lines[n]:
+        if "hw-register" not in lines[n] and "thread-shared" not in lines[n]:
             hit(m.start(), "volatile")
     for m in WHILE_0.finditer(code):
         hit(m.start(), "while-0")

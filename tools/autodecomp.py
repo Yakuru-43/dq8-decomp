@@ -368,10 +368,11 @@ def symbol_script_for(c, syms_ld, tmp):
     return out
 
 
-def verify(c, start, end, syms_ld, orig, flags=()):
-    """'match' if `c` compiles to exactly the original bytes, else the failure reason."""
+def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c"):
+    """'match' if `c` compiles to exactly the original bytes, else the failure reason.
+    `suffix` is the source file's extension: mwcc compiles a .cpp file as C++."""
     with tempfile.TemporaryDirectory() as tmp:
-        src, obj, elf, out = (f"{tmp}/f.c", f"{tmp}/f.o", f"{tmp}/f.elf", f"{tmp}/f.bin")
+        src, obj, elf, out = (f"{tmp}/f{suffix}", f"{tmp}/f.o", f"{tmp}/f.elf", f"{tmp}/f.bin")
         Path(src).write_text(c)
         r = subprocess.run([TC / "wibo", MWCC, "-c", *CFLAGS, *flags, src, "-o", obj], capture_output=True, text=True)
         if r.returncode:
