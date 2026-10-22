@@ -42,7 +42,8 @@ waiting for a rewrite; don't add new ones.
 - Stage files **by name**. Never `git add -A`, `git add .` or `git commit -a`.
 - Run `tools/gate.sh` after staging; commit only when it says `gate: PASS`.
   A hook blocks `git commit`/`git push` otherwise.
-- **Never push.** The user pushes after review.
+- **Never push.** Only the integration script on homelab-1 pushes, and only
+  the `factory` branch; `main` changes when the user merges a pull request.
 - Never commit game data or generated files: `asm/ iso/ extract/ assets/
   build/ linker/`, anything under `asmfunc/`, any binary. The gate refuses them.
 - Don't edit `checksum.sha1`, `.claude/`, `CLAUDE.md` or `tools/gate.sh`; ask.
