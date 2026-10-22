@@ -4,6 +4,12 @@
 #   tools/gate.sh            check what `git commit` would record (the index;
 #                            with nothing staged that is HEAD)
 #   tools/gate.sh --head     check HEAD itself
+#   tools/gate.sh --quick    factory worktrees only: the index may touch only
+#                            src/, config/*.yaml and notes/, every staged source
+#                            must print MATCH with tools/verify.py, plus steps 1-2;
+#                            no clean build. Writes "quick:<tree>", which the hook
+#                            accepts for commits on a factory-N branch only. The
+#                            full gate runs when the branch is integrated.
 #
 # It builds that tree from scratch in a temp dir (your iso/ and extract/
 # copied in, .toolchain and .venv linked), runs `make split && make`, checks
@@ -17,6 +23,8 @@ set -uo pipefail
 ROOT=$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel) || exit 1
 cd "$ROOT" || exit 1
 
+QUICK=0
+if [[ ${1:-} == --quick ]]; then QUICK=1; shift; fi
 if [[ ${1:-} == --head ]]; then
     TREE=$(git rev-parse 'HEAD^{tree}')
     WHAT="HEAD ($(git rev-parse --short HEAD))"
@@ -78,6 +86,30 @@ if (( ${#changed[@]} )); then
     rm -rf "$LINT"
 else
     echo "ok (no C changes)"
+fi
+
+# --- quick mode: scope and per-function verification instead of a build ----
+if [[ $QUICK == 1 ]]; then
+    step "quick: staged changes stay in src/, config/*.yaml, notes/"
+    outside=$(git diff --cached --name-only | grep -vE '^(src/[^/]+/[^/]+\.(c|cpp|h)|config/[^/]+\.yaml|notes/.+)$' || true)
+    [[ -n $outside ]] && bad "quick mode only covers function work; run the full gate for:" && echo "$outside"
+    [[ -z $outside ]] && echo "ok"
+    step "quick: every staged source file matches (tools/verify.py)"
+    mapfile -t srcs < <(git diff --cached --name-only --diff-filter=AM -- 'src/*.c' 'src/*.cpp' | grep -v '/asmfunc/')
+    for f in "${srcs[@]}"; do
+        if ! git diff --quiet -- "$f"; then bad "$f has unstaged edits: stage or revert them"; continue; fi
+        r=$(.venv/bin/python tools/verify.py "$f" 2>&1 | tail -1)
+        [[ $r == MATCH* ]] || bad "$f: $r"
+    done
+    [[ $fail == 0 ]] && echo "ok (${#srcs[@]} files)"
+    echo
+    if [[ $fail == 0 ]]; then
+        echo "quick:$TREE" > build/gate.ok
+        echo "gate: PASS, quick ($WHAT)"
+        exit 0
+    fi
+    echo "gate: FAIL, quick ($WHAT)"
+    exit 1
 fi
 
 # --- 3. clean build from the tree ---------------------------------------
