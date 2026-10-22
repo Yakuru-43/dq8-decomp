@@ -1974,6 +1974,8 @@ segments:
       - [0x10F5E0, c, func_0020F5E0]
       - [0x10F5F0, c, func_0020F5F0]
       - [0x10F600, asm, game_20F600]
+      - [0x10FB40, c, func_0020FB40]
+      - [0x10FC60, asm, game_20FC60]
       - [0x10FE20, c, func_0020FE20]
       - [0x10FE30, c, func_0020FE30]
       - [0x10FE40, asm, game_20FE40]
