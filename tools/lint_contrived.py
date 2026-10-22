@@ -19,6 +19,10 @@ Rules:
   noop-mask       `& 0xFFFFFFFF` on a 32-bit value
   empty-stmt      a line that is only `;`
   double-negate   `- -0x10` and the like
+  inline-asm      `asm`/`__asm__` blocks: the bytes must come from C
+  include-asm     INCLUDE_ASM / GLOBAL_ASM / INCLUDE_RODATA or `.incbin`
+  pragma          any `#pragma` (optimisation or scheduling switches)
+  text-section    data placed in a `.text` section with __attribute__
 """
 import re
 import sys
@@ -38,6 +42,10 @@ SELF_ASSIGN = re.compile(r"(?<![\w.>])(\w+)\s*=\s*\1\s*;")
 NOOP_MASK = re.compile(r"&\s*0x[fF]{8}[uU]?\b(?![lL])")
 EMPTY_STMT = re.compile(r"^[ \t]*;[ \t]*$", re.M)
 DOUBLE_NEG = re.compile(r"(?<![-\w)\]])-\s*-\s*(?=[\w(])")
+INLINE_ASM = re.compile(r"\b(?:__asm__|__asm|asm)\b")
+INCLUDE_ASM = re.compile(r"\b(?:INCLUDE_ASM|GLOBAL_ASM|INCLUDE_RODATA)\b|\.incbin\b")
+PRAGMA = re.compile(r"^[ \t]*#[ \t]*pragma\b", re.M)
+TEXT_SECTION = re.compile(r"section\s*\(\s*\"\.text")
 
 
 def strip(text):
@@ -122,6 +130,16 @@ def lint(path):
         hit(m.start(), "empty-stmt")
     for m in DOUBLE_NEG.finditer(code):
         hit(m.start(), "double-negate")
+    for m in INLINE_ASM.finditer(code):
+        hit(m.start(), "inline-asm")
+    # these live in strings or directives, so look at the text with only comments removed
+    nocomment = re.sub(r"//[^\n]*|/\*.*?\*/", lambda m: re.sub(r"[^\n]", " ", m.group(0)), raw, flags=re.S)
+    for m in INCLUDE_ASM.finditer(nocomment):
+        hit(m.start(), "include-asm")
+    for m in PRAGMA.finditer(nocomment):
+        hit(m.start(), "pragma")
+    for m in TEXT_SECTION.finditer(nocomment):
+        hit(m.start(), "text-section")
     return out
 
 
