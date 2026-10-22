@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """PreToolUse hook: block `git commit` / `git push` unless tools/gate.sh passed.
 
-tools/gate.sh writes the tree id it checked to build/gate.ok.  A commit is
+tools/gate.sh writes the tree id it checked to build/gate.ok (as "quick:<tree>"
+after `gate.sh --quick`, which only counts for commits on a factory-N branch).  A commit is
 allowed only when that is the tree the index holds now (what the commit would
 record); a push only when it is HEAD's tree.  Anything staged or committed
 after the gate ran changes the tree id, so the gate has to run again.
@@ -54,6 +55,13 @@ def main():
         want, what = git("write-tree", cwd=top), "the staged tree"
     else:
         want, what = git("rev-parse", "HEAD^{tree}", cwd=top), "HEAD"
+    if passed.startswith("quick:"):
+        # gate.sh --quick: function work in a factory worktree, commits only
+        branch = git("branch", "--show-current", cwd=top) or ""
+        if not commit or not re.fullmatch(r"factory-\d+", branch):
+            block(f"Blocked: a quick gate only covers commits on a factory-N branch. "
+                  f"Run the full `tools/gate.sh`{'' if commit else ' --head'}, then retry.")
+        passed = passed[len("quick:"):]
     if not passed or passed != want:
         block(f"Blocked: tools/gate.sh has not passed for {what} ({(want or '?')[:12]}). "
               f"Run `tools/gate.sh` (or `tools/gate.sh --head` before a push), fix what it reports, then retry.")
