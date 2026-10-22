@@ -3528,6 +3528,8 @@ segments:
       - [0x1FFAD0, asm, game_2FFAD0]
       - [0x1FFCC0, c, func_002FFCC0]
       - [0x1FFD60, asm, game_2FFD60]
+      - [0x200C00, c, func_00300C00]
+      - [0x200C70, asm, game_300C70]
       - [0x200CB0, c, func_00300CB0]
       - [0x200CC0, asm, game_300CC0]
       - [0x200EE0, c, func_00300EE0]
