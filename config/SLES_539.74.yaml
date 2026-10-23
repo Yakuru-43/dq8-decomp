@@ -2024,6 +2024,8 @@ segments:
       - [0x111680, c, func_00211680]
       - [0x1116A0, c, func_002116A0]
       - [0x1116B0, asm, game_2116B0]
+      - [0x111A50, c, func_00211A50]
+      - [0x111AC0, asm, game_211AC0]
       - [0x111BB0, c, func_00211BB0]
       - [0x111C00, c, func_00211C00]
       - [0x111C30, asm, game_211C30]
