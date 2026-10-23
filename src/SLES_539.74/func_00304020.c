@@ -1,4 +1,4 @@
-// range: 0x304020 0x30409C
+// range: 0x304020 0x3040A0
 #include "common.h"
 
 void func_0013E090(M2C_UNK *);                                       /* extern */
