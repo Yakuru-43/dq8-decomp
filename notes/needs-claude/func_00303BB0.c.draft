@@ -1,0 +1,84 @@
+// range: 0x303BB0 0x303E30
+// DRAFT — did not match (CLASS structural score=60, 648 vs 628 B). See func_00303BB0.md
+#include "common.h"
+
+s32 func_0016B7E0(void *, s32, s32);                      /* extern */
+u32 func_0016B2F0(void *, s32, s32);                      /* extern */
+void *func_0016D5B0(void *, s32);                         /* extern */
+void func_00288B40(void *, s32, void *);                  /* extern */
+void func_0013D340(s128 *, s128 *);                       /* extern */
+s32 func_001E4170(void *, s32, void *, void *, f32, f32); /* extern */
+
+s32 func_00303BB0(void *scene, void *src, s32 start, s32 num, void *cursor, s32 remain) {
+    s128 pos;
+    s128 slots[3];
+    s128 out;
+    s32 total;
+    s32 i;
+    s32 k;
+    s32 n;
+    u32 flags;
+    void *tgt;
+    f32 extra;
+    f32 dist;
+    f32 cap;
+
+    if (scene == NULL || src == NULL) {
+        return 0;
+    }
+    pos = M2C_FIELD(src, s128 *, 0x180);
+    total = 0;
+    extra = 0.5f * M2C_FIELD(src, f32 *, 0x4C8);
+    for (i = start; i < start + num; i++) {
+        if (func_0016B7E0(scene, 1, i) != 0) {
+            flags = func_0016B2F0(scene, 1, i);
+            if (flags & 0x10000000) {
+                continue;
+            }
+            tgt = func_0016D5B0(scene, i);
+            if (tgt == NULL || tgt == src) {
+                continue;
+            }
+            if (flags & 0x02000000) {
+                func_00288B40(tgt, 5, &slots[0]);
+                func_00288B40(tgt, 0, &slots[1]);
+                func_00288B40(tgt, 1, &slots[2]);
+                cap = M2C_FIELD(tgt, f32 *, 0x4C8);
+                if (cap <= 10.0f) {
+                    cap = 10.0f;
+                }
+                cap = cap + extra;
+                for (k = 0; k < 3; k++) {
+                    n = func_001E4170(cursor, remain, &slots[k], &pos, cap, 20.0f);
+                    total += n;
+                    remain -= n;
+                    cursor = (char *)cursor + n * 96;
+                    if (remain < 0) {
+                        break;
+                    }
+                }
+            } else {
+                out = M2C_FIELD(tgt, s128 *, 0x180);
+                func_0013D340(&out, &pos);
+                dist = M2C_FIELD(tgt, f32 *, 0x4C8);
+                if (dist == 0.0f) {
+                    dist = 10.0f;
+                    cap = 60.0f;
+                } else {
+                    cap = 60.0f;
+                }
+                if (cap < 0.5f) {
+                    continue;
+                }
+                n = func_001E4170(cursor, remain, &out, &pos, dist + extra, 20.0f);
+                total += n;
+                remain -= n;
+                cursor = (char *)cursor + n * 96;
+                if (remain < 0) {
+                    return total;
+                }
+            }
+        }
+    }
+    return total;
+}

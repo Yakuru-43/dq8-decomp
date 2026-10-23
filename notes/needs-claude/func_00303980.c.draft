@@ -1,0 +1,83 @@
+// range: 0x303980 0x303BB0
+#include "common.h"
+
+union Vec4 {
+    u128 q;
+    f32 f[4];
+};
+
+struct ActorRec {
+    /* 0x000 */ char pad_000[0x180];
+    /* 0x180 */ union Vec4 vec;
+    /* 0x190 */ char pad_190[0x338];
+    /* 0x4C8 */ f32 scale;
+};
+
+void *func_0016D5B0(void *, s32);                                    /* extern */
+s32 func_0016B7E0(void *, s32, s32);                                 /* extern */
+s32 func_00303BB0(void *, struct ActorRec *, s32, s32, char *, s32); /* extern */
+s32 func_001E4170(char *, s32, union Vec4 *, union Vec4 *, f32, f32); /* extern */
+
+s32 func_00303980(void *obj, s32 p1, char *out, s32 count, s32 flags) {
+    s32 total;
+    s32 n;
+    s32 i;
+    struct ActorRec *cur;
+    struct ActorRec *rec;
+    union Vec4 curVec;
+    union Vec4 newVec;
+    f32 speed;
+
+    if ((obj == NULL) || (out == NULL)) {
+        return 0;
+    }
+    cur = func_0016D5B0(obj, p1);
+    if (cur == NULL) {
+        return 0;
+    }
+    curVec.q = cur->vec.q;
+    total = 0;
+    if (flags & 2) {
+        n = func_00303BB0(obj, cur, 0x40, 0x20, out, count);
+        total += n;
+        count -= n;
+        out += n * 96;
+    }
+    if (flags & 4) {
+        n = func_00303BB0(obj, cur, 0x60, 0x20, out, count);
+        total += n;
+        count -= n;
+        out += n * 96;
+    }
+    n = func_00303BB0(obj, cur, 0x28, 0x10, out, count);
+    total += n;
+    count -= n;
+    out += n * 96;
+    n = func_00303BB0(obj, cur, 0x20, 0x8, out, count);
+    total += n;
+    count -= n;
+    out += n * 96;
+    if (!(flags & 1)) {
+        return total;
+    }
+    for (i = 0; i < 8; i++) {
+        if (func_0016B7E0(obj, 1, i) != 0) {
+            rec = func_0016D5B0(obj, i);
+            if ((rec != NULL) && (rec != cur)) {
+                newVec.q = rec->vec.q;
+                speed = rec->scale;
+                if (speed == 0.0f) {
+                    speed = 10.0f;
+                }
+                n = func_001E4170(out, count, &newVec, &curVec, speed, 20.0f);
+                total += n;
+                count -= n;
+                out += n * 96;
+                if (count < 0) {
+                    return total;
+                }
+            }
+        }
+    }
+    return total;
+}

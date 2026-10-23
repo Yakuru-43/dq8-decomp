@@ -1,0 +1,68 @@
+// range: 0x303750 0x303890
+#include "common.h"
+
+union Vec4 {
+    u128 q;
+    f32 f[4];
+};
+
+union Scale {
+    u128 q;
+    f32 f[4];
+    s32 i[4];
+};
+
+void func_0013DF10(M2C_UNK *, M2C_UNK *);                          /* extern */
+void func_0013B7B0(M2C_UNK *, M2C_UNK *, M2C_UNK *);               /* extern */
+s32 func_001E69B0(M2C_UNK *, s32, M2C_UNK *, M2C_UNK *, M2C_UNK *, s32, s32); /* extern */
+
+s32 func_00303750(union Vec4 *dst, union Vec4 *src, M2C_UNK *unk,
+                  M2C_UNK *dir, s32 n) {
+    union Vec4 move;
+    union Vec4 to;
+    union Scale scale;
+    union Vec4 hit;
+    M2C_UNK *rec;
+    s32 idx;
+    s32 ret;
+
+    if (dir == NULL) {
+        return 0;
+    }
+    if (n <= 0) {
+        return 0;
+    }
+    if (dir != NULL) {
+        if (n > 0) {
+            func_0013DF10((M2C_UNK *)&scale, unk);
+            scale.i[1] = 0;
+            move.q = src->q;
+            move.f[1] += 5.0f;
+            func_0013B7B0((M2C_UNK *)&to, (M2C_UNK *)&move, (M2C_UNK *)&scale);
+            func_0013B7B0((M2C_UNK *)&to, (M2C_UNK *)&to, (M2C_UNK *)&scale);
+            to.f[3] = 1.0f;
+            idx = func_001E69B0(dir, n, (M2C_UNK *)&move, (M2C_UNK *)&to,
+                                (M2C_UNK *)&hit, 0x11, 0);
+            if (idx >= 0) {
+                rec = (M2C_UNK *)((char *)dir + idx * 96);
+            } else {
+                rec = NULL;
+            }
+        } else {
+            rec = NULL;
+        }
+    } else {
+        rec = NULL;
+    }
+    ret = 0;
+    if (rec != NULL) {
+        if (*(s16 *)((char *)rec + 0x44) == 5) {
+            dst->f[0] = src->f[0];
+            dst->f[2] = src->f[2];
+            ret = 2;
+        } else {
+            ret = 1;
+        }
+    }
+    return ret;
+}
