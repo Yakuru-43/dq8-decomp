@@ -3,7 +3,8 @@
 
     try_match.py <file.c|.cpp> <symbol> <vram> [--bin SLES_539.74] [--ver 2.4-001213] [-- flags...]
 
-Prints MATCH or the first differing instruction. Use it to pin compiler
+Prints MATCH, or the first differing instruction and a CLASS line (register-only,
+reorder-only, reorder+register or structural, with a score; 0 = match). Use it to pin compiler
 versions/flags and to check a decompiled function before adding it to src/.
 """
 import argparse
@@ -77,15 +78,84 @@ def main():
         for i, (m, o) in enumerate(zip(words(mine), words(orig))):
             mark = " " if m == o else "*"
             print(f"{mark} +{i * 4:03X}  {dis(m, a.vram + i * 4):<34} {dis(o, a.vram + i * 4)}")
+    first = None
+    masked = []
     for i, (m, o) in enumerate(zip(words(mine), words(orig))):
         kind = rel.get(start + i * 4)
         # relocated fields hold unresolved addresses in the object: mask them
         mask = 0xFC000000 if kind == "R_MIPS_26" else 0xFFFF0000 if kind else 0xFFFFFFFF
-        if (m ^ o) & mask:
+        masked.append((m & mask, o & mask, m, o))
+        if (m ^ o) & mask and first is None:
+            first = i
             print(f"DIFF at +0x{i * 4:X}: mine {m:08X} orig {o:08X}  ({len(mine)} bytes)")
-            return 1
-    print(f"MATCH ({len(mine)} bytes, {a.ver} {' '.join(a.flags)})")
-    return 0
+    if first is None and len(mine) == len(orig):
+        print(f"MATCH ({len(mine)} bytes, {a.ver} {' '.join(a.flags)})")
+        return 0
+    if first is None:
+        print(f"DIFF at +0x{len(orig) and min(len(mine), len(orig)):X}: size {len(mine)} vs {len(orig)} bytes")
+    print(classify(masked, len(mine), orig_size(a.src, orig_all, base, len(orig)), a.vram))
+    return 1
+
+
+def orig_size(src, orig_all, base, fallback):
+    """The original function's size from the file's `// range:` line, without the
+    alignment nops at its end; the compared length when there is no range line."""
+    import csv, re
+    lo = hi = None
+    db = ROOT / "build" / "funcdb.tsv"     # the split's own bounds, when known
+    name = re.search(r"func_[0-9A-F]{8}", Path(src).name)
+    if db.exists() and name:
+        for row in csv.DictReader(open(db), delimiter="\t"):
+            if row["func"] == name.group(0):
+                lo = int(row["addr"], 16)
+                hi = lo + int(row["size"])
+                break
+    if lo is None:
+        m = re.search(r"//\s*range:\s*0x([0-9A-Fa-f]+)\s+0x([0-9A-Fa-f]+)", Path(src).read_text(errors="replace"))
+        if not m:
+            return fallback
+        lo, hi = int(m.group(1), 16), int(m.group(2), 16)
+    body = orig_all[lo - base:hi - base]
+    n = len(body)
+    while n >= 4 and body[n - 4:n] == b"\0\0\0\0":
+        n -= 4
+    # a nop right after a jump is its delay slot, not padding
+    if n >= 4 and n < len(body) and (int.from_bytes(body[n - 4:n], "little") >> 26 in (2, 3)
+                                      or int.from_bytes(body[n - 4:n], "little") & 0xFC00003E == 8):
+        n += 4
+    return n
+
+
+def classify(masked, n_mine, n_orig, vram):
+    """One line for notes and routing: the kind of mismatch, and a score
+    (differing words + size difference in words; 0 = match).
+      register-only     same instruction at every position, only registers differ
+      reorder-only      the same instructions, in a different order
+      reorder+register  the same mnemonics overall, in a different order and registers
+      structural        anything else (other instructions, other size)"""
+    import rabbitizer
+    def parts(w, i):
+        text = rabbitizer.Instruction(w, vram=vram + i * 4, category=rabbitizer.InstrCategory.R5900).disassemble()
+        mnem, _, ops = text.strip().partition(" ")
+        return mnem, [t for t in ops.replace("(", ",").replace(")", "").split(",") if t.strip()]
+    diff = sum(1 for mm, oo, _, _ in masked if mm != oo)
+    score = diff + abs(n_mine - n_orig) // 4
+    if n_mine != n_orig:
+        kind = "structural"
+    elif sorted(x[0] for x in masked) == sorted(x[1] for x in masked):
+        kind = "reorder-only"
+    else:
+        pm = [parts(m, i) for i, (_, _, m, _) in enumerate(masked)]
+        po = [parts(o, i) for i, (_, _, _, o) in enumerate(masked)]
+        regs_only = lambda a, b: a[0] == b[0] and len(a[1]) == len(b[1]) and all(
+            x == y or (x.strip().startswith("$") and y.strip().startswith("$")) for x, y in zip(a[1], b[1]))
+        if all(regs_only(a, b) for a, b in zip(pm, po)):
+            kind = "register-only"
+        elif sorted(x[0] for x in pm) == sorted(x[0] for x in po):
+            kind = "reorder+register"
+        else:
+            kind = "structural"
+    return f"CLASS {kind} score={score} ({diff} words differ, {n_mine} vs {n_orig} bytes)"
 
 
 if __name__ == "__main__":

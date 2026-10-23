@@ -20,7 +20,10 @@ Only when **both** hold:
 1. `tools/verify.py src/<bin>/<func>.c` prints `MATCH` (this is
    `autodecomp.verify()`: compile, link at the real address, compare bytes).
    `try_match.py` is for reading diffs; its `MATCH` is not enough.
-2. `tools/gate.sh` passes with the file staged.
+2. `tools/gate.sh` passes with the file staged. In a factory worktree (branch
+   `factory-N`), `tools/gate.sh --quick` is enough for the commit: it verifies
+   every staged source and runs the lint, without the clean build. The full
+   gate runs when the integration script merges the branch into `factory`.
 
 ## No contrived C
 Matching code must read like code a person wrote. `tools/lint_contrived.py`
@@ -40,9 +43,11 @@ waiting for a rewrite; don't add new ones.
 ## Git
 - `src/` changes and tool/doc changes go in **separate commits**.
 - Stage files **by name**. Never `git add -A`, `git add .` or `git commit -a`.
-- Run `tools/gate.sh` after staging; commit only when it says `gate: PASS`.
+- Run `tools/gate.sh` after staging (`--quick` on a `factory-N` branch, for
+  function work only); commit only when it says `gate: PASS`.
   A hook blocks `git commit`/`git push` otherwise.
-- **Never push.** The user pushes after review.
+- **Never push.** Only the integration script on homelab-1 pushes, and only
+  the `factory` branch; `main` changes when the user merges a pull request.
 - Never commit game data or generated files: `asm/ iso/ extract/ assets/
   build/ linker/`, anything under `asmfunc/`, any binary. The gate refuses them.
 - Don't edit `checksum.sha1`, `.claude/`, `CLAUDE.md` or `tools/gate.sh`; ask.
