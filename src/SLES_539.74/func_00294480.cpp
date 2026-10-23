@@ -1,4 +1,4 @@
-// range: 0x294480 0x2944C8
+// range: 0x294480 0x2944D0
 #include "common.h"
 
 struct Owner {

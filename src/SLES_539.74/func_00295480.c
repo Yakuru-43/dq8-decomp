@@ -1,4 +1,4 @@
-// range: 0x295480 0x2954CC
+// range: 0x295480 0x2954D0
 #include "common.h"
 
 s32 func_002915F0(s32, M2C_UNK);                    /* extern */
