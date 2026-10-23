@@ -1,0 +1,66 @@
+// range: 0x304430 0x30459C
+#include "common.h"
+
+void *func_001814D0(void);                                           /* extern */
+void *func_002D05A0(void *);                                         /* extern */
+s64 func_003045A0(void);                                             /* extern */
+void func_003040A0(s64, s32, s64);                                   /* extern */
+void func_00305020(void *, s32);                                     /* extern */
+
+struct Fields {
+    u8 pad[0x4074];
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+};
+
+static inline s32 BelowMax(s64 v) {
+    return v < 0x7FFFFFFF;
+}
+
+void func_00304430(s32 *src) {
+    s32 buf[5];
+    s32 *dst;
+    s32 *from;
+    s32 n;
+    void *obj;
+    void *base;
+    struct Fields *f;
+    s64 v1;
+    s64 val;
+
+    dst = buf;
+    from = src;
+    n = 5;
+    do {
+        *dst++ = *from++;
+        n--;
+    } while (n > 0);
+    if (buf[0] == 0) {
+        return;
+    }
+    v1 = buf[1];
+    obj = func_001814D0();
+    base = func_002D05A0(obj);
+    func_00305020(base, 1);
+    f = (struct Fields *)base;
+    f->a += v1;
+    f->b += buf[2];
+    f->c += buf[3];
+    f->d += buf[4];
+    if (!BelowMax(f->a)) {
+        f->a = 0x7FFFFFFF;
+    }
+    if (!BelowMax(f->b)) {
+        f->b = 0x7FFFFFFF;
+    }
+    if (!BelowMax(f->c)) {
+        f->c = 0x7FFFFFFF;
+    }
+    if (!BelowMax(f->d)) {
+        f->d = 0x7FFFFFFF;
+    }
+    val = func_003045A0();
+    func_003040A0(val, 3, v1);
+}
