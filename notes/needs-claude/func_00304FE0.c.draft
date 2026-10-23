@@ -1,0 +1,24 @@
+// range: 0x304FE0 0x305020
+// best attempt, CLASS register-only score=3 (ok wants $v0, CW gives $t0) — see func_00304FE0.md
+#include "common.h"
+
+typedef struct {
+    char pad0[0x30];
+    s32 unk30;
+    s32 unk34;
+} S_arg0;
+
+void func_00304FE0(S_arg0 *arg0, s32 arg1, s32 arg2, s32 arg3) {
+    s32 ok;
+
+    ok = 0;
+    if (arg0->unk34 < arg2) {
+        ok = 1;
+    }
+    if (arg3 != 0) {
+        if (ok != 0) {
+            arg0->unk30 = arg1;
+            arg0->unk34 = arg2;
+        }
+    }
+}
