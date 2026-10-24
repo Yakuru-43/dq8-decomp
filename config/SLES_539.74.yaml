@@ -3925,7 +3925,7 @@ segments:
       - [0x20AC80, c, func_0030AC80]
       - [0x20ACC0, c, func_0030ACC0]
       - [0x20AD20, c, func_0030AD20]
-      - [0x20AD30, asm, game_30AD30]
+      - [0x20AD30, c, func_0030AD30]
       - [0x20AD80, c, func_0030AD80]
       - [0x20AD90, asm, game_30AD90]
       - [0x20ADE0, c, func_0030ADE0]
