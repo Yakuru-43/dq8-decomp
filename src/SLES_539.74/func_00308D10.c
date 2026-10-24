@@ -1,4 +1,4 @@
-// range: 0x308D10 0x308D78
+// range: 0x308D10 0x308D80
 // auto: hand
 #include "common.h"
 
