@@ -3904,7 +3904,7 @@ segments:
       - [0x20A880, c, func_0030A880]
       - [0x20A890, c, func_0030A890]
       - [0x20A8A0, c, func_0030A8A0]
-      - [0x20A8E0, asm, game_30A8E0]
+      - [0x20A8E0, c, func_0030A8E0]
       - [0x20A940, c, func_0030A940]
       - [0x20A9A0, c, func_0030A9A0]
       - [0x20A9B0, c, func_0030A9B0]
