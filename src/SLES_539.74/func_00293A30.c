@@ -1,4 +1,4 @@
-// range: 0x293A30 0x293A9C
+// range: 0x293A30 0x293AA0
 #include "common.h"
 
 M2C_UNK func_00292960();                            /* extern */
