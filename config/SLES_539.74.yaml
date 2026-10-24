@@ -3017,7 +3017,7 @@ segments:
       - [0x190DF0, asm, game_290DF0]
       - [0x1912A0, c, func_002912A0]
       - [0x1912B0, c, func_002912B0]
-      - [0x1912C0, asm, game_2912C0]
+      - [0x1912C0, c, func_002912C0]
       - [0x191400, c, func_00291400]
       - [0x1914D0, c, func_002914D0]
       - [0x191520, c, func_00291520]
