@@ -1,6 +1,6 @@
 // range: 0x212BA0 0x212D20
-// best draft, score=28: all matches except the guarded-div block in the
-// mode==0 branch (CW zero-trap guard not emitted for /12 — see note)
+// flags: -flag divbyzerocheck
+// (the original guards the divide with bnez + break 0, 7: #pragma divbyzerocheck)
 #include "common.h"
 
 typedef struct {
@@ -55,9 +55,7 @@ void func_00212BA0(ItemHdr *item, s8 kind, s32 mode) {
     if (mode != 0) {
         t = t * 12 / 16;
     } else {
-        s32 unit;
-        unit = 12;
-        t = t * 12 / unit;
+        t = t * 12 / 12;
     }
     func_002E4DC0(&msg, (s16)(t + 0x100), item->unk2);
     msg.unk11E8 = kind;

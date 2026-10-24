@@ -123,3 +123,13 @@ over a surrounding construct, the result variable being written once per path by
 different means, or something about `$v0` being the compare constant at test time
 that lets the scheduler hoist the else's `daddu` out of its own block into the
 `b` delay slot, leaving F4 alive. Best C this session: build/retry_p14/s1.c.
+
+## Opus attempt 2026-10-24
+
+One more shape, same 92-byte output as the baseline: the store-and-test as
+a `static inline s32 SetState(Slot *, u32 state, u32 reason)` with its own
+`return 1;` / `return 0;`, called as `result = SetState(&slots[index], ...)`
+under `if (reason != 0)` with `else result = 0;`. The inline helper's join is
+merged like the plain if/else, so the F4 block is not an inlining artefact
+of this kind. Not tried: the helper returning through a local
+(`s32 ok = 0; ... return ok;`), and C++ with the helper as a `Slot` member.
