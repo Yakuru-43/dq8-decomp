@@ -3691,7 +3691,7 @@ segments:
       - [0x204A10, c, func_00304A10]
       - [0x204A20, c, func_00304A20]
       - [0x204A40, c, func_00304A40]
-      - [0x204A60, asm, game_304A60]
+      - [0x204A60, c, func_00304A60]
       - [0x204AD0, c, func_00304AD0]
       - [0x204B30, c, func_00304B30]
       - [0x204B70, c, func_00304B70]
