@@ -3701,7 +3701,7 @@ segments:
       - [0x204CC0, c, func_00304CC0]
       - [0x204CE0, c, func_00304CE0]
       - [0x204D30, c, func_00304D30]
-      - [0x204FE0, asm, game_304FE0]
+      - [0x204FE0, c, func_00304FE0]
       - [0x205020, c, func_00305020]
       - [0x205060, c, func_00305060]
       - [0x2050A0, asm, game_3050A0]
