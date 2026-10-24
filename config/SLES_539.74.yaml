@@ -3090,7 +3090,7 @@ segments:
       - [0x195EC0, c, func_00295EC0]
       - [0x195F20, c, func_00295F20]
       - [0x195F70, c, func_00295F70]
-      - [0x195FD0, asm, game_295FD0]
+      - [0x195FD0, c, func_00295FD0]
       - [0x196050, c, func_00296050]
       - [0x1960A0, c, func_002960A0]
       - [0x1960E0, c, func_002960E0]
