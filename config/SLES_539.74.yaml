@@ -3604,6 +3604,7 @@ segments:
       - [0x1FE2B0, c, func_002FE2B0]
       - [0x1FE690, c, func_002FE690]
       - [0x1FE750, asm, game_2FE750]
+      - [0x1FF0D0, c, func_002FF0D0]
       - [0x1FF0F0, c, func_002FF0F0]
       - [0x1FF110, c, func_002FF110]
       - [0x1FF1E0, c, func_002FF1E0]
