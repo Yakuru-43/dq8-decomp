@@ -3900,7 +3900,7 @@ segments:
       - [0x20A720, c, func_0030A720]
       - [0x20A730, c, func_0030A730]
       - [0x20A740, c, func_0030A740]
-      - [0x20A840, asm, game_30A840]
+      - [0x20A840, c, func_0030A840]
       - [0x20A880, c, func_0030A880]
       - [0x20A890, c, func_0030A890]
       - [0x20A8A0, c, func_0030A8A0]
