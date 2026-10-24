@@ -2010,7 +2010,7 @@ segments:
       - [0x110950, c, func_00210950]
       - [0x1109E0, c, func_002109E0]
       - [0x110A40, c, func_00210A40]
-      - [0x110A90, asm, game_210A90]
+      - [0x110A90, c, func_00210A90]
       - [0x110AE0, c, func_00210AE0]
       - [0x110B40, c, func_00210B40]
       - [0x110BA0, c, func_00210BA0]
