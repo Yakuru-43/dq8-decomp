@@ -3791,7 +3791,7 @@ segments:
       - [0x207B10, c, func_00307B10]
       - [0x207BB0, c, func_00307BB0]
       - [0x207C80, c, func_00307C80]
-      - [0x207CF0, asm, game_307CF0]
+      - [0x207CF0, c, func_00307CF0]
       - [0x207D90, c, func_00307D90]
       - [0x207E00, c, func_00307E00]
       - [0x207E80, asm, game_307E80]
