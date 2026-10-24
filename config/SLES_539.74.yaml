@@ -1937,6 +1937,8 @@ segments:
       - [0x10C360, c, func_0020C360]
       - [0x10C3E0, c, func_0020C3E0]
       - [0x10C460, asm, game_20C460]
+      - [0x10C5C0, c, func_0020C5C0]
+      - [0x10C8C0, asm, game_20C8C0]
       - [0x10CC10, c, func_0020CC10]
       - [0x10CC40, c, func_0020CC40]
       - [0x10CC70, c, func_0020CC70]
