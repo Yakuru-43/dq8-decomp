@@ -1955,7 +1955,7 @@ segments:
       - [0x10D4E0, c, func_0020D4E0]
       - [0x10D600, c, func_0020D600]
       - [0x10D660, c, func_0020D660]
-      - [0x10D670, asm, game_20D670]
+      - [0x10D670, c, func_0020D670]
       - [0x10D6D0, c, func_0020D6D0]
       - [0x10D6E0, c, func_0020D6E0]
       - [0x10D710, c, func_0020D710]
