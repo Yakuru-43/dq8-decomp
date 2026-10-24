@@ -2017,6 +2017,7 @@ segments:
       - [0x110E10, c, func_00210E10]
       - [0x110E90, c, func_00210E90]
       - [0x110EC0, asm, game_210EC0]
+      - [0x110F80, c, func_00210F80]
       - [0x110FC0, c, func_00210FC0]
       - [0x110FD0, c, func_00210FD0]
       - [0x111050, asm, game_211050]
