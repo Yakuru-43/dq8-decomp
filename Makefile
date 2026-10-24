@@ -58,12 +58,12 @@ $(BUILD)/%.bss.s.o: $$(wildcard %.bss.s)
 	@mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) -o $@ $(or $<,/dev/null)
 
+# a `// flags: ...` line near the top of a source file adds per-file flags
 $(BUILD)/%.cpp.o: %.cpp
 	@mkdir -p $(dir $@)
-	$(WIBO) $(MWCC) -c $(CFLAGS) $< -o $@
+	$(WIBO) $(MWCC) -c $(CFLAGS) $(shell sed -n '1,5s|^// flags: ||p' $<) $< -o $@
 	$(PYTHON) tools/set_abi.py $@
 
-# a `// flags: ...` line near the top of a source file adds per-file flags
 $(BUILD)/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	$(WIBO) $(MWCC) -c $(CFLAGS) $(shell sed -n '1,5s|^// flags: ||p' $<) $< -o $@

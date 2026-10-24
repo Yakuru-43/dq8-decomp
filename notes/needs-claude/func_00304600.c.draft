@@ -1,0 +1,169 @@
+// range: 0x304600 0x304980
+// DRAFT for needs-claude func_00304600 (best attempt, score 28, 26 words
+// differ, 900 vs 892 bytes). Do not commit as src/; see the .md note.
+#include "common.h"
+
+s32 func_001814D0(void);                            /* extern */
+s32 func_00191EB0(s32);                             /* extern */
+s32 func_00308870(s32, s32);                        /* extern */
+s32 func_003089E0(s32, s32);                        /* extern */
+
+s32 func_00304600(s32 kind, s32 index) {
+    s32 ret;
+    s32 obj;
+    s32 tmp;
+    s32 value;
+
+    ret = 0;
+    if (kind == 1) {
+        ret = 1;
+        if (index >= 4) {
+            ret = 2;
+        }
+        if (index >= 5) {
+            ret = 3;
+        }
+        if (index >= 6) {
+            ret = 4;
+        }
+    }
+    if (kind == 2) {
+        if (index <= 0) {
+            ret = 4;
+        } else {
+            ret = 5;
+        }
+        if (index >= 5) {
+            ret = 6;
+        }
+        if (index >= 0xB) {
+            ret = 7;
+        }
+    }
+    if (kind == 3) {
+        if (0 <= index) {
+            ret = 7;
+        }
+    }
+    obj = func_00191EB0(func_001814D0());
+    if (func_00308870(obj, 0x15) == 3) {
+        value = func_00308870(obj, 0x16);
+        if (value <= 0) {
+            ret = 7;
+        } else {
+            ret = 8;
+        }
+        if (value >= 0xE) {
+            ret = 9;
+        }
+    } else if (func_00308870(obj, 0x15) == 4) {
+        ret = 7;
+        tmp = func_00308870(obj, 0x16);
+        value = func_00308870(obj, 0x14);
+        if (tmp == 0) {
+            if (value == 3) {
+                ret = 9;
+            }
+        }
+        if (tmp >= 2) {
+            ret = 0xA;
+        }
+        if (tmp >= 4) {
+            ret = 0xB;
+        }
+    }
+    if (kind == 5) {
+        tmp = func_003089E0(obj, 0x48);
+        value = func_00308870(obj, 0x14);
+        if (value == 3) {
+            ret = 0xB;
+        } else {
+            ret = 9;
+        }
+        if ((index > 0) && (tmp != 0)) {
+            ret = 0xC;
+        }
+        if (index >= 3) {
+            ret = 0xD;
+        }
+        if (index >= 7) {
+            ret = 0xE;
+        }
+    }
+    if (kind == 6) {
+        ret = 0xE;
+        if (index >= 2) {
+            ret = 0xF;
+        }
+        if (index >= 6) {
+            ret = 0x10;
+        }
+    }
+    if (kind == 7) {
+        if (index <= 0) {
+            ret = 0x10;
+        } else {
+            ret = 0x11;
+        }
+    }
+    if (kind >= 8) {
+        ret = 0x11;
+    }
+    if (kind == 0xB) {
+        ret = 0x11;
+        if (index >= 2) {
+            ret = 0x12;
+        }
+        if (index >= 4) {
+            ret = 0x13;
+        }
+    }
+    if (kind == 0xC) {
+        ret = 0x13;
+        if (index >= 2) {
+            ret = 0x14;
+        }
+        if (index >= 8) {
+            ret = 0x15;
+        }
+    }
+    if (kind == 0xD) {
+        ret = 0x15;
+        if (index >= 2) {
+            ret = 0x16;
+        }
+        if (index >= 6) {
+            ret = 0x17;
+        }
+    }
+    if (kind == 0xE) {
+        ret = 0x17;
+        if (index >= 2) {
+            ret = 0x18;
+        }
+        if (index >= 6) {
+            ret = 0x19;
+        }
+    }
+    if (kind >= 0xF) {
+        ret = 0x19;
+    }
+    if (kind == 0x10) {
+        if (index >= 4) {
+            ret = 0x1A;
+        }
+        if (index >= 7) {
+            ret = 0x1B;
+        }
+    }
+    if (kind == 0x11) {
+        ret = 0x1B;
+        if (index >= 2) {
+            ret = 0x1C;
+        }
+    }
+    if (kind >= 0x12) {
+        ret = 0x1C;
+    }
+    return ret;
+}
