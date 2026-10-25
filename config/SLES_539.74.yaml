@@ -4044,6 +4044,7 @@ segments:
       - [0x20D180, c, func_0030D180]
       - [0x20D1A0, c, func_0030D1A0]
       - [0x20D1B0, asm, game_30D1B0]
+      - [0x20D270, c, func_0030D270]
       - [0x20D390, c, func_0030D390]
       - [0x20D3A0, c, func_0030D3A0]
       - [0x20D3B0, asm, game_30D3B0]
