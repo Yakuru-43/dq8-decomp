@@ -3239,7 +3239,7 @@ segments:
       - [0x19D1F0, c, func_0029D1F0]
       - [0x19D200, asm, game_29D200]
       - [0x19D3A0, c, func_0029D3A0]
-      - [0x19D430, asm, game_29D430]
+      - [0x19D430, c, func_0029D430]
       - [0x19D4F0, c, func_0029D4F0]
       - [0x19D520, c, func_0029D520]
       - [0x19D560, c, func_0029D560]
