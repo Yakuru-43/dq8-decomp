@@ -229,7 +229,7 @@ segments:
       - [0x3EEE0, c, asmfunc/func_0013EEE0]
       - [0x3EF90, asm, game_13EF90]
       - [0x3EFF0, c, func_0013EFF0]
-      - [0x3F010, asm, game_13F010]
+      - [0x3F010, c, func_0013F010]
       - [0x3F060, c, func_0013F060]
       - [0x3F070, asm, game_13F070]
       - [0x3F0D0, c, func_0013F0D0]
