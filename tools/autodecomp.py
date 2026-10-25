@@ -506,12 +506,13 @@ def symbol_script_for(c, syms_ld, tmp):
     return out
 
 
-def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c", rodata=None):
+def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c", rodata=None, out_bytes=None):
     """'match' if `c` compiles to exactly the original bytes, else the failure reason.
     `suffix` is the source file's extension: mwcc compiles a .cpp file as C++.
     `rodata` is (address, original bytes) for a file whose .rodata (a switch's
     jump table) replaces that range of the data segment: the object's .rodata
-    is linked there and must be exactly those bytes."""
+    is linked there and must be exactly those bytes. A dict passed as
+    `out_bytes` gets the linked "text" and "rodata" (tools/jtbl.py --diff)."""
     with tempfile.TemporaryDirectory() as tmp:
         src, obj, elf, out = (f"{tmp}/f{suffix}", f"{tmp}/f.o", f"{tmp}/f.elf", f"{tmp}/f.bin")
         Path(src).write_text(c)
@@ -541,6 +542,8 @@ def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c", rodata=None):
             subprocess.run([BIN / "mips64-linux-gnu-objcopy", "-O", "binary", "-j", ".rodata", elf, out],
                            check=True)
             table = Path(out).read_bytes()
+    if out_bytes is not None:
+        out_bytes.update(text=mine, rodata=table)
     if mine != orig[:len(mine)] or any(orig[len(mine):]):
         return "mismatch"
     # a short object is padded by `. = ALIGN(., 16)` in the linker script
