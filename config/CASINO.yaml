@@ -36,6 +36,7 @@ segments:
     bss_size: 0x1380
     subsegments:
       - [0x0, asm, text_45ECC0]
+      - [0x50, c, func_0045ED10]
       - [0x230, c, func_0045EEF0]
       - [0x270, asm, text_45EF30]
       - [0x1640, c, func_00460300]
@@ -110,5 +111,7 @@ segments:
       - [0x16A00, c, func_004756C0]
       - [0x16A30, asm, text_4756F0]
       - [0x1BAC0, data, data_47A780]
+      - [0x1F8A0, .rodata, func_0045ED10]
+      - [0x1F8C8, data, data_47E588]
       - { start: 0x20740, type: bss, name: bss }
   - [0x20740]
