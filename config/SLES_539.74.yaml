@@ -118,6 +118,8 @@ segments:
       - [0x7100, asm, text_107100]
       - [0x7F10, c, func_00107F10]
       - [0x7F20, asm, text_107F20]
+      - [0x8090, cpp, func_00108090]
+      - [0x80E0, asm, text_1080E0]
       - [0x8398, asm, sdk_108398]
       - [0x18430, asm, sdk_118430]
       - [0x28868, asm, sdk_128868]
