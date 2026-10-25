@@ -1,0 +1,42 @@
+// range: 0x310C60 0x310CF0
+#include "common.h"
+
+struct Owner {
+    char pad0[0x60];
+    s32 field60[3];
+};
+
+struct EntryVtbl {
+    char pad0[68];
+    void (*field44)(void *, f32);
+};
+
+struct Entry {
+    char pad0[0x1B0];
+    struct EntryVtbl *vptr;
+};
+
+extern s32 func_0015F490(void);
+extern M2C_UNK *func_00168160(void);
+extern struct Entry *func_0016D5B0(s32, s32);
+
+void func_00310C60(struct Owner *o, f32 val) {
+    struct Entry *entry;
+    s32 handle;
+    s32 ctx;
+
+    func_00168160();
+    handle = func_0015F490();
+    ctx = handle;
+    if (handle == 0) {
+        return;
+    }
+    if (ctx == 0) {
+        return;
+    }
+    entry = func_0016D5B0(handle, o->field60[o->field60[2]]);
+    if (entry == 0) {
+        return;
+    }
+    entry->vptr->field44(entry, val);
+}
