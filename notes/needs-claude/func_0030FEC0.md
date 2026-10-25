@@ -48,6 +48,25 @@ have ONE `return 0;` at the end of the function with loop-A's exit jumping to
 it (forward branch — but it sits before the else...). Try: `if (party) {...}
 else {...}` with a single trailing `return 0;` and no early return after loop A.
 
+## SOLVED-BY-LEVER (2026-10-25, factory-3): both clones matched
+`func_00310050` and `func_003101F0` are now matched bytes — see
+`src/SLES_539.74/func_00310050.c` / `func_003101F0.c` for the exact source
+form. The fix was NOT the shared-`return 0` hint above (that alone still
+misplaces INCA); it is the TOP-LEVEL BRANCH ORDER. Write the test as
+`if (actor->inParty == 0) { ...list loop... } else { ...inv loop... }` —
+the NOT-in-party branch as the then-branch — plus:
+- every gate a separate `if (cond) { continue; }`;
+- the last gate inverted: `if (func_0030FD70(...) == 0) { continue; }
+  return 1;` (body never falls through to the inc stub → CW sinks both INC
+  blocks to the end, INCB before INCA);
+- one trailing `return 0;` after the if/else (shared stub, condB branches
+  back to it);
+- `u8 kind = (u8)key` (310050 only) assigned after the null checks inside
+  each branch; `struct Desc` needs only the fields read (0xF/0x20/0x24).
+With this form func_00310050 matched first try (412 B) and func_003101F0
+matched first try (416 B). The same skeleton should crack THIS function —
+swap the top-level `if` in the best C left here.
+
 ## Also: clones queued behind it
 `func_00310050` (0x310050, 416) and `func_003101F0` (0x3101F0, 416) in
 asm/SLES_539.74/game_30FEC0.s are near-clones (same skeleton; key compare via
