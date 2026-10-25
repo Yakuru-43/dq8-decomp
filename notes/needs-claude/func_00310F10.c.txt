@@ -1,0 +1,163 @@
+// range: 0x310F10 0x3112C0
+#include "common.h"
+
+struct Owner {
+    s32 field0;
+    s32 field8;
+    char padC[0x58];
+    s32 field60;
+    s32 field64;
+    s32 field68;
+    s32 field6C;
+};
+
+struct Entry {
+    char pad0[0x1C8];
+    s32 field1C8;
+};
+
+struct Record {
+    char pad0[0x10C];
+    s32 field10C;
+};
+
+struct BufPair {
+    char pad0[0x2C];
+    void *data;
+    s32 count;
+    char pad34[4];
+    void *data2;
+    s32 count2;
+    s32 items[8];
+    s32 items2[8];
+    char pad80[8];
+};
+
+extern void *func_0015F450(void);
+extern void func_00131188(void *, s32, s32);
+extern struct Entry *func_0016D5B0(void *, s32);
+extern void func_00159630(void *, s32);
+extern void func_0016A430(void *, s32);
+extern void func_0014DF80(s32 *);
+extern char *func_00181420(void);
+extern s32 func_00203B10(char *, s32);
+extern s32 func_00203940(char *, s32, s32);
+extern void func_002BF750(void *, s32, s32, s32);
+extern void func_001340C0(char *, char *);
+extern struct Record *func_00162E80(void *);
+extern void func_0018C640(void *, s32, s32, s32, s32 *, s32, s32);
+extern void func_0016D540(void *, s32, s32);
+extern void func_0016B1F0(void *, s32, s32, s32);
+extern void *func_00151B40(struct Entry *);
+extern void *func_0014A490(void *, char *);
+extern void func_00151F40(struct Entry *, void *);
+extern void func_0016B6F0(void *, s32, s32);
+extern M2C_UNK *func_00168160(void);
+extern void func_002A3AB0(void *, s32 *, s32, s32, s32, s32);
+
+extern char D_003D0998[];
+extern char D_003D09A0[];
+extern char D_003D09C0[];
+extern char D_003D09D0[];
+extern s32 D_003DFBC0;
+
+s32 func_00310F10(struct Owner *o, void *t) {
+    char key60[0x50];
+    char keyB0[0x50];
+    char query[0x50];
+    struct BufPair buf;
+    void *handle;
+    struct Entry *first;
+    s32 mode;
+    struct Entry *second;
+    struct Entry *third;
+    struct Record *rec;
+    s32 code;
+    void *found;
+    void *match;
+    struct Entry *target;
+
+    if (t == 0) {
+        return 0;
+    }
+    handle = func_0015F450();
+    func_00131188(&buf, 0, sizeof(buf));
+    buf.data = buf.items;
+    buf.count = 8;
+    buf.data2 = buf.items2;
+    buf.count2 = 8;
+    first = func_0016D5B0(t, o->field0);
+    func_00159630(handle, o->field6C);
+    func_0016A430(t, o->field64);
+    if (first == 0) {
+        return 0;
+    }
+    func_0014DF80(&o->field8);
+    o->field64 = -1;
+    o->field60 = -1;
+    mode = o->field0;
+    if (mode == 2) {
+        if (func_00203B10(func_00181420(), mode) != 0xB) {
+            return 0;
+        }
+        code = func_00203940(func_00181420(), o->field0, 0);
+        func_002BF750(&query, o->field0, code, 0);
+        o->field60 = 0xE;
+        o->field64 = 0xB8;
+        func_001340C0(key60, D_003D09C0);
+        o->field6C = 0x185;
+        func_001340C0(keyB0, D_003D09D0);
+    } else if (mode == 1) {
+        if (func_00203B10(func_00181420(), mode) != 5) {
+            return 0;
+        }
+        code = func_00203940(func_00181420(), o->field0, 0);
+        func_002BF750(&query, o->field0, code, 0);
+        o->field60 = 0xB;
+        o->field64 = 0xB7;
+        func_001340C0(key60, D_003D0998);
+        o->field6C = 0x186;
+        func_001340C0(keyB0, D_003D09A0);
+    } else {
+        return 0;
+    }
+    rec = func_00162E80(&query);
+    if (rec == 0) {
+        return 0;
+    }
+    func_0018C640(t, o->field64, rec->field10C, D_003DFBC0, &o->field8, o->field6C, 0);
+    func_0016D540(t, o->field64, o->field6C);
+    func_0016B1F0(t, 1, o->field64, 1);
+    second = func_0016D5B0(t, o->field60);
+    third = func_0016D5B0(t, o->field64);
+    if (second == 0 || third == 0) {
+        o->field64 = -1;
+        o->field60 = -1;
+        return 0;
+    }
+    if (first != 0 && third != 0) {
+        found = func_00151B40(first);
+        if (found != 0) {
+            match = func_0014A490(found, key60);
+            if (match != 0) {
+                func_00151F40(third, match);
+            }
+        }
+    }
+    func_0016B6F0(t, 1, o->field60);
+    func_0016B6F0(t, 1, o->field64);
+    target = (struct Entry *)func_00168160();
+    if (target != 0) {
+        target = func_0016D5B0(target, o->field60);
+        if (target != 0) {
+            o->field68 = 1;
+            target->field1C8 |= 1;
+        }
+    }
+    rec = func_00162E80(keyB0);
+    if (rec == 0) {
+        return 0;
+    }
+    func_002A3AB0(t, &o->field8, o->field64, rec->field10C, 0, 0);
+    return 1;
+}
