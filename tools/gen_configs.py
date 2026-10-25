@@ -51,6 +51,37 @@ def src_ranges(binary):
             out.append((int(m.group(1), 16), int(m.group(2), 16), name, p.suffix[1:]))
     return sorted(out)
 
+
+RODATA = re.compile(r"^// rodata: (0x[0-9A-Fa-f]+) (0x[0-9A-Fa-f]+)", re.M)
+
+
+def src_rodata(binary):
+    """[(start, end, name)]: the .rodata of src files with a `// rodata: 0xSTART 0xEND` line.
+
+    A switch compiled to a jump table puts the table in the file's .rodata; the
+    original table sits in the data segment, so that range of data is cut out
+    and the object's .rodata is linked there instead (tools/postsplit.py).
+    """
+    out = []
+    base = ROOT / "src" / binary
+    for p in sorted(base.rglob("*.c*")):
+        m = RODATA.search(p.read_text())
+        if m:
+            name = p.relative_to(base).with_suffix("").as_posix()
+            out.append((int(m.group(1), 16), int(m.group(2), 16), name))
+    return sorted(out)
+
+
+def splice_rodata(subsegs, binary, vram):
+    """Cut each src file's `// rodata:` range out of the data subsegments."""
+    for start, end, src in src_rodata(binary):
+        start, end = start - vram, end - vram
+        before = [c for c in subsegs if c[0] < start]
+        after = [c for c in subsegs if c[0] >= end]
+        resume = [] if after and after[0][0] == end else [(end, "data", f"data_{vram + end:06X}")]
+        subsegs = before + [(start, ".rodata", src)] + resume + after
+    return subsegs
+
 COMMON = """\
 options:
   platform: ps2
@@ -155,7 +186,8 @@ def main_yaml():
     seg("main2", 0x29D248, "code", ["[0x29D248, asm, text_39D248]"])
     seg("vif_packets", 0x29D548, "bin")
     seg("main3", 0x29D8B8, "code", ["[0x29D8B8, asm, text_39D8B8]"])
-    seg("data", 0x29E780, "code", ["[0x29E780, data, data_39E780]"])
+    data_subsegs = splice_rodata([(0x29E780, "data", "data_39E780")], name, vram)
+    seg("data", 0x29E780, "code", [f"[0x{o:X}, {t}, {n}]" for o, t, n in data_subsegs])
     seg("static_init", 0x2D6100, "code", ["[0x2D6100, asm, static_init]"])
     seg("ctors", 0x2DD3F0, "code", ["[0x2DD3F0, data, ctors]",
                                      f"{{ start: 0x{len(data):X}, type: bss, name: bss }}"],
@@ -177,7 +209,8 @@ def overlay_yaml(name):
     chunks = [(o, "asm", n) for o, n in text_chunks(data, 0, text, vram)]
     for o, t, n in splice_src(chunks, name, vram, lambda addr: "text"):
         lines.append(f"      - [0x{o:X}, {t}, {n}]")
-    lines.append(f"      - [0x{text:X}, data, data_{vram + text:06X}]")
+    for o, t, n in splice_rodata([(text, "data", f"data_{vram + text:06X}")], name, vram):
+        lines.append(f"      - [0x{o:X}, {t}, {n}]")
     lines.append(f"      - {{ start: 0x{len(data):X}, type: bss, name: bss }}")
     lines.append(f"  - [0x{len(data):X}]")
     return "\n".join(lines) + "\n"
