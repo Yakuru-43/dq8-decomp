@@ -135,7 +135,7 @@ segments:
       - [0x3B790, c, asmfunc/func_0013B790]
       - [0x3B7B0, c, asmfunc/func_0013B7B0]
       - [0x3B7D0, c, asmfunc/func_0013B7D0]
-      - [0x3B7F0, asm, game_13B7F0]
+      - [0x3B7F0, c, func_0013B7F0]
       - [0x3B900, c, asmfunc/func_0013B900]
       - [0x3B970, asm, game_13B970]
       - [0x3BC60, c, func_0013BC60]
