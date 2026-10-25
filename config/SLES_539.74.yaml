@@ -4130,6 +4130,8 @@ segments:
       - [0x210B00, asm, game_310B00]
       - [0x210DC0, c, func_00310DC0]
       - [0x210E10, asm, game_310E10]
+      - [0x211470, c, func_00311470]
+      - [0x2114F0, asm, game_3114F0]
       - [0x2115A0, c, func_003115A0]
       - [0x2115D0, c, func_003115D0]
       - [0x211610, asm, game_311610]
