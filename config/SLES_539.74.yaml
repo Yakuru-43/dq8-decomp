@@ -144,7 +144,7 @@ segments:
       - [0x3BDA0, asm, game_13BDA0]
       - [0x3C240, c, asmfunc/func_0013C240]
       - [0x3C270, c, asmfunc/func_0013C270]
-      - [0x3C490, asm, game_13C490]
+      - [0x3C490, c, func_0013C490]
       - [0x3C500, c, asmfunc/func_0013C500]
       - [0x3C590, c, asmfunc/func_0013C590]
       - [0x3C5E0, c, asmfunc/func_0013C5E0]
