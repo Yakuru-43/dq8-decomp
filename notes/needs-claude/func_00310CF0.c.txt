@@ -1,0 +1,58 @@
+// range: 0x310CF0 0x310DC0
+#include "common.h"
+
+extern "C" {
+
+struct Owner {
+    char pad0[0x60];
+    s32 field60[3]; /* [2] doubles as mode/index */
+    s32 field6C;
+};
+
+struct Entry {
+    char pad0[0x1B0]; /* vptr sits after the data */
+    virtual void v_0x08(void);
+    virtual void v_0x0C(void);
+    virtual void v_0x10(void);
+    virtual void v_0x14(void);
+    virtual void v_0x18(f32 arg);
+    virtual void v_0x1C(void);
+    virtual void v_0x20(void);
+    virtual void v_0x24(void);
+    char pad1B4[0x448 - 0x1B4];
+    f32 field448;
+};
+
+extern M2C_UNK *func_00168160(void);
+extern u32 func_0015F490(void);
+extern Entry *func_0016D5B0(u32, s32);
+extern void func_001419A0(Entry *, s32, f32);
+
+void func_00310CF0(struct Owner *o, f32 val) {
+    u32 work;
+    Entry *ctx;
+    Entry *entry;
+
+    if (o->field60[2] != 1) {
+        return;
+    }
+    func_00168160();
+    work = func_0015F490();
+    ctx = (Entry *)work;
+    if (work == 0) {
+        return;
+    }
+    if (ctx == 0) {
+        return;
+    }
+    entry = func_0016D5B0(work, o->field60[o->field60[2]]);
+    if (entry == 0) {
+        return;
+    }
+    entry->field448 = val;
+    func_001419A0(ctx, o->field6C, 1.0f);
+    entry->v_0x18(1.0f);
+    entry->v_0x24();
+}
+
+}
