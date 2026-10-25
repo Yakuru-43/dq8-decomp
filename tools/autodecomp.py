@@ -315,6 +315,70 @@ def guard_form(c, name):
     return c[:decl.end()] + body[:m.start()] + guard + c[body_end:]
 
 
+UNPROTO = re.compile(r"^(\S[^;(\n]*?\b(\w+))\(\);", re.M)
+FLOAT_LIT = re.compile(r"(?<![\w.])\d+\.\d*f?\b|(?<![\w.])\.\d+f?\b")
+
+
+def call_args(c, fn):
+    """The argument strings of the first call `fn(...)` in the body, or None."""
+    m = re.search(rf"(?<![\w>.]){fn}\((?!\);)", c[c.find("{"):] if "{" in c else c)
+    if not m:
+        return None
+    body = c[c.find("{"):]
+    i, depth, start, args = m.end(), 1, m.end(), []
+    while i < len(body) and depth:
+        ch = body[i]
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth -= 1
+        elif ch == "," and depth == 1:
+            args.append(body[start:i].strip())
+            start = i + 1
+        i += 1
+    last = body[start:i - 1].strip()
+    if last:
+        args.append(last)
+    return args
+
+
+def float_protos(c):
+    """Prototype the unprototyped callees that take a float, or None.
+
+    m2c declares callees it knows nothing about as `T f();`. C promotes a float
+    passed to such a function to double, which CodeWarrior converts with the
+    soft-float helper `fptodp` -- an undefined symbol at link time, and never
+    the original code. Each argument is typed from the first call: f32 when
+    its expression is float (a float literal, or a name declared f32), a
+    pointer when it takes an address or names a pointer, s32 otherwise.
+    """
+    floats = set(re.findall(r"\bf(?:32|64)\s+(\w+)\s*[;=,)\[(]", c))
+    ptrs = set(re.findall(r"\b\w+\s*\*+\s*(\w+)\s*[;=,)\[]", c))
+    changed = False
+
+    def arg_type(a):
+        if a.startswith("&") or a.startswith('"') or re.fullmatch(r"\w+", a) and a in ptrs:
+            return "void *"
+        if re.match(r"\((?:s|u)(?:8|16|32|64)\)", a):
+            return "s32"
+        names = set(re.findall(r"\b(\w+)\b", a))
+        return "f32" if FLOAT_LIT.search(a) or names & floats else "s32"
+
+    def repl(m):
+        nonlocal changed
+        args = call_args(c, m.group(2))
+        if not args:
+            return m.group(0)
+        types = [arg_type(a) for a in args]
+        if "f32" not in types:
+            return m.group(0)
+        changed = True
+        return f"{m.group(1)}({', '.join(types)});"
+
+    out = UNPROTO.sub(repl, c)
+    return out if changed else None
+
+
 def candidates(name, asm):
     """Yield (kind, source) attempts, most likely first."""
     seen = set()
@@ -326,6 +390,7 @@ def candidates(name, asm):
         # unprototyped callees: m2c often disagrees with itself on argument counts
         unproto = re.sub(r"^(\S[^;(]*?\b\w+)\([^;]*\);(\s*/\* (?:extern|static) \*/)", r"\1();\2", c, flags=re.M)
         bases = [b for b in (structify(c), structify(unproto)) if b] + [c, unproto]
+        bases += [p for p in map(float_protos, bases) if p]
         for v in [x for b in bases for x in (b, SWAP_CMP.sub(r"\3 \2 \1", b))]:
             if v not in seen:
                 seen.add(v)
@@ -500,16 +565,20 @@ def try_function(job):
     def check(c, flags=()):
         return verify(c, start, end, syms_ld, orig, flags, rodata=rodata)
 
+    # the reason logged is the closest any draft came, not the last draft's:
+    # one draft that fails to link must not hide another that only mismatches
+    rank = ["mismatch", "padding", "rodata", "size", "data", "link", "compile", "m2c"]
     why = "m2c"
     mismatched = []
     uncompiled = []
     for kind, c in candidates(name, with_jump_tables(binary, asm) if rodata else asm):
-        why = check(c)
-        if why == "match":
+        r = check(c)
+        why = min(why, r, key=lambda x: rank.index(x) if x in rank else -1)
+        if r == "match":
             return name, (kind, c, ()), f"match_{kind}"
-        if why in ("mismatch", "size", "padding", "rodata"):
+        if r in ("mismatch", "size", "padding", "rodata"):
             mismatched.append((kind, c))
-        elif why == "compile":
+        elif r == "compile":
             uncompiled.append(c)
     # some files may have been built with other optimization settings
     for flags in (("-O4",), ("-O2",)):
