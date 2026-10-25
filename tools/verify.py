@@ -4,8 +4,10 @@
     verify.py src/<bin>/func_XXXXXXXX.c|.cpp [...]
 
 The file's `// range: 0xSTART 0xEND` line gives the address and its
-`// flags: ...` line (if any) the extra compiler flags.  Prints MATCH or the
-reason (compile, data, size, link, mismatch, padding) per file; exit status
+`// flags: ...` line (if any) the extra compiler flags; a `// rodata: 0xSTART
+0xEND` line says the file's .rodata (a switch's jump table) replaces that range
+of the data segment, and it is checked there too.  Prints MATCH or the
+reason (compile, data, rodata, size, link, mismatch, padding) per file; exit status
 1 unless every file matches.  This is the only test that counts a function
 as matched (CLAUDE.md); tools/try_match.py --show is for looking at diffs.
 """
@@ -33,8 +35,13 @@ def check(path, syms):
         symbol_script(binary, syms[binary])
     base = VRAM.get(binary, 0x45ECC0)
     data = (ROOT / "extract" / f"{binary}.bin").read_bytes()
+    ro = re.search(r"^// rodata: (0x[0-9A-Fa-f]+) (0x[0-9A-Fa-f]+)", c, re.M)
+    rodata = None
+    if ro:
+        rs, re_ = int(ro.group(1), 16), int(ro.group(2), 16)
+        rodata = (rs, data[rs - base:re_ - base])
     return verify(c, start, end, syms[binary], data[start - base:end - base],
-                  tuple(flags.group(1).split()) if flags else (), path.suffix)
+                  tuple(flags.group(1).split()) if flags else (), path.suffix, rodata)
 
 
 def main():

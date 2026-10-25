@@ -315,6 +315,70 @@ def guard_form(c, name):
     return c[:decl.end()] + body[:m.start()] + guard + c[body_end:]
 
 
+UNPROTO = re.compile(r"^(\S[^;(\n]*?\b(\w+))\(\);", re.M)
+FLOAT_LIT = re.compile(r"(?<![\w.])\d+\.\d*f?\b|(?<![\w.])\.\d+f?\b")
+
+
+def call_args(c, fn):
+    """The argument strings of the first call `fn(...)` in the body, or None."""
+    m = re.search(rf"(?<![\w>.]){fn}\((?!\);)", c[c.find("{"):] if "{" in c else c)
+    if not m:
+        return None
+    body = c[c.find("{"):]
+    i, depth, start, args = m.end(), 1, m.end(), []
+    while i < len(body) and depth:
+        ch = body[i]
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth -= 1
+        elif ch == "," and depth == 1:
+            args.append(body[start:i].strip())
+            start = i + 1
+        i += 1
+    last = body[start:i - 1].strip()
+    if last:
+        args.append(last)
+    return args
+
+
+def float_protos(c):
+    """Prototype the unprototyped callees that take a float, or None.
+
+    m2c declares callees it knows nothing about as `T f();`. C promotes a float
+    passed to such a function to double, which CodeWarrior converts with the
+    soft-float helper `fptodp` -- an undefined symbol at link time, and never
+    the original code. Each argument is typed from the first call: f32 when
+    its expression is float (a float literal, or a name declared f32), a
+    pointer when it takes an address or names a pointer, s32 otherwise.
+    """
+    floats = set(re.findall(r"\bf(?:32|64)\s+(\w+)\s*[;=,)\[(]", c))
+    ptrs = set(re.findall(r"\b\w+\s*\*+\s*(\w+)\s*[;=,)\[]", c))
+    changed = False
+
+    def arg_type(a):
+        if a.startswith("&") or a.startswith('"') or re.fullmatch(r"\w+", a) and a in ptrs:
+            return "void *"
+        if re.match(r"\((?:s|u)(?:8|16|32|64)\)", a):
+            return "s32"
+        names = set(re.findall(r"\b(\w+)\b", a))
+        return "f32" if FLOAT_LIT.search(a) or names & floats else "s32"
+
+    def repl(m):
+        nonlocal changed
+        args = call_args(c, m.group(2))
+        if not args:
+            return m.group(0)
+        types = [arg_type(a) for a in args]
+        if "f32" not in types:
+            return m.group(0)
+        changed = True
+        return f"{m.group(1)}({', '.join(types)});"
+
+    out = UNPROTO.sub(repl, c)
+    return out if changed else None
+
+
 def candidates(name, asm):
     """Yield (kind, source) attempts, most likely first."""
     seen = set()
@@ -326,6 +390,7 @@ def candidates(name, asm):
         # unprototyped callees: m2c often disagrees with itself on argument counts
         unproto = re.sub(r"^(\S[^;(]*?\b\w+)\([^;]*\);(\s*/\* (?:extern|static) \*/)", r"\1();\2", c, flags=re.M)
         bases = [b for b in (structify(c), structify(unproto)) if b] + [c, unproto]
+        bases += [p for p in map(float_protos, bases) if p]
         for v in [x for b in bases for x in (b, SWAP_CMP.sub(r"\3 \2 \1", b))]:
             if v not in seen:
                 seen.add(v)
@@ -339,6 +404,79 @@ def candidates(name, asm):
         c = asm_function(name, asm)
         if c:
             yield "asm", c
+
+
+JTBL_REF = re.compile(r"%hi\((jtbl_[0-9A-F]{8})\)")
+JTBL = re.compile(r"^dlabel (jtbl_([0-9A-F]{8}))\n(.*?)^enddlabel \1\n", re.M | re.S)
+
+
+@lru_cache(maxsize=8)
+def jump_tables(binary):
+    """name -> (address, [target addresses]) for every jtbl_ in asm/<binary>/data."""
+    out = {}
+    for f in (ROOT / "asm" / binary / "data").glob("*.s"):
+        for m in JTBL.finditer(f.read_text(errors="replace")):
+            out[m.group(1)] = (int(m.group(2), 16),
+                               [int(w, 16) for w in re.findall(r"\.word\s+(0x[0-9A-Fa-f]+)", m.group(3))])
+    return out
+
+
+def function_tables(binary, asm):
+    """{name: (address, [targets])} for the jump tables a function's asm uses.
+
+    splat ends a table at the next label, so the alignment zeros after it look
+    like entries: a table is the run of words that point into the function.
+    Raises KeyError if a table is not in the data disassembly.
+    """
+    addrs = [int(a, 16) for a in INSN_ADDR.findall(asm)]
+    lo, hi = min(addrs), max(addrs)
+    out = {}
+    for n in sorted(set(JTBL_REF.findall(asm))):
+        start, words = jump_tables(binary)[n]
+        k = 0
+        while k < len(words) and lo <= words[k] <= hi:
+            k += 1
+        out[n] = (start, words[:k])
+    return out
+
+
+def rodata_range(binary, asm):
+    """(start, end) of the jump tables a function's asm uses, None if it uses none.
+
+    CodeWarrior writes a function's switch tables one after another into its
+    .rodata; the src file gets `// rodata: START END` and its .rodata replaces
+    that range of the data segment (tools/gen_configs.py, tools/postsplit.py).
+    Raises KeyError if a table is not in the data disassembly.
+    """
+    tables = function_tables(binary, asm)
+    if not tables:
+        return None
+    spans = [(s, s + 4 * len(w)) for s, w in tables.values()]
+    return min(s for s, _ in spans), max(e for _, e in spans)
+
+
+def with_jump_tables(binary, asm):
+    """The function's asm plus its jump tables, as m2c needs them to write a `switch`.
+
+    The data disassembly has the tables as raw addresses and the text one has
+    no labels at the case targets: add `.L` labels there and `.word .L...` tables.
+    """
+    tables = function_tables(binary, asm)
+    if not tables:
+        return asm
+    targets = {w for _, words in tables.values() for w in words}
+    have = {int(a, 16) for a in re.findall(r"^\s*\.L([0-9A-F]{8}):", asm, re.M)}
+    out = []
+    for line in asm.splitlines():
+        m = INSN_ADDR.match(line)
+        if m and int(m.group(1), 16) in targets - have:
+            out.append(f"  .L{m.group(1)}:")
+        out.append(line)
+    out += ["", ".section .rodata", ""]
+    for n, (_, words) in tables.items():
+        out.append(f"glabel {n}")
+        out += [f"    .word .L{w:08X}" for w in words]
+    return "\n".join(out) + "\n"
 
 
 ADDR_SYM = re.compile(r"\b((?:func|jtbl|D)_[0-9A-F]{8})\b")
@@ -368,9 +506,13 @@ def symbol_script_for(c, syms_ld, tmp):
     return out
 
 
-def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c"):
+def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c", rodata=None, out_bytes=None):
     """'match' if `c` compiles to exactly the original bytes, else the failure reason.
-    `suffix` is the source file's extension: mwcc compiles a .cpp file as C++."""
+    `suffix` is the source file's extension: mwcc compiles a .cpp file as C++.
+    `rodata` is (address, original bytes) for a file whose .rodata (a switch's
+    jump table) replaces that range of the data segment: the object's .rodata
+    is linked there and must be exactly those bytes. A dict passed as
+    `out_bytes` gets the linked "text" and "rodata" (tools/jtbl.py --diff)."""
     with tempfile.TemporaryDirectory() as tmp:
         src, obj, elf, out = (f"{tmp}/f{suffix}", f"{tmp}/f.o", f"{tmp}/f.elf", f"{tmp}/f.bin")
         Path(src).write_text(c)
@@ -378,53 +520,73 @@ def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c"):
         if r.returncode:
             return "compile"
         secs = sections(obj)
-        if any(secs.get(s, 0) for s in (".data", ".rodata", ".sdata", ".sbss", ".bss", ".sdata2", ".rdata")):
+        if any(secs.get(s, 0) for s in (".data", ".sdata", ".sbss", ".bss", ".sdata2", ".rdata")):
+            return "data"
+        if secs.get(".rodata", 0) and rodata is None:
             return "data"
         size = secs.get(".text", 0)
         if not size or size > end - start:
             return "size"
         subprocess.run([sys.executable, ROOT / "tools/set_abi.py", obj], check=True)
+        place = [f"--section-start=.rodata=0x{rodata[0]:X}"] if rodata else []
         r = subprocess.run([BIN / "mips64-linux-gnu-ld", "-EL", "-m", "elf32ltsmip", "--no-check-sections",
-                            "-nostdlib", "--unresolved-symbols=report-all", "-Ttext", hex(start),
+                            "-nostdlib", "--unresolved-symbols=report-all", "-Ttext", hex(start), *place,
                             "-T", symbol_script_for(c, syms_ld, tmp), "-e", hex(start),
                             obj, "-o", elf], capture_output=True, text=True)
         if r.returncode:
             return "link"
         subprocess.run([BIN / "mips64-linux-gnu-objcopy", "-O", "binary", "-j", ".text", elf, out], check=True)
         mine = Path(out).read_bytes()
+        table = None
+        if rodata:
+            subprocess.run([BIN / "mips64-linux-gnu-objcopy", "-O", "binary", "-j", ".rodata", elf, out],
+                           check=True)
+            table = Path(out).read_bytes()
+    if out_bytes is not None:
+        out_bytes.update(text=mine, rodata=table)
     if mine != orig[:len(mine)] or any(orig[len(mine):]):
         return "mismatch"
     # a short object is padded by `. = ALIGN(., 16)` in the linker script
     if len(mine) != end - start and (start + len(mine) + 15) // 16 * 16 != end:
         return "padding"
+    # the code is right, so the case addresses are: a wrong table is a wrong range
+    if rodata and table != rodata[1]:
+        return "rodata"
     return "match"
 
 
 def try_function(job):
-    binary, name, start, end, asm, syms_ld, orig = job
-    if "jtbl" in asm:
-        return name, None, "jumptable"
+    binary, name, start, end, asm, syms_ld, orig, rodata = job
+    if "jtbl" in asm and rodata is None:
+        return name, None, "jumptable"  # a table the data disassembly doesn't have
     if ALABEL.search(asm):
         # `alabel` marks a global entry point inside the body: other code calls
         # that address, and a C file cannot name a point in the middle of one of
         # its functions, so this range cannot become one file (the callers would
         # lose their target when the label goes away)
         return name, None, "entry inside"
+    def check(c, flags=()):
+        return verify(c, start, end, syms_ld, orig, flags, rodata=rodata)
+
+    # the reason logged is the closest any draft came, not the last draft's:
+    # one draft that fails to link must not hide another that only mismatches
+    rank = ["mismatch", "padding", "rodata", "size", "data", "link", "compile", "m2c"]
     why = "m2c"
     mismatched = []
     uncompiled = []
-    for kind, c in candidates(name, asm):
-        why = verify(c, start, end, syms_ld, orig)
-        if why == "match":
+    for kind, c in candidates(name, with_jump_tables(binary, asm) if rodata else asm):
+        r = check(c)
+        why = min(why, r, key=lambda x: rank.index(x) if x in rank else -1)
+        if r == "match":
             return name, (kind, c, ()), f"match_{kind}"
-        if why in ("mismatch", "size", "padding"):
+        if r in ("mismatch", "size", "padding", "rodata"):
             mismatched.append((kind, c))
-        elif why == "compile":
+        elif r == "compile":
             uncompiled.append(c)
     # some files may have been built with other optimization settings
     for flags in (("-O4",), ("-O2",)):
         for kind, c in mismatched:
-            if verify(c, start, end, syms_ld, orig, flags) == "match":
+            if check(c, flags) == "match":
                 return name, (kind, c, flags), f"match_{kind}{flags[0]}"
     if uncompiled:
         from repair import repair  # imports us: only import it when needed
@@ -441,10 +603,10 @@ def try_function(job):
             if swapped != c:
                 variants.append(swapped)
             for variant in variants:
-                if verify(variant, start, end, syms_ld, orig) == "match":
+                if check(variant) == "match":
                     return name, ("repair", variant, ()), "match_repair"
                 for flags in (("-O2",), ("-O4",)):
-                    if verify(variant, start, end, syms_ld, orig, flags) == "match":
+                    if check(variant, flags) == "match":
                         return name, ("repair", variant, flags), f"match_repair{flags[0]}"
             # it compiles now but the bytes differ: hand it to the permuter, which
             # searches source orders for exactly this kind of difference
@@ -464,6 +626,7 @@ def main():
     ap.add_argument("--skip", type=int, default=0, help="skip the first N candidate functions")
     ap.add_argument("--retry", help="only functions whose last result was one of these (comma-separated)")
     ap.add_argument("--dry-run", action="store_true", help="report, don't write src files")
+    ap.add_argument("--jumptables", action="store_true", help="only functions that use a jump table")
     a = ap.parse_args()
 
     base = VRAM.get(a.bin, 0x45ECC0)
@@ -478,6 +641,8 @@ def main():
         last = dict(l.split("\t", 1) for l in tsv.read_text().splitlines()) if tsv.exists() else {}
         want = set(a.retry.split(","))
         funcs = [f for f in funcs if last.get(f[0]) in want]
+    if a.jumptables:
+        funcs = [f for f in funcs if JTBL_REF.search(f[3])]
     funcs = funcs[a.skip:]
     if a.limit:
         funcs = funcs[:a.limit]
@@ -485,7 +650,14 @@ def main():
     syms_ld = ROOT / "build" / f"{a.bin}_all_syms.ld"
     syms_ld.parent.mkdir(exist_ok=True)
     symbol_script(a.bin, syms_ld)
-    jobs = [(a.bin, n, s, e, asm, syms_ld, data[s - base:e - base]) for n, s, e, asm, _ in funcs]
+    jobs, tables = [], {}
+    for n, s, e, asm, _ in funcs:
+        try:
+            tables[n] = rodata_range(a.bin, asm)
+        except KeyError:
+            tables[n] = None
+        ro = tables[n] and (tables[n][0], data[tables[n][0] - base:tables[n][1] - base])
+        jobs.append((a.bin, n, s, e, asm, syms_ld, data[s - base:e - base], ro))
 
     stats = {}
     ranges = {n: (s, e) for n, s, e, _, _ in funcs}
@@ -499,7 +671,9 @@ def main():
                 s, e = ranges[name]
                 if flags:
                     c = f"// flags: {' '.join(flags)}\n" + c
-                note = {"m2c": "m2c draft",
+                if tables[name]:
+                    c = f"// rodata: 0x{tables[name][0]:X} 0x{tables[name][1]:X}\n" + c
+                note ={"m2c": "m2c draft",
                         "repair": "m2c draft, with the casts CodeWarrior asks for",
                         "asm": "asm function (hand-written VU0 code; m2c can't express it)"}[kind]
                 # asm functions carry the original instructions verbatim: they go in

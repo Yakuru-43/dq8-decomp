@@ -50,6 +50,7 @@ segments:
       - [0xB90, c, func_0045F850]
       - [0xBB0, c, func_0045F870]
       - [0xBC0, asm, text_45F880]
+      - [0x14F0, c, func_004601B0]
       - [0x15D0, c, func_00460290]
       - [0x1610, asm, text_4602D0]
       - [0x1EC0, c, func_00460B80]
@@ -282,5 +283,7 @@ segments:
       - [0x23C40, c, func_00482900]
       - [0x23C50, asm, text_482910]
       - [0x23CC0, data, data_482980]
+      - [0x252B0, .rodata, func_004601B0]
+      - [0x252C8, data, data_483F88]
       - { start: 0x26340, type: bss, name: bss }
   - [0x26340]
