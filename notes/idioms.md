@@ -47,3 +47,18 @@ Fix: copy the twin's C and change only the types. Shape: one local for the teste
 next byte read into a local (`b1 = p[1];`) on the line just above the test that follows.
 Example: src/SLES_539.74/func_00100EE0.c (twin of src/SLES_539.74/func_00100F80.c)
 Solved: func_00100EE0 (first try from the twin, 2026-10-26, Opus)
+
+## Virtual-base constructor: a dead `daddu s0,a1` + `(s16)` flag test at entry
+Sign: entry does `daddu s0,a1,zero; dsll32 v0,s0,16; dsra32 v0,v0,16; bnez v0,..` and
+`a1` is never read again (notes call it a "dead save"); the branch target stores
+`o+N` to `0(o)` and a vtable to `N(o)`, then jumps back; the common path stores a vtable,
+reloads `0(o)` and writes `(o+N) - *(o)` with `subu` to a field of the sub-object.
+Fix: a `.cpp` with a real class hierarchy, not hand-written C: `struct D : virtual VB`
+with `D::D(args)`. `a1` is CW's hidden most-derived flag. Give D an override of a VB
+virtual (that adds the `subu` delta store), and give VB a destructor (`~VB();`, a declaration
+is enough). The flag then stays live for the exception cleanup, which is the s0 save.
+Pad VB with an `s64` member so the vbase lands 8-aligned. Test with
+`try_match.py f.cpp __ct__1DFi <vram>` (the mangled name). verify.py says `LINK` until
+`__vt__1D`/`__vt__2VB` (and the ctor name) have aliases in symbol_addrs (integration adds them).
+Example: notes/needs-claude/func_00104060.md (Opus attempt section)
+Solved: func_00104060, func_00104110 (byte matches, waiting for the aliases; 2026-10-26, Opus)
