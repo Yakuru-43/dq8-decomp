@@ -2668,7 +2668,7 @@ segments:
       - [0x163CF0, c, func_00263CF0]
       - [0x163D00, c, func_00263D00]
       - [0x163D10, c, func_00263D10]
-      - [0x163D60, asm, game_263D60]
+      - [0x163D60, c, func_00263D60]
       - [0x163DA0, c, func_00263DA0]
       - [0x163DE0, asm, game_263DE0]
       - [0x163FA0, c, func_00263FA0]
