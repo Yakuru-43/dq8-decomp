@@ -89,3 +89,15 @@ Static inline helpers taking the struct pointer or a `u8 *&` did not do it; only
 Also: try_match.py defaults to 2.4 and -O2; pass `--ver 3.0.1b151-050317 ... -- -O3 -Isrc`.
 Example: src/SLES_539.74/func_00104DF0.cpp
 Solved: func_00104DF0 (about 12 tries, 2026-10-26, Opus)
+
+## Constant in a `b` delay slot and a pre-call copy: an if/else, constant branch first
+Sign: `bgez $sX` forward over `b <join>; addiu $v0,$zero,1` (the `addiu` looks dead), the
+call block placed after it; at the join a `jal` with `daddu $s0,$v0` in its delay slot and a
+later `beqz $v0` testing the *new* v0. That copy saves the value from *before* the call, so the
+function returns a different variable than the call's result (Qwen read it as `return ret`).
+Mine shows `bltz`/`bltzl` with the call inline, or the value kept in an extra `$s2`.
+Fix: write the variable as an if/else with the constant branch first:
+`if (val < 0) { result = 1; } else { result = f(...); }` (not `result = 1; if (val >= 0) ...`,
+and not `>= 0` first: that order gives `bltzl`). Return `result` at the end.
+Example: src/SLES_539.74/func_00211050.c
+Solved: func_00211050 (3 tries, 2026-10-26, Opus)
