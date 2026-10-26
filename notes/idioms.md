@@ -101,3 +101,24 @@ Fix: write the variable as an if/else with the constant branch first:
 and not `>= 0` first: that order gives `bltzl`). Return `result` at the end.
 Example: src/SLES_539.74/func_00211050.c
 Solved: func_00211050 (3 tries, 2026-10-26, Opus)
+
+## Two `return 0` share one stub: if/else that falls into one trailing `return 0`
+Sign: an inner `beql $v0,$zero,<stub>` jumps far forward to a `b <epilogue>; daddu $v0,$zero,$zero`
+stub that the other branch falls into (it sits right after that branch's last block), with a
+store in the `beql` delay slot. Mine is 2 words longer: a private `bnel`/`b`+`v0=0` pair, because
+each branch has its own `return 0;` and CodeWarrior does not merge separate return statements.
+Fix: write the branches as `if (c) { ...; if (r) return 1; x = 0; } else { ...; }` and put a
+single `return 0;` after the if/else, so the zero path of both arms falls into it. Keep the early
+`return 1;`s inside the arms.
+Example: src/SLES_539.74/func_0030A180.c
+Solved: func_0030A180 (1 try, 2026-10-26, Opus)
+
+## `p + 8` arg set up before the call-result copy: make the base a pointer
+Sign: around `jal f(g(), p + 8, ...)` the original copies `daddu $a0,$v0,$zero` first and puts
+`addiu $a1,$sX,8` in the jal delay slot; mine has the two swapped (reorder-only, 2 words). The
+base (`$sX`) was declared `s32`.
+Fix: type the base as a pointer (`char *`, or the struct pointer it really is), both in the struct
+field / local and in the callee's prototype. Integer `+ 8` is scheduled before the `$v0` copy,
+pointer `+ 8` after it. A named temp for `g()` does not change it.
+Example: src/SLES_539.74/func_0030A180.c
+Solved: func_0030A180 (1 try, 2026-10-26, Opus)
