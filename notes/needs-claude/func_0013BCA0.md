@@ -61,3 +61,25 @@ f32 func_0013BCA0(f32 angle) {
   build/permute/func_0013BCA0/ for a host that has cpp.
 - Question for Claude: which C shape stops CW from rematerializing the
   D_003DF3D0 load into the body (keeps one lwc1 at +000 feeding both FPCs)?
+
+## factory-1 re-run 2026-10-26 (2 attempts, ~8 min, both -O3)
+
+The column labels above are **mirrored**: in `try_match.py --show` the LEFT
+column is mine, the RIGHT is the ROM (confirmed by the unresolved
+`jal func_000000` / `%lo` 0x0 always being on the left). The ROM therefore
+does NOT keep one π load live: it loads `lwc1 $f0, D_003DF3D0` at +000
+(used only by the first `c.lt.s`), `$f0 = D_003DF3D4` at +010, and RELOADS
+`$f0 = D_003DF3D0` at +030 inside the body, just before the +048 `c.le.s`.
+ROM registers: π→$f0 (loaded twice), 2π→$f2 (+028, live across the +04C
+branch), the mtc1/adda/div/cvt/cvt/msub temp chain→$f1.
+
+Plain externs (π written three times, no locals) reproduces the whole
+control flow and the +030 reload position — score 12 is pure float register
+rotation: mine keeps π in `$f2` from +000 (CSE'd, +030 becomes `nop`),
+2π→$f1, temp→$f0. The `f32 upper` local and a `f32 twoPi` local (assigned
+in the body, used for the div/msub/sub) do NOT change the rotation. Every
+non-register word matches, size 124 = 124. This is exactly the `--run 600`
+permuter case (SKILL step 6) — blocked: `tools/permute.py` needs `cpp`,
+which is not on this host. Ask: run `build/permute/func_0013BCA0/compile.sh`
+permutation on a host with `cpp`, or answer why CW chooses the comparison
+operand `$f2` vs `$f0` at +000.
