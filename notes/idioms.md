@@ -34,4 +34,4 @@ block; `func_00101510` is `__unexpected`. Try `-O4,p` if the `addu $fp,$sp` is n
 first jal's delay slot (`// flags: -O4,p`). verify.py says `LINK` until
 `__unexpected = 0x101510;` is in config/symbol_addrs_SLES_539.74.txt (integration adds it).
 Example: notes/needs-claude/func_001007A0.md (Opus attempt section)
-Solved: func_001007A0 (byte match, waiting for the alias; 2026-10-26, Opus)
+Solved: func_001007A0, func_00100880 (byte matches, waiting for the alias; 2026-10-26, Opus)
