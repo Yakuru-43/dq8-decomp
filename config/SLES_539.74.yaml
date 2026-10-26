@@ -2981,6 +2981,8 @@ segments:
       - [0x17E540, asm, game_27E540]
       - [0x17E9D0, c, func_0027E9D0]
       - [0x17EA10, asm, game_27EA10]
+      - [0x17EA60, c, func_0027EA60]
+      - [0x17EAA0, asm, game_27EAA0]
       - [0x17ED60, c, func_0027ED60]
       - [0x17ED70, asm, game_27ED70]
       - [0x17EE50, c, func_0027EE50]
