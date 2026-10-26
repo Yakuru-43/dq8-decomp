@@ -35,3 +35,15 @@ first jal's delay slot (`// flags: -O4,p`). verify.py says `LINK` until
 `__unexpected = 0x101510;` is in config/symbol_addrs_SLES_539.74.txt (integration adds it).
 Example: notes/needs-claude/func_001007A0.md (Opus attempt section)
 Solved: func_001007A0, func_00100880 (byte matches, waiting for the alias; 2026-10-26, Opus)
+
+## Early-return chain: one shift duplicated after a beql, or a matched twin exists
+Sign: diff is one extra `srl`/`sra` right after a `beql` whose delay slot already does the
+same shift (mine shifts twice, orig once), everything after it +4; or loads like
+`lbu $a2,1($a0)` sit in the branch delay slots of the bit tests. Often the note says
+"signed/unsigned twin of func_X" and func_X is already in src/.
+Fix: copy the twin's C and change only the types. Shape: one local for the tested value
+(`u32 b = p[0];`), each case an `if ((b & m) == 0) { *out = ...; return p + n; }` using the
+*unshifted* `b` in every expression (`(b >> 2) << 8`, no shared `b >>= 1`), and each
+next byte read into a local (`b1 = p[1];`) on the line just above the test that follows.
+Example: src/SLES_539.74/func_00100EE0.c (twin of src/SLES_539.74/func_00100F80.c)
+Solved: func_00100EE0 (first try from the twin, 2026-10-26, Opus)
