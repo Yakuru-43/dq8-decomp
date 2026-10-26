@@ -103,6 +103,8 @@ segments:
       - [0x46C0, cpp, func_001046C0]
       - [0x4780, cpp, func_00104780]
       - [0x4890, asm, text_104890]
+      - [0x4DF0, cpp, func_00104DF0]
+      - [0x4EB0, asm, text_104EB0]
       - [0x5160, c, func_00105160]
       - [0x5180, c, func_00105180]
       - [0x51D0, cpp, func_001051D0]
