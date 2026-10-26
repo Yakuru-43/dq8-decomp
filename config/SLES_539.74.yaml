@@ -2143,6 +2143,8 @@ segments:
       - [0x1190B0, asm, game_2190B0]
       - [0x11B220, c, func_0021B220]
       - [0x11B230, asm, game_21B230]
+      - [0x11B8C0, c, func_0021B8C0]
+      - [0x11B920, asm, game_21B920]
       - [0x11BCC0, c, func_0021BCC0]
       - [0x11BCD0, asm, game_21BCD0]
       - [0x11C760, c, func_0021C760]
