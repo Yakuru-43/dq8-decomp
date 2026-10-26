@@ -4104,7 +4104,7 @@ segments:
       - [0x20EF80, c, func_0030EF80]
       - [0x20EFB0, c, func_0030EFB0]
       - [0x20EFC0, c, func_0030EFC0]
-      - [0x20EFD0, asm, game_30EFD0]
+      - [0x20EFD0, c, func_0030EFD0]
       - [0x20F220, c, func_0030F220]
       - [0x20F240, c, func_0030F240]
       - [0x20F250, c, func_0030F250]
