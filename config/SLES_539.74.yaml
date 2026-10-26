@@ -127,6 +127,7 @@ segments:
       - [0x7040, cpp, func_00107040]
       - [0x7090, cpp, func_00107090]
       - [0x7100, asm, text_107100]
+      - [0x7E70, c, func_00107E70]
       - [0x7F10, c, func_00107F10]
       - [0x7F20, asm, text_107F20]
       - [0x8090, cpp, func_00108090]
