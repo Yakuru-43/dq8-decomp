@@ -122,3 +122,19 @@ field / local and in the callee's prototype. Integer `+ 8` is scheduled before t
 pointer `+ 8` after it. A named temp for `g()` does not change it.
 Example: src/SLES_539.74/func_0030A180.c
 Solved: func_0030A180 (1 try, 2026-10-26, Opus)
+
+## Loop with a top guard and the body inline: `if (cond) do { } while (cond);`
+Sign: the original tests once before the loop (`slt $at,$zero,$sN; beqz $at,<after>` with
+`i = 0` in the delay slot, or `blez $sN,<after>`), then the body falls through in place and
+the loop closes with a bottom `bnez`/`bgtz` (plain, not likely). Mine (a `for`/`while`) jumps
+to a bottom test (`slt; bnel`), places the body after the following code (often just before
+the epilogue) or folds the decrement into a `bgtzl` delay slot. Usually with a `return` inside the loop.
+Fix: write the guard and a do-while: `i = 0; if (i < len) { p = buf; do { ...; } while (++i < len); }`
+and `if (len > 0) { do { len--; ... } while (len > 0); }`. Swapping if/else or ternary order
+does not move the body; the loop form does.
+Also: a stack local one slot too high (mine `0x6E`, orig `0x6C`) next to a buffer is a 4-byte
+local typed too small: here `func_00130FD0` is memcpy, so the `u16` result is a `u32` copied
+into and returned as `(u16)val` (still `lhu`). The lint refuses `(--x->f < 0)` (double-negate
+false hit): `if ((x->f -= 1) < 0)` gives the same code; `x->f--; if (x->f < 0)` does not.
+Example: src/SLES_539.74/func_00105E30.c
+Solved: func_00105E30 (8 tries, 2026-10-26, Opus)
