@@ -267,6 +267,8 @@ segments:
       - [0x3FF70, c, func_0013FF70]
       - [0x3FF80, c, func_0013FF80]
       - [0x3FF90, asm, game_13FF90]
+      - [0x40410, c, func_00140410]
+      - [0x40490, asm, game_140490]
       - [0x41CE0, c, func_00141CE0]
       - [0x41D10, asm, game_141D10]
       - [0x42B60, c, func_00142B60]
