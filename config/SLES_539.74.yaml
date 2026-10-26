@@ -2518,6 +2518,7 @@ segments:
       - [0x14E4A0, c, func_0024E4A0]
       - [0x14E4C0, c, func_0024E4C0]
       - [0x14E4E0, asm, game_24E4E0]
+      - [0x14E550, c, func_0024E550]
       - [0x14E590, c, func_0024E590]
       - [0x14E5A0, c, func_0024E5A0]
       - [0x14E5B0, c, func_0024E5B0]
