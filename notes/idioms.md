@@ -62,3 +62,15 @@ Pad VB with an `s64` member so the vbase lands 8-aligned. Test with
 `__vt__1D`/`__vt__2VB` (and the ctor name) have aliases in symbol_addrs (integration adds them).
 Example: notes/needs-claude/func_00104060.md (Opus attempt section)
 Solved: func_00104060, func_00104110 (byte matches, waiting for the aliases; 2026-10-26, Opus)
+
+## Float temporaries swapped: declare locals in reverse, use a struct, pass -O3
+Sign: same size and schedule, but two float values sit in each other's registers
+(`$f21`/`$f22` saved temps, or `$f4`/`$f5` load pairs with `sub.s` operands flipped).
+Fix: first make sure try_match got `-- -O3` (without it the diff is unscheduled, full of
+`nop` delay slots, and no use reading). Read arg0 through a struct with named fields
+instead of `M2C_FIELD` casts, and keep each call inline in the expression it feeds
+(`sx * cosf(a) - sx * s`). If only the callee-saved floats are swapped, swap the order the
+locals are declared in: CW gave the local declared *first* the higher register
+(`f32 sy; f32 sx;` put sx in `$f21`, sy in `$f22`).
+Example: src/SLES_539.74/func_002116B0.c
+Solved: func_002116B0 (2 tries, 2026-10-26, Opus)
