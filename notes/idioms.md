@@ -74,3 +74,18 @@ locals are declared in: CW gave the local declared *first* the higher register
 (`f32 sy; f32 sx;` put sx in `$f21`, sy in `$f22`).
 Example: src/SLES_539.74/func_002116B0.c
 Solved: func_002116B0 (2 tries, 2026-10-26, Opus)
+
+## Field load CSE'd where the original reloads: go through inline member accessors
+Sign: the original reloads a field it already loaded for a guard (`lw v1,8(a0)` again
+right after `beql` on `field_08 <= field_04`), and mine reuses the guard's register, so
+mine is one `lw` short. Often with a bool kept as `not/sltiu/xori 1` + `beqz`, and the
+field's store in that `beqz` delay slot. Typical of MSL streambuf code (Reader view:
+eback/gptr/egptr at 0x04/0x08/0x0C, pbase/pptr/epptr 0x10/0x14/0x18, file at 0x1C).
+Fix: a `.cpp` with inline member functions on the struct, as the library had:
+`u8 *gptr() const { return field_08; }`, `u8 *eback() const`, `void gbump(s32 n) { field_08 += n; }`,
+and write the body with them: `if (r->gptr() <= r->eback()) return -1; bool store = !is_eof(c);
+r->gbump(-1); if (store) *r->gptr() = c;`. CW does not CSE loads across inlined member calls.
+Static inline helpers taking the struct pointer or a `u8 *&` did not do it; only members.
+Also: try_match.py defaults to 2.4 and -O2; pass `--ver 3.0.1b151-050317 ... -- -O3 -Isrc`.
+Example: src/SLES_539.74/func_00104DF0.cpp
+Solved: func_00104DF0 (about 12 tries, 2026-10-26, Opus)
