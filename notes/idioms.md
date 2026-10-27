@@ -138,3 +138,172 @@ into and returned as `(u16)val` (still `lhu`). The lint refuses `(--x->f < 0)` (
 false hit): `if ((x->f -= 1) < 0)` gives the same code; `x->f--; if (x->f < 0)` does not.
 Example: src/SLES_539.74/func_00105E30.c
 Solved: func_00105E30 (8 tries, 2026-10-26, Opus)
+
+## Indirect call through `$t9`: a C++ virtual call, vptr placed after the data
+Sign: the diff is only the register of an indirect call: orig `lw $t9,N($a0); lw $t9,S($t9);
+jalr $t9` (or `jr $t9` for a tail call), mine the same with `$v0`. Plain-C function pointers
+(struct member, local, `(*fp)()`) always give `$v0`; only a C++ virtual call gives `$t9`.
+Fix: a `.cpp`, functions inside `extern "C" { }`, a struct whose data members come first so
+the vptr lands at N (`s32 data[N/4];` then the virtuals; with no data before them the vptr is
+at 0) and the called method at slot S (first virtual is S=0x8, then +4 each), called as
+`obj->method()`. If the function also stores the vtable first (a constructor), `struct C {
+data; C(); virtual f(); }; C::C() { f(); }` gives the exact bytes but verify.py says `LINK`
+until `__vt__1C` has an alias; to verify now, store the vptr through a twin struct with a
+plain `void **vtbl` at N and `= D_<vtable>;`, then make the virtual call. Pass `-- -O3` to
+try_match: without it the schedule (e.g. `daddu s0,a0` in the jalr delay slot) looks wrong.
+Example: src/SLES_539.74/func_00218740.cpp, src/SLES_539.74/func_001BA940.cpp
+Solved: func_00218740 (3 tries, 2026-10-27, Opus)
+
+## Two vptr constants in `$v0`/`$v1` the wrong way round: compute the sub-object pointer first
+Sign: a vbase constructor helper (vptr store at +N, `*(o+0)` = second vtable, then
+`(o+M) - *(o+0)` stored at `+0x48`); the diff is only that the two `lui/addiu` vtable
+addresses use `$v0` and `$v1` the other way round, and no statement order fixes it.
+Fix: assign `sub = (char *)obj + M;` as the first statement inside `if (obj != 0)`, before
+the vptr store, and use `sub` both in the delta `(u32)sub - h2` and in the later
+`if (sub != 0)` sub-object build. Use two separate locals for the two `node->handle` loads.
+If a matched twin in the same class family exists, copy it and change only the offsets.
+Example: src/SLES_539.74/func_00103600.c, src/SLES_539.74/func_001036A0.c
+Solved: func_00103600, func_001036A0 (first try from the twin, 2026-10-27, Opus)
+
+## Register clusters swapped around an `or`/`addu`: write the operands in the other order
+Sign: register-only diff, same schedule, whole groups of values swapped between two
+registers (`$a1`/`$t1` here, even far up the function), and the commutative instruction
+that joins two terms (`or $v1,$a1,$v1`, `addu`) prints the *same* registers on both sides,
+but the term that lands in `rs` is the other value (orig: `rs` = the term loaded later).
+Fix: swap the operands of `|`/`+` in the C (`(w->nreg << 28) | word | 0x4000` instead of
+`word | (w->nreg << 28) | 0x4000`). CW colours the left operand's register first, and
+that choice ripples back to every earlier value sharing the register. Check try_match got
+`-- -O3` first, or the diff is unscheduled and misleading.
+Example: src/SLES_539.74/func_0013F240.c
+Solved: func_0013F240 (1st try, 2026-10-27, Opus)
+
+## Two inline tests normalized twice, one shared `andi 0xFF`: `return A() && B() == 0;`
+Sign: a `u8`/bool function whose body is an inlined test computed twice; after the first
+test a *second* `sltu $v0,$zero,$v0` then `beqz` (no `beql`), after the second test
+`xor $v0,$v0,$zero; sltiu $v0,$v0,1`, and both paths meet at one `b` with
+`andi $v0,$v0,0xFF` in its delay slot (the false path of the first test carries its own
+0 into that `andi`). An `if (A) return ...; return 0;` gives `andi`+`beql` instead.
+Fix: one return of a logical AND of the two inline calls, the second compared `== 0`
+(`!B()` gives `sltu; xori 1` instead of `xor; sltiu`). Keep the helper `static inline`
+returning `s32` (`(w & mask) != 0`), plain C.
+Example: src/SLES_539.74/func_00308250.c
+Solved: func_00308250 (3rd try, 2026-10-27, Opus)
+
+## Flag set with `daddiu $sN,$zero,1`, tested raw: a C++ `bool` in a `.cpp`
+Sign: a found/ready flag in an `s` register, set with `daddiu $sN,$zero,0x1` (often in
+the delay slot of a `b` out of a loop) where yours gives `addiu`, and the flag is later
+tested with a plain `beql`/`bnel $sN,$zero` (no `andi 0xFF`). `s32`/`u32`/`s64` flags
+give `addiu`; `u8` gives the `daddiu` but masks the test with `andi`.
+Fix: make the file a `.cpp` (functions inside `extern "C" { }`), declare the flag
+`bool`, write `found = false;` / `found = true;` and test `if (found)`. CW knows a bool
+is 0/1, so it keeps the `daddiu` store and drops the mask.
+Example: src/SLES_539.74/func_00294F40.cpp
+Solved: func_00294F40 (1st try, 2026-10-27, Opus), func_00104890 (with the switch entry below),
+func_0029B6C0 (`bool ret` for the `daddiu $s1,$zero,1` before `break`)
+
+## `andi $r,$zero,0x1; sll $s,$r,N` in a bitfield RMW: the field is set to **0**, not 1
+Sign: a `u8 : 1` read-modify-write `lbu; addiu -mask; and; or; sb` whose inserted value
+is `andi $r,$zero,0x1` followed by `sll` by the bit position (one `andi` can feed several
+`sll`s). `$zero & 1` is 0, so the bit is being cleared. Writing `= 1` folds to
+`daddiu $r,$zero,1<<N`, and no RHS trick keeps the `andi`. A field set to 1 at
+bit 0 shows as a plain `daddiu $r,$zero,1` instead.
+Fix: write `f.bitN = 0;`. CW lowers a constant-0 bitfield store without folding it, so
+you get exactly `andi $zero,1; sll; and; or` (it keeps the `or` with 0 too).
+Example: src/SLES_539.74/func_0013FA20.c
+Solved: func_0013FA20 (1st try, 2026-10-27, Opus)
+
+## `sw $v0,N($s0); lw $v0,N($s0); sw $v0,N($s0)`: a member setter fed by a member getter
+Sign: a field is stored, reloaded and stored again with identical encodings (notes call
+it "the triplet" or "reload-and-restore"); `x = x` is lint-forbidden, and a static inline
+`set(w, w->field)` in C folds the reload away (mine is 8 B short).
+Fix: a `.cpp` (inside `extern "C" { }`) with inline member functions:
+`void SetBase(char *b) { base = b; ... }` and `char *Base() const { return base; }`, then
+`w->base = expr; w->SetBase(w->Base());`. Both the getter and the setter are needed: with
+`w->SetBase(w->base)` the reload is still CSE'd. Same mechanism as "Field load CSE'd where
+the original reloads". A non-void function that returns garbage on its early path
+(`$v0` never set) is `return n;` with `n` not yet assigned; C++ refuses a bare `return;`.
+Also pass try_match `--ver 3.0.1b151-050317 ... -- -O3 -Isrc`, or every delay slot is a `nop`.
+Example: src/SLES_539.74/func_0013F330.cpp
+Solved: func_0013F330 (3 tries, 2026-10-27, Opus)
+
+## Last arm's else falls straight into `jr $ra`: `{ store; return; }` in that arm
+Sign: an if/else whose two arms each end in their own if/else. The original's tail is
+`b <join>; nop` / `b <join-1>; sw ..` (first arm's else stub) / `sw ..` falling into `jr $ra`
+(the last arm's else stub, no branch). Mine has a `b` in that last stub as well (one word
+longer, or the stubs look shifted by 4). Qwen's notes call it "structural" and blame the
+register allocation, but first look at how the draft reads its fields: wrong registers
+everywhere in an `M2C_FIELD(arg0, char **, N)` draft can come from the casts.
+Fix: (1) read the object through a struct with named fields, as the matched siblings do
+(that took func_0013F0E0 from score 94 to 5); (2) in the *last* arm only, write the guard
+as an early return: `if (n1 <= 0 || n2 <= 0) { w->wp = end; return; }` and then the
+stores. Keep the first arm as a plain if/else. An early return in the first arm, a single
+store shared after the if/else, or `static inline` helpers for each arm all came out worse.
+Example: src/SLES_539.74/func_0013F0E0.c
+Solved: func_0013F0E0 (8 tries, 2026-10-27, Opus)
+
+## Compare chain on constants, `b <default>` after it, one case body inline: a `switch`
+Sign: a value is tested against a few constants in a row (`addiu $v1,$zero,K;
+beql $a0,$v1,<L>` with a one-instruction body such as `addiu $a2,$zero,2` in each delay
+slot), then `b <fail>` for the default, then *one* multi-instruction case body inline that
+falls into the join. An if/else-if chain gives the same tests but turns the last one into
+`bnel` to the failure and moves the long arm far away (after the other out-of-line blocks).
+Fix: a `switch` with a `default:`. CW emits the tests in **reverse source order** of the
+case labels and lays the bodies out in source order, so read the beql order backwards
+(tests 4, 2, 1 → write `case 1:`, `case 2:`, `case 4:`, `default:`). Writing the cases
+in test order gives the tests reversed and a bigger function. A value set in a case's delay
+slot on both paths of an inner `if` (`beqz ..; addiu $a2,1`) is a plain `whence = 1;`
+before that `if`.
+Example: src/SLES_539.74/func_00104890.cpp
+Solved: func_00104890 (5 tries, 2026-10-27, Opus)
+
+## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
+Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
+mine branches forward (`beq`) to a copy of the body near the epilogue with a `b` back; often a
+`return` stub before it gains a `b` (mine 4 bytes longer). Flipping the test (`!=` with an
+empty then, constant on the left) changes nothing. Look at what comes *before* the block:
+an early return such as `if (p == 0) return r;` followed by the rest of the function.
+Fix: nest the rest under the positive test instead: `if (p != 0) { ...; if (n == 16) {..} ...; }
+return r;`. The early return makes CW lay the remaining tail out as a separate region and
+move the inner `if` body out of line; the nested form keeps it inline (func_00104FE0 went from
+score 29 / 388 B to score 4 / 384 B with only this change).
+Related, same function: two pointers sharing `u = base + (n + 1)` (`addiu a0,u,0x23` /
+`addiu v1,u,0x24`, where mine derives one from the other with `addiu -1`): bump the count
+first, `n++; setg(buf, buf + n - 1, buf + n);`. `buf + (n + 1) - 1` and `&buf[n]` did not.
+Example: src/SLES_539.74/func_00104FE0.cpp
+Solved: func_00104FE0 (about 25 tries over three sessions, 2026-10-27, Opus), func_00105B70
+(its wide twin over 4-byte slots: func_00104FE0's C with `u32 buf_24[16]`, `n == 16` / `n = 1`
+and a `u16` store matched on the first try, 2026-10-27, Opus; the `andi 0xFFFF` in the
+`beqz gptr` delay slot is `u16 ch = result;` before the nested `if`)
+
+## `bgez r; andi v,r,0xFF` / `beqz v; addiu v,v,-0x100` inline after a call: signed `r % 256`
+Sign: straight after a `jal` (often `func_00132D38`, the rand), `bgez $v0, skip` with
+`andi $v1,$v0,0xFF` in the delay slot, then `beqz $v1, skip; nop; addiu $v1,$v1,-0x100`,
+`skip:` and a compare on `$v1`. Hand-written `v = r & 0xFF; if (r < 0 && v != 0) v -= 0x100;`
+(nested or not) comes out `bltz` to an out-of-line copy and is 4-8 bytes longer. The same
+shape with `0x1F` / `-0x20` (or any 2^n) is `% 32`.
+Fix: it is CW's expansion of a signed modulo by a power of two: write `rand() % 256 < weight`
+(`func_00132D38()` returning `s32`). No temporary needed.
+Also seen in the same function: a loop index from an `s16`-returning callee re-sign-extended
+(`dsll32/dsra32 16`) where the original uses `$v0` directly in a `bgezl`: declare the callee and
+the local `s32`. And `sw $v0,0x288($s0)` with `addiu $s0,$s2,0xE0` in the `jal` delay slot,
+where mine stores `0x368($s2)`: take `sub = &unit->sub;` and write
+`sub->data = f(owner, sub->state);` (both through `sub`; `unit->sub.state` as the argument folds
+the pointer away).
+Example: src/SLES_539.74/func_0029B6C0.cpp
+Solved: func_0029B6C0 (3 tries, 2026-10-27, Opus)
+
+## `bnel $x,$zero,+3; <next>; b <epi>; daddu $v0,$zero,$zero` where the original is `beql $x,$zero,<epi>`
+Sign: an early `if (x == 0) return 0;` (often inside a loop, `x` a value just loaded from a
+table, e.g. a key/terminator) where the original has `beql $x,$zero,<far>` + `daddu $v0,$zero,$zero`
+in the delay slot, but mine inverts it: `bnel $x,$zero,+3` with the next instruction (a call's
+`daddu $a0,...`) in the delay slot, then `b <epilogue>; daddu $v0,$zero,$zero` (mine 4 bytes
+longer, every later word shifted). Changing the loop form (for/while/goto, test in the condition,
+break to a trailing `return 0`) changes nothing.
+Fix: the tested value is a **pointer**: type the field/local `void *` (or the struct pointer it is)
+and the callee parameter it is passed to. Note the opposite rule for `if (r) r->f = x;` stores
+(SKILL.md: integer gives `bnel`+store); for the early-return guard, a pointer gives the `beql`.
+Same file: a lookup result `entry` (pointer) tested for `-1` comes out `beql $a0,$zero` +
+`addiu $v1,$zero,-1` only as `if (entry != 0) return entry->value; return -1;` (the
+`if (entry == 0) return -1;` order gives `bnel`).
+Example: src/SLES_539.74/func_003072A0.c (kind lookup = inline twin of func_003062B0)
+Solved: func_003072A0 (9 tries, 2026-10-27, Opus)
