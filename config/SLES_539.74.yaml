@@ -79,7 +79,7 @@ segments:
       - [0x34A0, c, func_001034A0]
       - [0x3500, cpp, func_00103500]
       - [0x3600, c, func_00103600]
-      - [0x36A0, asm, text_1036A0]
+      - [0x36A0, c, func_001036A0]
       - [0x3740, c, func_00103740]
       - [0x37A0, c, func_001037A0]
       - [0x37F0, c, func_001037F0]
