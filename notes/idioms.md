@@ -153,3 +153,14 @@ plain `void **vtbl` at N and `= D_<vtable>;`, then make the virtual call. Pass `
 try_match: without it the schedule (e.g. `daddu s0,a0` in the jalr delay slot) looks wrong.
 Example: src/SLES_539.74/func_00218740.cpp, src/SLES_539.74/func_001BA940.cpp
 Solved: func_00218740 (3 tries, 2026-10-27, Opus)
+
+## Two vptr constants in `$v0`/`$v1` the wrong way round: compute the sub-object pointer first
+Sign: a vbase constructor helper (vptr store at +N, `*(o+0)` = second vtable, then
+`(o+M) - *(o+0)` stored at `+0x48`); the diff is only that the two `lui/addiu` vtable
+addresses use `$v0` and `$v1` the other way round, and no statement order fixes it.
+Fix: assign `sub = (char *)obj + M;` as the first statement inside `if (obj != 0)`, before
+the vptr store, and use `sub` both in the delta `(u32)sub - h2` and in the later
+`if (sub != 0)` sub-object build. Use two separate locals for the two `node->handle` loads.
+If a matched twin in the same class family exists, copy it and change only the offsets.
+Example: src/SLES_539.74/func_00103600.c, src/SLES_539.74/func_001036A0.c
+Solved: func_00103600, func_001036A0 (first try from the twin, 2026-10-27, Opus)
