@@ -36,6 +36,13 @@ def next_row(rows):
     return None
 
 
+def print_row(head, rows, r):
+    """The row with its line number, so a Read of build/queue.tsv can stay that one line."""
+    print("\t".join(head))
+    print("\t".join(r))
+    print(f"build/queue.tsv line {rows.index(r) + 2}")
+
+
 def find_asm(binary, func):
     """The lines from `glabel func` to `endlabel func`, or None."""
     for f in sorted((ROOT / "asm" / binary).glob("*.s")):
@@ -60,14 +67,12 @@ def main():
         r = next_row(rows)
         if r is None:
             sys.exit("no eligible todo row")
-        print("\t".join(head))
-        print("\t".join(r))
+        print_row(head, rows, r)
         return
     func = args.func
     row = next((r for r in rows if len(r) > 3 and r[3] == func), None)
     if row:
-        print("\t".join(head))
-        print("\t".join(row))
+        print_row(head, rows, row)
     binary = row[2] if row else "SLES_539.74"
 
     path, body = find_asm(binary, func)
