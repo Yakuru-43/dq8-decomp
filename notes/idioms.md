@@ -224,3 +224,18 @@ the original reloads". A non-void function that returns garbage on its early pat
 Also pass try_match `--ver 3.0.1b151-050317 ... -- -O3 -Isrc`, or every delay slot is a `nop`.
 Example: src/SLES_539.74/func_0013F330.cpp
 Solved: func_0013F330 (3 tries, 2026-10-27, Opus)
+
+## Last arm's else falls straight into `jr $ra`: `{ store; return; }` in that arm
+Sign: an if/else whose two arms each end in their own if/else. The original's tail is
+`b <join>; nop` / `b <join-1>; sw ..` (first arm's else stub) / `sw ..` falling into `jr $ra`
+(the last arm's else stub, no branch). Mine has a `b` in that last stub as well (one word
+longer, or the stubs look shifted by 4). Qwen's notes call it "structural" and blame the
+register allocation, but first look at how the draft reads its fields: wrong registers
+everywhere in an `M2C_FIELD(arg0, char **, N)` draft can come from the casts.
+Fix: (1) read the object through a struct with named fields, as the matched siblings do
+(that took func_0013F0E0 from score 94 to 5); (2) in the *last* arm only, write the guard
+as an early return: `if (n1 <= 0 || n2 <= 0) { w->wp = end; return; }` and then the
+stores. Keep the first arm as a plain if/else. An early return in the first arm, a single
+store shared after the if/else, or `static inline` helpers for each arm all came out worse.
+Example: src/SLES_539.74/func_0013F0E0.c
+Solved: func_0013F0E0 (8 tries, 2026-10-27, Opus)
