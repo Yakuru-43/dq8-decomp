@@ -198,7 +198,8 @@ Fix: make the file a `.cpp` (functions inside `extern "C" { }`), declare the fla
 `bool`, write `found = false;` / `found = true;` and test `if (found)`. CW knows a bool
 is 0/1, so it keeps the `daddiu` store and drops the mask.
 Example: src/SLES_539.74/func_00294F40.cpp
-Solved: func_00294F40 (1st try, 2026-10-27, Opus)
+Solved: func_00294F40 (1st try, 2026-10-27, Opus), func_00104890 (with the switch entry below),
+func_0029B6C0 (`bool ret` for the `daddiu $s1,$zero,1` before `break`)
 
 ## `andi $r,$zero,0x1; sll $s,$r,N` in a bitfield RMW: the field is set to **0**, not 1
 Sign: a `u8 : 1` read-modify-write `lbu; addiu -mask; and; or; sb` whose inserted value
@@ -210,3 +211,99 @@ Fix: write `f.bitN = 0;`. CW lowers a constant-0 bitfield store without folding 
 you get exactly `andi $zero,1; sll; and; or` (it keeps the `or` with 0 too).
 Example: src/SLES_539.74/func_0013FA20.c
 Solved: func_0013FA20 (1st try, 2026-10-27, Opus)
+
+## `sw $v0,N($s0); lw $v0,N($s0); sw $v0,N($s0)`: a member setter fed by a member getter
+Sign: a field is stored, reloaded and stored again with identical encodings (notes call
+it "the triplet" or "reload-and-restore"); `x = x` is lint-forbidden, and a static inline
+`set(w, w->field)` in C folds the reload away (mine is 8 B short).
+Fix: a `.cpp` (inside `extern "C" { }`) with inline member functions:
+`void SetBase(char *b) { base = b; ... }` and `char *Base() const { return base; }`, then
+`w->base = expr; w->SetBase(w->Base());`. Both the getter and the setter are needed: with
+`w->SetBase(w->base)` the reload is still CSE'd. Same mechanism as "Field load CSE'd where
+the original reloads". A non-void function that returns garbage on its early path
+(`$v0` never set) is `return n;` with `n` not yet assigned; C++ refuses a bare `return;`.
+Also pass try_match `--ver 3.0.1b151-050317 ... -- -O3 -Isrc`, or every delay slot is a `nop`.
+Example: src/SLES_539.74/func_0013F330.cpp
+Solved: func_0013F330 (3 tries, 2026-10-27, Opus)
+
+## Last arm's else falls straight into `jr $ra`: `{ store; return; }` in that arm
+Sign: an if/else whose two arms each end in their own if/else. The original's tail is
+`b <join>; nop` / `b <join-1>; sw ..` (first arm's else stub) / `sw ..` falling into `jr $ra`
+(the last arm's else stub, no branch). Mine has a `b` in that last stub as well (one word
+longer, or the stubs look shifted by 4). Qwen's notes call it "structural" and blame the
+register allocation, but first look at how the draft reads its fields: wrong registers
+everywhere in an `M2C_FIELD(arg0, char **, N)` draft can come from the casts.
+Fix: (1) read the object through a struct with named fields, as the matched siblings do
+(that took func_0013F0E0 from score 94 to 5); (2) in the *last* arm only, write the guard
+as an early return: `if (n1 <= 0 || n2 <= 0) { w->wp = end; return; }` and then the
+stores. Keep the first arm as a plain if/else. An early return in the first arm, a single
+store shared after the if/else, or `static inline` helpers for each arm all came out worse.
+Example: src/SLES_539.74/func_0013F0E0.c
+Solved: func_0013F0E0 (8 tries, 2026-10-27, Opus)
+
+## Compare chain on constants, `b <default>` after it, one case body inline: a `switch`
+Sign: a value is tested against a few constants in a row (`addiu $v1,$zero,K;
+beql $a0,$v1,<L>` with a one-instruction body such as `addiu $a2,$zero,2` in each delay
+slot), then `b <fail>` for the default, then *one* multi-instruction case body inline that
+falls into the join. An if/else-if chain gives the same tests but turns the last one into
+`bnel` to the failure and moves the long arm far away (after the other out-of-line blocks).
+Fix: a `switch` with a `default:`. CW emits the tests in **reverse source order** of the
+case labels and lays the bodies out in source order, so read the beql order backwards
+(tests 4, 2, 1 → write `case 1:`, `case 2:`, `case 4:`, `default:`). Writing the cases
+in test order gives the tests reversed and a bigger function. A value set in a case's delay
+slot on both paths of an inner `if` (`beqz ..; addiu $a2,1`) is a plain `whence = 1;`
+before that `if`.
+Example: src/SLES_539.74/func_00104890.cpp
+Solved: func_00104890 (5 tries, 2026-10-27, Opus)
+
+## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
+Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
+mine branches forward (`beq`) to a copy of the body near the epilogue with a `b` back; often a
+`return` stub before it gains a `b` (mine 4 bytes longer). Flipping the test (`!=` with an
+empty then, constant on the left) changes nothing. Look at what comes *before* the block:
+an early return such as `if (p == 0) return r;` followed by the rest of the function.
+Fix: nest the rest under the positive test instead: `if (p != 0) { ...; if (n == 16) {..} ...; }
+return r;`. The early return makes CW lay the remaining tail out as a separate region and
+move the inner `if` body out of line; the nested form keeps it inline (func_00104FE0 went from
+score 29 / 388 B to score 4 / 384 B with only this change).
+Related, same function: two pointers sharing `u = base + (n + 1)` (`addiu a0,u,0x23` /
+`addiu v1,u,0x24`, where mine derives one from the other with `addiu -1`): bump the count
+first, `n++; setg(buf, buf + n - 1, buf + n);`. `buf + (n + 1) - 1` and `&buf[n]` did not.
+Example: src/SLES_539.74/func_00104FE0.cpp
+Solved: func_00104FE0 (about 25 tries over three sessions, 2026-10-27, Opus), func_00105B70
+(its wide twin over 4-byte slots: func_00104FE0's C with `u32 buf_24[16]`, `n == 16` / `n = 1`
+and a `u16` store matched on the first try, 2026-10-27, Opus; the `andi 0xFFFF` in the
+`beqz gptr` delay slot is `u16 ch = result;` before the nested `if`)
+
+## `bgez r; andi v,r,0xFF` / `beqz v; addiu v,v,-0x100` inline after a call: signed `r % 256`
+Sign: straight after a `jal` (often `func_00132D38`, the rand), `bgez $v0, skip` with
+`andi $v1,$v0,0xFF` in the delay slot, then `beqz $v1, skip; nop; addiu $v1,$v1,-0x100`,
+`skip:` and a compare on `$v1`. Hand-written `v = r & 0xFF; if (r < 0 && v != 0) v -= 0x100;`
+(nested or not) comes out `bltz` to an out-of-line copy and is 4-8 bytes longer. The same
+shape with `0x1F` / `-0x20` (or any 2^n) is `% 32`.
+Fix: it is CW's expansion of a signed modulo by a power of two: write `rand() % 256 < weight`
+(`func_00132D38()` returning `s32`). No temporary needed.
+Also seen in the same function: a loop index from an `s16`-returning callee re-sign-extended
+(`dsll32/dsra32 16`) where the original uses `$v0` directly in a `bgezl`: declare the callee and
+the local `s32`. And `sw $v0,0x288($s0)` with `addiu $s0,$s2,0xE0` in the `jal` delay slot,
+where mine stores `0x368($s2)`: take `sub = &unit->sub;` and write
+`sub->data = f(owner, sub->state);` (both through `sub`; `unit->sub.state` as the argument folds
+the pointer away).
+Example: src/SLES_539.74/func_0029B6C0.cpp
+Solved: func_0029B6C0 (3 tries, 2026-10-27, Opus)
+
+## `bnel $x,$zero,+3; <next>; b <epi>; daddu $v0,$zero,$zero` where the original is `beql $x,$zero,<epi>`
+Sign: an early `if (x == 0) return 0;` (often inside a loop, `x` a value just loaded from a
+table, e.g. a key/terminator) where the original has `beql $x,$zero,<far>` + `daddu $v0,$zero,$zero`
+in the delay slot, but mine inverts it: `bnel $x,$zero,+3` with the next instruction (a call's
+`daddu $a0,...`) in the delay slot, then `b <epilogue>; daddu $v0,$zero,$zero` (mine 4 bytes
+longer, every later word shifted). Changing the loop form (for/while/goto, test in the condition,
+break to a trailing `return 0`) changes nothing.
+Fix: the tested value is a **pointer**: type the field/local `void *` (or the struct pointer it is)
+and the callee parameter it is passed to. Note the opposite rule for `if (r) r->f = x;` stores
+(SKILL.md: integer gives `bnel`+store); for the early-return guard, a pointer gives the `beql`.
+Same file: a lookup result `entry` (pointer) tested for `-1` comes out `beql $a0,$zero` +
+`addiu $v1,$zero,-1` only as `if (entry != 0) return entry->value; return -1;` (the
+`if (entry == 0) return -1;` order gives `bnel`).
+Example: src/SLES_539.74/func_003072A0.c (kind lookup = inline twin of func_003062B0)
+Solved: func_003072A0 (9 tries, 2026-10-27, Opus)
