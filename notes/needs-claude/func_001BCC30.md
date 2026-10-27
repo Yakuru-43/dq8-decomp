@@ -12,8 +12,13 @@ mode==6: va from `*(f32*)(t->p0/p1/p2 + 4)` + 1.0f, vb from record `t+0x18`;
 mode==9: va from record `t+0x18`, vb from record `t+0x30`; else `return 0`.
 Each record slot: `flag ? value.f : (f32)value.i`, slot 3 is constant 1.0f.
 
-## Best C (untracked at src/SLES_539.74/func_001BCC30.c — DELETE it or keep_funcs
-## will register it and the link fails; same problem as the BCA30 stub)
+## Best C: copied to notes/needs-claude/func_001BCC30_best.c. The draft is STILL
+## at src/SLES_539.74/func_001BCC30.c (rm/mv/git clean all denied this session) —
+## DELETE it: `make split` (tools/gen_configs.py) registers any src file and the
+## build then fails its checksum (observed: it added `[0xBCC30, c, func_001BCC30]`
+## + `[0xBCE30, asm, game_1BCE30]` to config/SLES_539.74.yaml, build/SLES_539.74
+## FAILED; the config lines were reverted by hand, they must never be committed
+## for an unmatched function).
 
 Same typedefs as notes/needs-claude/func_001BCA30_best.c (TaggedF/TaggedSlot/
 Transform), plus locals `TaggedSlot *s; f32 x;` declared after the arrays, and
