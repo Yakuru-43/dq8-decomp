@@ -198,7 +198,8 @@ Fix: make the file a `.cpp` (functions inside `extern "C" { }`), declare the fla
 `bool`, write `found = false;` / `found = true;` and test `if (found)`. CW knows a bool
 is 0/1, so it keeps the `daddiu` store and drops the mask.
 Example: src/SLES_539.74/func_00294F40.cpp
-Solved: func_00294F40 (1st try, 2026-10-27, Opus), func_00104890 (with the switch entry below)
+Solved: func_00294F40 (1st try, 2026-10-27, Opus), func_00104890 (with the switch entry below),
+func_0029B6C0 (`bool ret` for the `daddiu $s1,$zero,1` before `break`)
 
 ## `andi $r,$zero,0x1; sll $s,$r,N` in a bitfield RMW: the field is set to **0**, not 1
 Sign: a `u8 : 1` read-modify-write `lbu; addiu -mask; and; or; sb` whose inserted value
@@ -273,3 +274,20 @@ Solved: func_00104FE0 (about 25 tries over three sessions, 2026-10-27, Opus), fu
 (its wide twin over 4-byte slots: func_00104FE0's C with `u32 buf_24[16]`, `n == 16` / `n = 1`
 and a `u16` store matched on the first try, 2026-10-27, Opus; the `andi 0xFFFF` in the
 `beqz gptr` delay slot is `u16 ch = result;` before the nested `if`)
+
+## `bgez r; andi v,r,0xFF` / `beqz v; addiu v,v,-0x100` inline after a call: signed `r % 256`
+Sign: straight after a `jal` (often `func_00132D38`, the rand), `bgez $v0, skip` with
+`andi $v1,$v0,0xFF` in the delay slot, then `beqz $v1, skip; nop; addiu $v1,$v1,-0x100`,
+`skip:` and a compare on `$v1`. Hand-written `v = r & 0xFF; if (r < 0 && v != 0) v -= 0x100;`
+(nested or not) comes out `bltz` to an out-of-line copy and is 4-8 bytes longer. The same
+shape with `0x1F` / `-0x20` (or any 2^n) is `% 32`.
+Fix: it is CW's expansion of a signed modulo by a power of two: write `rand() % 256 < weight`
+(`func_00132D38()` returning `s32`). No temporary needed.
+Also seen in the same function: a loop index from an `s16`-returning callee re-sign-extended
+(`dsll32/dsra32 16`) where the original uses `$v0` directly in a `bgezl`: declare the callee and
+the local `s32`. And `sw $v0,0x288($s0)` with `addiu $s0,$s2,0xE0` in the `jal` delay slot,
+where mine stores `0x368($s2)`: take `sub = &unit->sub;` and write
+`sub->data = f(owner, sub->state);` (both through `sub`; `unit->sub.state` as the argument folds
+the pointer away).
+Example: src/SLES_539.74/func_0029B6C0.cpp
+Solved: func_0029B6C0 (3 tries, 2026-10-27, Opus)
