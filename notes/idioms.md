@@ -199,3 +199,14 @@ Fix: make the file a `.cpp` (functions inside `extern "C" { }`), declare the fla
 is 0/1, so it keeps the `daddiu` store and drops the mask.
 Example: src/SLES_539.74/func_00294F40.cpp
 Solved: func_00294F40 (1st try, 2026-10-27, Opus)
+
+## `andi $r,$zero,0x1; sll $s,$r,N` in a bitfield RMW: the field is set to **0**, not 1
+Sign: a `u8 : 1` read-modify-write `lbu; addiu -mask; and; or; sb` whose inserted value
+is `andi $r,$zero,0x1` followed by `sll` by the bit position (one `andi` can feed several
+`sll`s). `$zero & 1` is 0, so the bit is being cleared. Writing `= 1` folds to
+`daddiu $r,$zero,1<<N`, and no RHS trick keeps the `andi`. A field set to 1 at
+bit 0 shows as a plain `daddiu $r,$zero,1` instead.
+Fix: write `f.bitN = 0;`. CW lowers a constant-0 bitfield store without folding it, so
+you get exactly `andi $zero,1; sll; and; or` (it keeps the `or` with 0 too).
+Example: src/SLES_539.74/func_0013FA20.c
+Solved: func_0013FA20 (1st try, 2026-10-27, Opus)
