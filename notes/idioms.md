@@ -138,3 +138,18 @@ into and returned as `(u16)val` (still `lhu`). The lint refuses `(--x->f < 0)` (
 false hit): `if ((x->f -= 1) < 0)` gives the same code; `x->f--; if (x->f < 0)` does not.
 Example: src/SLES_539.74/func_00105E30.c
 Solved: func_00105E30 (8 tries, 2026-10-26, Opus)
+
+## Indirect call through `$t9`: a C++ virtual call, vptr placed after the data
+Sign: the diff is only the register of an indirect call: orig `lw $t9,N($a0); lw $t9,S($t9);
+jalr $t9` (or `jr $t9` for a tail call), mine the same with `$v0`. Plain-C function pointers
+(struct member, local, `(*fp)()`) always give `$v0`; only a C++ virtual call gives `$t9`.
+Fix: a `.cpp`, functions inside `extern "C" { }`, a struct whose data members come first so
+the vptr lands at N (`s32 data[N/4];` then the virtuals; with no data before them the vptr is
+at 0) and the called method at slot S (first virtual is S=0x8, then +4 each), called as
+`obj->method()`. If the function also stores the vtable first (a constructor), `struct C {
+data; C(); virtual f(); }; C::C() { f(); }` gives the exact bytes but verify.py says `LINK`
+until `__vt__1C` has an alias; to verify now, store the vptr through a twin struct with a
+plain `void **vtbl` at N and `= D_<vtable>;`, then make the virtual call. Pass `-- -O3` to
+try_match: without it the schedule (e.g. `daddu s0,a0` in the jalr delay slot) looks wrong.
+Example: src/SLES_539.74/func_00218740.cpp, src/SLES_539.74/func_001BA940.cpp
+Solved: func_00218740 (3 tries, 2026-10-27, Opus)
