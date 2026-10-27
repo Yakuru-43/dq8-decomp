@@ -185,7 +185,7 @@ segments:
       - [0x3F070, c, func_0013F070]
       - [0x3F0B0, asm, game_13F0B0]
       - [0x3F0D0, c, func_0013F0D0]
-      - [0x3F0E0, asm, game_13F0E0]
+      - [0x3F0E0, c, func_0013F0E0]
       - [0x3F240, c, func_0013F240]
       - [0x3F300, c, func_0013F300]
       - [0x3F330, cpp, func_0013F330]
