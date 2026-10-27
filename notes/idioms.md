@@ -210,3 +210,17 @@ Fix: write `f.bitN = 0;`. CW lowers a constant-0 bitfield store without folding 
 you get exactly `andi $zero,1; sll; and; or` (it keeps the `or` with 0 too).
 Example: src/SLES_539.74/func_0013FA20.c
 Solved: func_0013FA20 (1st try, 2026-10-27, Opus)
+
+## `sw $v0,N($s0); lw $v0,N($s0); sw $v0,N($s0)`: a member setter fed by a member getter
+Sign: a field is stored, reloaded and stored again with identical encodings (notes call
+it "the triplet" or "reload-and-restore"); `x = x` is lint-forbidden, and a static inline
+`set(w, w->field)` in C folds the reload away (mine is 8 B short).
+Fix: a `.cpp` (inside `extern "C" { }`) with inline member functions:
+`void SetBase(char *b) { base = b; ... }` and `char *Base() const { return base; }`, then
+`w->base = expr; w->SetBase(w->Base());`. Both the getter and the setter are needed: with
+`w->SetBase(w->base)` the reload is still CSE'd. Same mechanism as "Field load CSE'd where
+the original reloads". A non-void function that returns garbage on its early path
+(`$v0` never set) is `return n;` with `n` not yet assigned; C++ refuses a bare `return;`.
+Also pass try_match `--ver 3.0.1b151-050317 ... -- -O3 -Isrc`, or every delay slot is a `nop`.
+Example: src/SLES_539.74/func_0013F330.cpp
+Solved: func_0013F330 (3 tries, 2026-10-27, Opus)
