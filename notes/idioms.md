@@ -176,3 +176,15 @@ that choice ripples back to every earlier value sharing the register. Check try_
 `-- -O3` first, or the diff is unscheduled and misleading.
 Example: src/SLES_539.74/func_0013F240.c
 Solved: func_0013F240 (1st try, 2026-10-27, Opus)
+
+## Two inline tests normalized twice, one shared `andi 0xFF`: `return A() && B() == 0;`
+Sign: a `u8`/bool function whose body is an inlined test computed twice; after the first
+test a *second* `sltu $v0,$zero,$v0` then `beqz` (no `beql`), after the second test
+`xor $v0,$v0,$zero; sltiu $v0,$v0,1`, and both paths meet at one `b` with
+`andi $v0,$v0,0xFF` in its delay slot (the false path of the first test carries its own
+0 into that `andi`). An `if (A) return ...; return 0;` gives `andi`+`beql` instead.
+Fix: one return of a logical AND of the two inline calls, the second compared `== 0`
+(`!B()` gives `sltu; xori 1` instead of `xor; sltiu`). Keep the helper `static inline`
+returning `s32` (`(w & mask) != 0`), plain C.
+Example: src/SLES_539.74/func_00308250.c
+Solved: func_00308250 (3rd try, 2026-10-27, Opus)
