@@ -188,3 +188,14 @@ Fix: one return of a logical AND of the two inline calls, the second compared `=
 returning `s32` (`(w & mask) != 0`), plain C.
 Example: src/SLES_539.74/func_00308250.c
 Solved: func_00308250 (3rd try, 2026-10-27, Opus)
+
+## Flag set with `daddiu $sN,$zero,1`, tested raw: a C++ `bool` in a `.cpp`
+Sign: a found/ready flag in an `s` register, set with `daddiu $sN,$zero,0x1` (often in
+the delay slot of a `b` out of a loop) where yours gives `addiu`, and the flag is later
+tested with a plain `beql`/`bnel $sN,$zero` (no `andi 0xFF`). `s32`/`u32`/`s64` flags
+give `addiu`; `u8` gives the `daddiu` but masks the test with `andi`.
+Fix: make the file a `.cpp` (functions inside `extern "C" { }`), declare the flag
+`bool`, write `found = false;` / `found = true;` and test `if (found)`. CW knows a bool
+is 0/1, so it keeps the `daddiu` store and drops the mask.
+Example: src/SLES_539.74/func_00294F40.cpp
+Solved: func_00294F40 (1st try, 2026-10-27, Opus)
