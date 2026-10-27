@@ -164,3 +164,15 @@ the vptr store, and use `sub` both in the delta `(u32)sub - h2` and in the later
 If a matched twin in the same class family exists, copy it and change only the offsets.
 Example: src/SLES_539.74/func_00103600.c, src/SLES_539.74/func_001036A0.c
 Solved: func_00103600, func_001036A0 (first try from the twin, 2026-10-27, Opus)
+
+## Register clusters swapped around an `or`/`addu`: write the operands in the other order
+Sign: register-only diff, same schedule, whole groups of values swapped between two
+registers (`$a1`/`$t1` here, even far up the function), and the commutative instruction
+that joins two terms (`or $v1,$a1,$v1`, `addu`) prints the *same* registers on both sides,
+but the term that lands in `rs` is the other value (orig: `rs` = the term loaded later).
+Fix: swap the operands of `|`/`+` in the C (`(w->nreg << 28) | word | 0x4000` instead of
+`word | (w->nreg << 28) | 0x4000`). CW colours the left operand's register first, and
+that choice ripples back to every earlier value sharing the register. Check try_match got
+`-- -O3` first, or the diff is unscheduled and misleading.
+Example: src/SLES_539.74/func_0013F240.c
+Solved: func_0013F240 (1st try, 2026-10-27, Opus)
