@@ -269,4 +269,7 @@ Related, same function: two pointers sharing `u = base + (n + 1)` (`addiu a0,u,0
 `addiu v1,u,0x24`, where mine derives one from the other with `addiu -1`): bump the count
 first, `n++; setg(buf, buf + n - 1, buf + n);`. `buf + (n + 1) - 1` and `&buf[n]` did not.
 Example: src/SLES_539.74/func_00104FE0.cpp
-Solved: func_00104FE0 (about 25 tries over three sessions, 2026-10-27, Opus)
+Solved: func_00104FE0 (about 25 tries over three sessions, 2026-10-27, Opus), func_00105B70
+(its wide twin over 4-byte slots: func_00104FE0's C with `u32 buf_24[16]`, `n == 16` / `n = 1`
+and a `u16` store matched on the first try, 2026-10-27, Opus; the `andi 0xFFFF` in the
+`beqz gptr` delay slot is `u16 ch = result;` before the nested `if`)
