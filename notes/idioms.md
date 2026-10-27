@@ -198,7 +198,7 @@ Fix: make the file a `.cpp` (functions inside `extern "C" { }`), declare the fla
 `bool`, write `found = false;` / `found = true;` and test `if (found)`. CW knows a bool
 is 0/1, so it keeps the `daddiu` store and drops the mask.
 Example: src/SLES_539.74/func_00294F40.cpp
-Solved: func_00294F40 (1st try, 2026-10-27, Opus)
+Solved: func_00294F40 (1st try, 2026-10-27, Opus), func_00104890 (with the switch entry below)
 
 ## `andi $r,$zero,0x1; sll $s,$r,N` in a bitfield RMW: the field is set to **0**, not 1
 Sign: a `u8 : 1` read-modify-write `lbu; addiu -mask; and; or; sb` whose inserted value
@@ -239,3 +239,18 @@ stores. Keep the first arm as a plain if/else. An early return in the first arm,
 store shared after the if/else, or `static inline` helpers for each arm all came out worse.
 Example: src/SLES_539.74/func_0013F0E0.c
 Solved: func_0013F0E0 (8 tries, 2026-10-27, Opus)
+
+## Compare chain on constants, `b <default>` after it, one case body inline: a `switch`
+Sign: a value is tested against a few constants in a row (`addiu $v1,$zero,K;
+beql $a0,$v1,<L>` with a one-instruction body such as `addiu $a2,$zero,2` in each delay
+slot), then `b <fail>` for the default, then *one* multi-instruction case body inline that
+falls into the join. An if/else-if chain gives the same tests but turns the last one into
+`bnel` to the failure and moves the long arm far away (after the other out-of-line blocks).
+Fix: a `switch` with a `default:`. CW emits the tests in **reverse source order** of the
+case labels and lays the bodies out in source order, so read the beql order backwards
+(tests 4, 2, 1 → write `case 1:`, `case 2:`, `case 4:`, `default:`). Writing the cases
+in test order gives the tests reversed and a bigger function. A value set in a case's delay
+slot on both paths of an inner `if` (`beqz ..; addiu $a2,1`) is a plain `whence = 1;`
+before that `if`.
+Example: src/SLES_539.74/func_00104890.cpp
+Solved: func_00104890 (5 tries, 2026-10-27, Opus)
