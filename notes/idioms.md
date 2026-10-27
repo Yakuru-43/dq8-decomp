@@ -291,3 +291,19 @@ where mine stores `0x368($s2)`: take `sub = &unit->sub;` and write
 the pointer away).
 Example: src/SLES_539.74/func_0029B6C0.cpp
 Solved: func_0029B6C0 (3 tries, 2026-10-27, Opus)
+
+## `bnel $x,$zero,+3; <next>; b <epi>; daddu $v0,$zero,$zero` where the original is `beql $x,$zero,<epi>`
+Sign: an early `if (x == 0) return 0;` (often inside a loop, `x` a value just loaded from a
+table, e.g. a key/terminator) where the original has `beql $x,$zero,<far>` + `daddu $v0,$zero,$zero`
+in the delay slot, but mine inverts it: `bnel $x,$zero,+3` with the next instruction (a call's
+`daddu $a0,...`) in the delay slot, then `b <epilogue>; daddu $v0,$zero,$zero` (mine 4 bytes
+longer, every later word shifted). Changing the loop form (for/while/goto, test in the condition,
+break to a trailing `return 0`) changes nothing.
+Fix: the tested value is a **pointer**: type the field/local `void *` (or the struct pointer it is)
+and the callee parameter it is passed to. Note the opposite rule for `if (r) r->f = x;` stores
+(SKILL.md: integer gives `bnel`+store); for the early-return guard, a pointer gives the `beql`.
+Same file: a lookup result `entry` (pointer) tested for `-1` comes out `beql $a0,$zero` +
+`addiu $v1,$zero,-1` only as `if (entry != 0) return entry->value; return -1;` (the
+`if (entry == 0) return -1;` order gives `bnel`).
+Example: src/SLES_539.74/func_003072A0.c (kind lookup = inline twin of func_003062B0)
+Solved: func_003072A0 (9 tries, 2026-10-27, Opus)
