@@ -1,8 +1,5 @@
 // range: 0x13FA20 0x13FB30
-// best attempt 2026-10-26 factory-1 (-O3), CLASS structural score=58 (252 vs 260 B)
 #include "common.h"
-
-extern "C" {
 
 typedef struct {
     /* 00 */ u8 low : 3;
@@ -34,24 +31,22 @@ void func_00157990(void *, s32);
 void func_00157930(void *, s32);
 void func_001578D0(void *, s32);
 
-/* Restart the stream: reopen the buffer, rewind it, raise the ready flags. */
+/* Reset the stream: reopen the buffer, rewind it, clear the state flags. */
 void func_0013FA20(Stream *o) {
     u8 b;
 
     b = M2C_FIELD(o, u8 *, 0x70);
-    o->flags.bit6 = 1;
+    o->flags.bit6 = 0;
     func_00157B30(o->buf, 1, b);
     func_00157A40(o->buf, 0);
     func_00157990(o->buf, 2);
-    M2C_FIELD(o, s32 *, 0xE4) = 1;
-    func_00157930(o->buf, M2C_FIELD(o, s32 *, 0xE4));
+    o->e4 = 1;
+    func_00157930(o->buf, o->e4);
     func_001578D0(o->buf, 0);
-    o->flags.bit4 = 1;
+    o->flags.bit4 = 0;
     o->flags71.bit0 = 1;
     o->e0 = 1;
-    o->flags.bit3 = 1;
-    o->flags.bit7 = 1;
-    o->flags.bit5 = 1;
-}
-
+    o->flags.bit3 = 0;
+    o->flags.bit7 = 0;
+    o->flags.bit5 = 0;
 }
