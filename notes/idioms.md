@@ -254,3 +254,19 @@ slot on both paths of an inner `if` (`beqz ..; addiu $a2,1`) is a plain `whence 
 before that `if`.
 Example: src/SLES_539.74/func_00104890.cpp
 Solved: func_00104890 (5 tries, 2026-10-27, Opus)
+
+## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
+Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
+mine branches forward (`beq`) to a copy of the body near the epilogue with a `b` back; often a
+`return` stub before it gains a `b` (mine 4 bytes longer). Flipping the test (`!=` with an
+empty then, constant on the left) changes nothing. Look at what comes *before* the block:
+an early return such as `if (p == 0) return r;` followed by the rest of the function.
+Fix: nest the rest under the positive test instead: `if (p != 0) { ...; if (n == 16) {..} ...; }
+return r;`. The early return makes CW lay the remaining tail out as a separate region and
+move the inner `if` body out of line; the nested form keeps it inline (func_00104FE0 went from
+score 29 / 388 B to score 4 / 384 B with only this change).
+Related, same function: two pointers sharing `u = base + (n + 1)` (`addiu a0,u,0x23` /
+`addiu v1,u,0x24`, where mine derives one from the other with `addiu -1`): bump the count
+first, `n++; setg(buf, buf + n - 1, buf + n);`. `buf + (n + 1) - 1` and `&buf[n]` did not.
+Example: src/SLES_539.74/func_00104FE0.cpp
+Solved: func_00104FE0 (about 25 tries over three sessions, 2026-10-27, Opus)
