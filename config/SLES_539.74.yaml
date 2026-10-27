@@ -281,6 +281,8 @@ segments:
       - [0x40890, asm, game_140890]
       - [0x409C0, c, func_001409C0]
       - [0x40A30, asm, game_140A30]
+      - [0x40F40, c, func_00140F40]
+      - [0x41020, asm, game_141020]
       - [0x41CE0, c, func_00141CE0]
       - [0x41D10, asm, game_141D10]
       - [0x42B60, c, func_00142B60]
