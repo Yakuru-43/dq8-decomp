@@ -903,6 +903,7 @@ segments:
       - [0x772E0, c, func_001772E0]
       - [0x772F0, c, func_001772F0]
       - [0x77300, asm, game_177300]
+      - [0x77920, c, func_00177920]
       - [0x77A70, c, func_00177A70]
       - [0x77B30, c, func_00177B30]
       - [0x77BD0, asm, game_177BD0]
