@@ -191,6 +191,7 @@ segments:
       - [0x10620, asm, text_46F2E0]
       - [0x10C80, c, func_0046F940]
       - [0x10C90, asm, text_46F950]
+      - [0x11480, c, func_00470140]
       - [0x115D0, c, func_00470290]
       - [0x115F0, asm, text_4702B0]
       - [0x11640, c, func_00470300]
