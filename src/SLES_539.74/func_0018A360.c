@@ -1,0 +1,9 @@
+// range: 0x18A360 0x18A380
+#include "common.h"
+
+void func_0018A360(u8 *arg0) {
+    arg0[0x68CC] = 0;
+    arg0[0x68CD] = 0x80;
+    arg0[0x68CE] = 0x80;
+    arg0[0x68CF] = 0x80;
+}
