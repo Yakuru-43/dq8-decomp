@@ -1860,6 +1860,8 @@ segments:
       - [0xDC490, asm, game_1DC490]
       - [0xDC540, c, func_001DC540]
       - [0xDC590, asm, game_1DC590]
+      - [0xDC5D0, c, func_001DC5D0]
+      - [0xDC680, asm, game_1DC680]
       - [0xDC860, c, func_001DC860]
       - [0xDC8E0, c, func_001DC8E0]
       - [0xDC960, c, func_001DC960]
