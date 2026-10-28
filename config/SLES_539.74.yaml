@@ -650,7 +650,7 @@ segments:
       - [0x66810, c, func_00166810]
       - [0x66820, c, func_00166820]
       - [0x66830, c, func_00166830]
-      - [0x66840, asm, game_166840]
+      - [0x66840, cpp, func_00166840]
       - [0x66AB0, c, func_00166AB0]
       - [0x66AC0, c, func_00166AC0]
       - [0x66AE0, asm, game_166AE0]
