@@ -1,0 +1,37 @@
+// range: 0x1DC5D0 0x1DC680
+#include "common.h"
+
+typedef struct Slot1DC5D0 {
+    /* 0x00 */ s32 type;
+    /* 0x04 */ char *ptr;
+} Slot1DC5D0;
+
+s32 func_002C18B0(s32); /* extern */
+
+s32 func_001DC5D0(Slot1DC5D0 *slots) {
+    f32 vals[4];
+    f32 val1;
+    f32 val2;
+    s32 result;
+    Slot1DC5D0 *sl;
+
+    result = func_002C18B0((s32)vals);
+    sl = slots;
+    if (sl->type == 3) {
+        *(s32 *)(sl->ptr + 4) = result;
+    }
+    sl = slots + 1;
+    if (sl->type == 3) {
+        *(f32 *)(sl->ptr + 4) = vals[0];
+    }
+    sl = slots + 2;
+    val1 = vals[1];
+    if (sl->type == 3) {
+        *(f32 *)(sl->ptr + 4) = val1;
+    }
+    val2 = vals[2];
+    if (slots[3].type == 3) {
+        *(f32 *)(slots[3].ptr + 4) = val2;
+    }
+    return 1;
+}
