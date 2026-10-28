@@ -1371,6 +1371,8 @@ segments:
       - [0xB35B0, asm, game_1B35B0]
       - [0xB3E10, c, func_001B3E10]
       - [0xB3E30, asm, game_1B3E30]
+      - [0xB3F70, c, func_001B3F70]
+      - [0xB3FB0, asm, game_1B3FB0]
       - [0xB45D0, c, func_001B45D0]
       - [0xB45F0, asm, game_1B45F0]
       - [0xB4920, c, func_001B4920]
