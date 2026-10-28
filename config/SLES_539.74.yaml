@@ -1616,6 +1616,8 @@ segments:
       - [0xC7890, c, func_001C7890]
       - [0xC78D0, c, func_001C78D0]
       - [0xC78F0, asm, game_1C78F0]
+      - [0xC7950, c, func_001C7950]
+      - [0xC79E0, asm, game_1C79E0]
       - [0xC9760, c, func_001C9760]
       - [0xC9830, asm, game_1C9830]
       - [0xC98E0, c, func_001C98E0]
