@@ -276,6 +276,8 @@ segments:
       - [0x20C80, c, func_0047F940]
       - [0x20C90, c, func_0047F950]
       - [0x20CA0, asm, text_47F960]
+      - [0x20F80, cpp, func_0047FC40]
+      - [0x21040, asm, text_47FD00]
       - [0x21840, c, func_00480500]
       - [0x218A0, asm, text_480560]
       - [0x21B70, c, func_00480830]
