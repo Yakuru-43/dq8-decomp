@@ -11,6 +11,14 @@ provides, and give each one a `type:func` entry in
 config/symbol_addrs_<bin>.txt: splat starts a function at every such symbol,
 so the label survives the next re-split as well.
 
+Data gets the same treatment.  An overlay reaches main-executable globals
+through $gp, and splat can only name gp-relative addresses for the main
+executable ("Failed to symbolize address ... for %gp_rel"), so a decompiled
+overlay function that says `extern s16 D_003E19F0;` links against nothing.
+Every `D_XXXXXXXX` the compiled files need and the link does not provide gets
+a plain `D_XXXXXXXX = 0xXXXXXXXX;` entry, which splat turns into a definition
+in linker/<bin>_undefined_syms_auto.txt.
+
     keep_funcs.py [--dry-run]
 
 Run after a build (it reads build/ objects and linker/*.ld); if it adds
@@ -30,6 +38,7 @@ from gen_configs import MAIN_TEXT_REGIONS  # noqa: E402
 
 BINARIES = ["SLES_539.74", "TITLE", "SHOP", "MENU", "CASINO", "BATTLE"]
 FUNC = re.compile(r"func_([0-9A-Fa-f]{8})")
+DATA = re.compile(r"D_([0-9A-Fa-f]{8})")
 BLOCK = "// --- labels kept for calls from decompiled code (tools/keep_funcs.py) ---"
 NM = str(a.BIN / "mips64-linux-gnu-nm")
 
@@ -81,14 +90,19 @@ def main():
                 provided |= set(re.findall(r"^(\w+) = ", f.read_text(), re.M))
 
         ranges = text_ranges(binary)
-        missing = sorted({int(m.group(1), 16) for n in nm_names(["--undefined-only"], src_objs)
-                          - provided for m in [FUNC.fullmatch(n)] if m
+        needed = nm_names(["--undefined-only"], src_objs) - provided
+        missing = sorted({int(m.group(1), 16) for n in needed for m in [FUNC.fullmatch(n)] if m
                           if any(s <= int(m.group(1), 16) < e for s, e in ranges)})
-        if not missing:
+        missing_data = sorted({int(m.group(1), 16) for n in needed for m in [DATA.fullmatch(n)] if m})
+        if not missing and not missing_data:
             continue
-        print(f"{binary}: {len(missing)} call target(s) without a label: "
-              + " ".join(f"0x{x:X}" for x in missing))
-        total += len(missing)
+        if missing:
+            print(f"{binary}: {len(missing)} call target(s) without a label: "
+                  + " ".join(f"0x{x:X}" for x in missing))
+        if missing_data:
+            print(f"{binary}: {len(missing_data)} data symbol(s) without a definition: "
+                  + " ".join(f"0x{x:X}" for x in missing_data))
+        total += len(missing) + len(missing_data)
         if args.dry_run:
             continue
         manual = ROOT / "config" / f"symbol_addrs_{binary}.txt"
@@ -97,8 +111,11 @@ def main():
         block = have[have.index(BLOCK):] if BLOCK in have else ""
         keep = sorted({int(m.group(1), 16) for m in
                        re.finditer(r"^func_([0-9A-Fa-f]{8}) =", block, re.M)} | set(missing))
+        keep_data = sorted({int(m.group(1), 16) for m in
+                            re.finditer(r"^D_([0-9A-Fa-f]{8}) =", block, re.M)} | set(missing_data))
         manual.write_text(head.rstrip("\n") + "\n\n" + BLOCK + "\n"
-                          + "".join(f"func_{x:08X} = 0x{x:X}; // type:func\n" for x in keep))
+                          + "".join(f"func_{x:08X} = 0x{x:X}; // type:func\n" for x in keep)
+                          + "".join(f"D_{x:08X} = 0x{x:X};\n" for x in keep_data))
     print(f"{total} label(s) to keep"
           + (" (dry run)" if args.dry_run else "; re-run `make split && make -j`"))
 
