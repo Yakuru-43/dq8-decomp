@@ -36,6 +36,7 @@ segments:
     bss_size: 0x1C80
     subsegments:
       - [0x0, asm, text_45ECC0]
+      - [0x40, c, func_0045ED00]
       - [0x100, c, func_0045EDC0]
       - [0x110, c, func_0045EDD0]
       - [0x120, c, func_0045EDE0]
@@ -115,6 +116,9 @@ segments:
       - [0xA600, asm, text_4692C0]
       - [0xBC30, c, func_0046A8F0]
       - [0xBD30, asm, text_46A9F0]
+      - [0xC0F0, c, func_0046ADB0]
+      - [0xC1C0, c, func_0046AE80]
+      - [0xC250, asm, text_46AF10]
       - [0xCC90, c, func_0046B950]
       - [0xCCA0, asm, text_46B960]
       - [0xCF80, c, func_0046BC40]
