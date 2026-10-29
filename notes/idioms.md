@@ -413,3 +413,18 @@ return 0;` (`return best > 0;` gives `slt`). Node/best registers swapped: reorde
 declarations (here `best` first).
 Example: src/SLES_539.74/func_00292F60.c
 Solved: func_00292F60 (5 tries, 2026-10-29, Opus; no mh2 entry needed)
+
+## `if (addr != 0) { push }` after early returns goes out of line (`bnez` far + `b` back): make `addr` a pointer
+Sign: an `int`-typed address computed as `base + (count << 4)` (later masked `& 0x0FFFFFFF`
+via `dsll32/dsrl32 4`) is tested `if (addr != 0)` around a short store block; the original
+has `beqz $sN, +N` and the block inline, mine has `bnez $sN` to a cold copy near the epilogue
+with a `b` back, and an extra `b` before the `return 1` stub (mine 8 bytes longer). Flipping
+the test, an empty then, constant-left, nesting under positive tests, an inline helper: no change.
+Fix: type the address as a pointer (`u128 *rec = (u128 *)w->base + w->count;`, index it as
+`rec[idx] = 0;`, mask with `(u32)rec & 0x0FFFFFFF`). CW lays out a null-pointer test inline
+where it moves an integer `!= 0` test's body cold. The `sll 4; addu` of `rec + (idx << 4)` is
+`rec[idx]` on the pointer.
+Also, same function: `mtc1 $zero,$f0; c.le.s $f20,$f0; bc1t skip` (orig) vs mine
+`c.lt.s $f0,$f20; bc1f` is `if (!(amount <= 0.0f)) call;`, not `0.0f < amount`.
+Example: src/SLES_539.74/func_001419A0.c
+Solved: func_001419A0 (5 tries, 2026-10-29, Opus; no mh2 entry needed)
