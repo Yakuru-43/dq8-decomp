@@ -430,3 +430,17 @@ Also, same function: `mtc1 $zero,$f0; c.le.s $f20,$f0; bc1t skip` (orig) vs mine
 `c.lt.s $f0,$f20; bc1f` is `if (!(amount <= 0.0f)) call;`, not `0.0f < amount`.
 Example: src/SLES_539.74/func_001419A0.c
 Solved: func_001419A0 (5 tries, 2026-10-29, Opus; no mh2 entry needed)
+
+## `slt $at,$v0,$zero; beql $at,$zero` on a call result where mine has `bgezl $v0`: write `0 <= r`
+Sign: a signed test of a call result against zero. The original computes `slt $at,$v0,$zero`
+and branches on `$at` (`beql $at,$zero,<hit>`, `bnez $at`...); mine branches on `$v0` itself
+(`bgezl`/`bltz`), one word shorter. `r >= 0`, `!(r < 0)` and a named temp all give `bgezl`.
+Fix: put the constant on the left: `if (0 <= f(...))`. CW then lowers it as a general `slt`
+into `$at`. (`0 < r` likewise gives `slt $at,$zero,$v0`.)
+Also, same function: a flag set to a constant in the delay slot of a `jal`, then zeroed in a
+`beql $sN,$zero` delay slot after the call, is `flag = 0xC4; h = f(); if (h == NULL) flag = 0;`
+(the assignment written before the call; after it, CW puts the test cold, and `h ? 0xC4 : 0`
+gives `movz`). The saved registers and stack slots were in reverse order until the locals were
+declared in reverse order (see "Float temporaries swapped").
+Example: src/SLES_539.74/func_00302FB0.c
+Solved: func_00302FB0 (4 tries, 2026-10-29, Opus; no mh2 entry needed)
