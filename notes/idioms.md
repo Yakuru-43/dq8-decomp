@@ -357,3 +357,19 @@ Fix: it is CW's expansion of signed division by a power of two: write `r / 64` o
 Round-up-to-64: `if (arg0 % 64 != 0) { arg0 = (arg0 / 64 + 1) * 64; } return arg0;`
 Example: src/SLES_539.74/func_0022AB70.c
 Solved: func_0022AB70 (1st try, 2026-10-29, Opus; byte-identical twin at 0x00168840)
+
+## `beql`/`bc1tl`/`bc1fl` chains whose delay slots load 0/1 into one register, then a join: an inline helper with `return`s
+Sign: a value (a node pointer, a 0/1 flag) set by a chain of tests where each **likely**
+branch carries the result in its delay slot (`beql $a1,$zero,J; daddu $a1,$zero,$zero`,
+`bc1tl J; addiu $v1,$zero,1`, `bc1fl J; daddu $v1,$zero,$zero`, last arm `b J; <const>`), all
+arms meeting at one join that stores/tests the value. Writing it with `if/else` arms assigning
+a local gives plain `beqz`+`nop` and `bc1f`+`nop` skips, the arms reordered or duplicated.
+Fix: put the chain in a `static inline` helper that returns each value early
+(`Node *n = l->cur; if (n == NULL) return NULL; l->cur = n->next; return n->item;`), and
+call it as `x = Helper(...)`. For float tests pass the **values** as parameters (`InRange(*val,
+n->lo, n->hi)`), not the struct: that fixes the load order and the `$f0/$f1/$f2` allocation.
+Branch sense per test: a `bc1t` to the out-of-line arm came from `if (!(hi <= lo)) { inline arm }`;
+a final `bc1tl J; 1` then `b J; 0` came from `if (v >= hi) return 0; return 1;` (the
+`if (v < hi) return 1; return 0;` order gives `bc1fl; 0`).
+Example: src/SLES_539.74/func_001F2670.c
+Solved: func_001F2670 (7 tries, 2026-10-29, Opus; twin func_001F2760 still open)
