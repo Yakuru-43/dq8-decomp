@@ -340,3 +340,14 @@ separate `if`s give `beqz + nop` and a merged tail (8 B short).
 Example: src/SLES_539.74/func_0014CE20.c
 Solved: func_0014CE20 (2026-10-28, Qwen factory-1), func_0014A630 (its twin, 1st try from
 func_0014CE20's C, 2026-10-29, Opus)
+
+## `bgez r; sra v,r,n` / `addiu v,r,2^n-1; sra v,v,n` (plain `bgez`, not `bgezl`): signed `r / 2^n`
+Sign: `bgez $a0, join` with `sra $v0,$a0,n` in the delay slot, then the fall-through
+`addiu $v0,$a0,2^n-1; sra $v0,$v0,n`, `join:`. Hand-written
+`if (r < 0) q = (r + 63) >> 6; else q = r >> 6;` (either order, or a ternary) gives
+`bgezl`/`bltzl` or `slt`+`bnel` (1 word or more off). Often next to the `% 2^n` shape above
+(`bgez; andi` / `beqz; addiu -2^n`).
+Fix: it is CW's expansion of signed division by a power of two: write `r / 64` on an `s32`.
+Round-up-to-64: `if (arg0 % 64 != 0) { arg0 = (arg0 / 64 + 1) * 64; } return arg0;`
+Example: src/SLES_539.74/func_0022AB70.c
+Solved: func_0022AB70 (1st try, 2026-10-29, Opus; byte-identical twin at 0x00168840)
