@@ -307,3 +307,36 @@ Same file: a lookup result `entry` (pointer) tested for `-1` comes out `beql $a0
 `if (entry == 0) return -1;` order gives `bnel`).
 Example: src/SLES_539.74/func_003072A0.c (kind lookup = inline twin of func_003062B0)
 Solved: func_003072A0 (9 tries, 2026-10-27, Opus)
+
+## Unrolled `{type, ptr}` slot stores: keep the entry address with one reused pointer local
+Sign: k unrolled `if (e->type == 3) *(f32 *)(e->ptr + 4) = v;` tests over an array of
+8-byte `{s32 type; char *ptr;}` slots (script-VM output slots). The original materializes
+each entry's address, `addiu $aN,$base,8` (0x10, ...) in the test's branch delay slot, then
+loads `lw $v0,4($aN)` in the body; mine folds it to `lw $v0,0xC($base)` and is 8 B short per
+slot. Often the last slot *is* folded (`0x1C($base)` directly) in the original too.
+Fix: write each slot through one pointer local assigned on the line just before its test:
+`sl = slots + 1; if (sl->type == 3) { *(f32 *)(sl->ptr + 4) = v; }`. Write a slot directly
+(`slots[3].type`, `n->out[2].type`) where the original folds the offset; slot 0 is the same
+either way. For float values from a local array, read each into a named `f32` on the line
+before its test (`val1 = vals[1];`) so the `lwc1` lands in the test block, as the original.
+For `{tag, bits}` inputs converted up front (`tag == 0 ? (f32)bits : *(f32 *)&bits`), give
+the middle element its own local (`q = p + 1;`) and keep `bits` `s32` (`u32` gives the
+unsigned-convert expansion). If the node base lands in the wrong register, check the
+prototype: func_001DE300 has a second, unused `s32` argument, so the base goes to `$a1`.
+Example: src/SLES_539.74/func_001DC5D0.c, src/SLES_539.74/func_001DE300.c
+Solved: func_001DC5D0, func_001DE300 (2026-10-28, Qwen factory-1; checked 2026-10-29, Opus)
+
+## `lb; dsll32 24` / `dsra32 24` around a byte compare in a string scan: an `s8` local
+Sign: a loop over a `char *` string with `lb $v0,N(p)` in the test, `dsll32 $v0,$v0,24` in
+the branch delay slot and `dsra32 $v0,$v0,24` at the top of the body, before a compare with
+a constant (`'-'` = 0x2D); a second byte of the same string is compared with no shifts.
+Comparing `*p == '-'` directly (`char *` or `s8 *`) gives no shift pair (mine 12 B short).
+Fix: read the tested byte into a plain `s8` local in the loop condition and compare the
+neighbour byte through the pointer: `s8 c; while ((c = *s) != 0) { if (c == '-' &&
+*(s + 1) == '-') { break; } n++; s++; }`. In the same pair of functions, the null guards
+`beql $a0,$zero,<stub>; daddu $v0,$zero,$zero` (stub just before `jr $ra`, `return 1` as
+`b` over it) come from one combined `if (arg0 == 0 || arg1 == 0) { return 0; }`; two
+separate `if`s give `beqz + nop` and a merged tail (8 B short).
+Example: src/SLES_539.74/func_0014CE20.c
+Solved: func_0014CE20 (2026-10-28, Qwen factory-1), func_0014A630 (its twin, 1st try from
+func_0014CE20's C, 2026-10-29, Opus)
