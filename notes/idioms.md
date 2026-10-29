@@ -331,11 +331,14 @@ unsigned-convert expansion). If the node base lands in the wrong register, check
 prototype: func_001DE300 has a second, unused `s32` argument, so the base goes to `$a1`.
 A `static inline f32 get(Tagged *t) { if (t->tag == 0) return (f32)t->val.i; return t->val.f; }`
 also works when it is passed the pointer local (`t = &arg0[1]; buf[1] = get(t);`); called
-with `&arg0[1]` directly the offset folds again. Also: try_match.py defaults to 2.4 -O2.
+with `&arg0[1]` directly the offset folds again. When the whole slot block is materialized too
+(`addiu $a0,$s0,0x18` in the first test's delay slot, then `8($a0)`, `0x14($a0)`), write the
+locals in the caller (`p = t->a; v[0] = get(p); q = p + 1; v[1] = get(q); v[2] = get(&p[2]);`):
+an inline `getvec(v, t->a)` helper folds every offset back onto `$s0`. Also: try_match.py defaults to 2.4 -O2.
 Example: src/SLES_539.74/func_001DC5D0.c, src/SLES_539.74/func_001DE300.c, src/SLES_539.74/func_001C67B0.c
 Solved: func_001DC5D0, func_001DE300 (2026-10-28, Qwen factory-1; checked 2026-10-29, Opus),
 func_001C67B0 (5 tries, 2026-10-29, Opus), func_001C5590 (1st try from its twin
-func_001C5DD0's C, 2026-10-29, Opus)
+func_001C5DD0's C, 2026-10-29, Opus), func_001BCA30 (3 tries, 2026-10-29, Opus)
 
 ## `lb; dsll32 24` / `dsra32 24` around a byte compare in a string scan: an `s8` local
 Sign: a loop over a `char *` string with `lb $v0,N(p)` in the test, `dsll32 $v0,$v0,24` in
