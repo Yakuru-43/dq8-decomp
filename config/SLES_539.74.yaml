@@ -3736,7 +3736,7 @@ segments:
       - [0x192E70, cpp, func_00292E70]
       - [0x192EC0, c, func_00292EC0]
       - [0x192F20, c, func_00292F20]
-      - [0x192F60, asm, game_292F60]
+      - [0x192F60, c, func_00292F60]
       - [0x193080, c, func_00293080]
       - [0x193090, c, func_00293090]
       - [0x1930A0, asm, game_2930A0]
