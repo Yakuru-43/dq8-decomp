@@ -386,3 +386,16 @@ q++; } while (q < &s->a[8]);`. CW then reuses the END value as `q`'s start. Bott
 loops with no `b` at entry come from `do { } while`, not `for`/`while`.
 Example: src/SLES_539.74/func_00181030.cpp
 Solved: func_00181030 (first try, 2026-10-29, Opus)
+
+## Compare chain skips `$a0` (constants and the tested value in `$a1`/`$a2`), bare `jal`s with no `daddu $a0`: those callees take `arg0`
+Sign: a dispatcher copies `arg0` to `$s0`, then its compare chain keeps the tested value and
+the constants in `$a1`/`$a2`/`$v1` and never touches `$a0`; some arms are `jal f; nop` with no
+argument set-up while others do `jal g; daddu $a0,$s0,$zero`. Mine is register-only off: the
+chain takes `$a0` (`addiu $a0,$zero,1`, value in `$a1`) because my prototypes for the bare
+calls take nothing. `$a0` still holds `arg0` there, so CW passes it with no move.
+Fix: give every bare-`jal` callee the `arg0` parameter and pass it (`f(arg0);`), even where
+m2c wrote `f()`; the callee's own file often confirms it (func_00296AF0 takes `s32 arg0`).
+Also: this draft looked 36 bytes long and "structural" at try_match's default -O2; with
+`-- -O3` the plain if/else-if chain was already register-only.
+Example: src/SLES_539.74/func_00296BD0.c
+Solved: func_00296BD0 (7 tries, 2026-10-29, Opus; mh2 catalogue "A switch value in a2 where yours has a1")
