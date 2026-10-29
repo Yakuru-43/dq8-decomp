@@ -306,7 +306,8 @@ Same file: a lookup result `entry` (pointer) tested for `-1` comes out `beql $a0
 `addiu $v1,$zero,-1` only as `if (entry != 0) return entry->value; return -1;` (the
 `if (entry == 0) return -1;` order gives `bnel`).
 Example: src/SLES_539.74/func_003072A0.c (kind lookup = inline twin of func_003062B0)
-Solved: func_003072A0 (9 tries, 2026-10-27, Opus)
+Solved: func_003072A0 (9 tries, 2026-10-27, Opus), func_001B2F00 (call result `r` typed
+`void *`; its twin func_001B2FB0 was already matched: check `src/` for the twin first, 2026-10-29, Opus)
 
 ## Unrolled `{type, ptr}` slot stores: keep the entry address with one reused pointer local
 Sign: k unrolled `if (e->type == 3) *(f32 *)(e->ptr + 4) = v;` tests over an array of
