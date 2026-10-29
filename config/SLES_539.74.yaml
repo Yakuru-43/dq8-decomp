@@ -1963,7 +1963,7 @@ segments:
       - [0xDDAA0, asm, game_1DDAA0]
       - [0xDDDA0, c, func_001DDDA0]
       - [0xDDFA0, c, func_001DDFA0]
-      - [0xDE1A0, asm, game_1DE1A0]
+      - [0xDE1A0, c, func_001DE1A0]
       - [0xDE300, c, func_001DE300]
       - [0xDE3B0, c, func_001DE3B0]
       - [0xDE410, asm, game_1DE410]
