@@ -399,3 +399,17 @@ Also: this draft looked 36 bytes long and "structural" at try_match's default -O
 `-- -O3` the plain if/else-if chain was already register-only.
 Example: src/SLES_539.74/func_00296BD0.c
 Solved: func_00296BD0 (7 tries, 2026-10-29, Opus; mh2 catalogue "A switch value in a2 where yours has a1")
+
+## `subu $v0,$sN,$v0` right after a `jal` whose delay slot is `daddu $sN,$v0,$zero`: two different call results, not a self-difference
+Sign: `jal f; lw $a0,..` then `daddu $a0,$sX,$zero; jal g; daddu $sX,$v0,$zero` then
+`subu $v0,$sX,$v0; blezl ...`. The note says "sX == v0, always 0, CW folded my version and
+dropped the whole block (output much shorter)". Wrong reading: the delay slot runs *before*
+`g`, so `$sX` holds `f`'s result and `$v0` after the call is `g`'s. Also seen with it: a
+callee defined as `s16` but used with no `dsll32/dsra32` after its `jal` in this TU.
+Fix: `gain = f(node->obj) - g(obj, 0);` (the `daddu $a0,$sX` before the delay slot means `obj`
+was cached in `$sX` from an earlier compare). Declare the unextended callee `extern s32`.
+`blezl $sN; daddu $v0,$zero,0; addiu $v0,$zero,1` at the end is `if (best > 0) return 1;
+return 0;` (`return best > 0;` gives `slt`). Node/best registers swapped: reorder the locals'
+declarations (here `best` first).
+Example: src/SLES_539.74/func_00292F60.c
+Solved: func_00292F60 (5 tries, 2026-10-29, Opus; no mh2 entry needed)
