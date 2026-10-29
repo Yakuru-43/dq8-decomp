@@ -1764,7 +1764,7 @@ segments:
       - [0xC72F0, c, func_001C72F0]
       - [0xC73A0, asm, game_1C73A0]
       - [0xC7500, c, func_001C7500]
-      - [0xC7620, asm, game_1C7620]
+      - [0xC7620, c, func_001C7620]
       - [0xC7690, c, func_001C7690]
       - [0xC76D0, c, func_001C76D0]
       - [0xC7710, c, func_001C7710]
