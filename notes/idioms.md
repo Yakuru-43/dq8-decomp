@@ -373,3 +373,16 @@ a final `bc1tl J; 1` then `b J; 0` came from `if (v >= hi) return 0; return 1;` 
 `if (v < hi) return 1; return 0;` order gives `bc1fl; 0`).
 Example: src/SLES_539.74/func_001F2670.c
 Solved: func_001F2670 (7 tries, 2026-10-29, Opus; twin func_001F2760 still open)
+
+## Two back-to-back loops, the first one's cursor/value/end registers swapped: give the second loop its own pointer
+Sign: two consecutive pointer loops (fill/copy) where the second starts where the first
+ends; register-only diff confined to the **first** loop, whose cursor/value/end cluster
+takes the second loop's registers (mine loop1 `a1/a0/v1`, orig `a0/v1/a1`), and the
+original's second-loop cursor is the first loop's END register (`addiu $a1,$s0,END`
+reused, no copy). One shared `p` continued across both loops gives the swap.
+Fix: a separate local for the second loop, initialised from the same address as the first
+loop's end: `p = &s->a[0]; do { ... p++; } while (p < &s->a[4]); q = &s->a[4]; do { ...
+q++; } while (q < &s->a[8]);`. CW then reuses the END value as `q`'s start. Bottom-tested
+loops with no `b` at entry come from `do { } while`, not `for`/`while`.
+Example: src/SLES_539.74/func_00181030.cpp
+Solved: func_00181030 (first try, 2026-10-29, Opus)
