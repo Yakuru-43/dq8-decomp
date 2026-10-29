@@ -793,7 +793,7 @@ segments:
       - [0x69B60, c, func_00169B60]
       - [0x69B70, c, func_00169B70]
       - [0x69BA0, c, func_00169BA0]
-      - [0x69BB0, asm, game_169BB0]
+      - [0x69BB0, c, func_00169BB0]
       - [0x69DF0, c, func_00169DF0]
       - [0x69E50, c, func_00169E50]
       - [0x69E60, c, func_00169E60]
