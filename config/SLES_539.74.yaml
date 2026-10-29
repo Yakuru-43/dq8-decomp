@@ -451,6 +451,8 @@ segments:
       - [0x4DF80, asm, game_14DF80]
       - [0x4E000, c, func_0014E000]
       - [0x4E030, asm, game_14E030]
+      - [0x4E0B0, c, func_0014E0B0]
+      - [0x4E130, asm, game_14E130]
       - [0x4E320, c, func_0014E320]
       - [0x4E360, asm, game_14E360]
       - [0x4E500, c, func_0014E500]
