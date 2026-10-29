@@ -199,7 +199,7 @@ Fix: make the file a `.cpp` (functions inside `extern "C" { }`), declare the fla
 is 0/1, so it keeps the `daddiu` store and drops the mask.
 Example: src/SLES_539.74/func_00294F40.cpp
 Solved: func_00294F40 (1st try, 2026-10-27, Opus), func_00104890 (with the switch entry below),
-func_0029B6C0 (`bool ret` for the `daddiu $s1,$zero,1` before `break`)
+func_0029B6C0 (`bool ret` for the `daddiu $s1,$zero,1` before `break`), func_001053A0
 
 ## `andi $r,$zero,0x1; sll $s,$r,N` in a bitfield RMW: the field is set to **0**, not 1
 Sign: a `u8 : 1` read-modify-write `lbu; addiu -mask; and; or; sb` whose inserted value
@@ -254,7 +254,9 @@ in test order gives the tests reversed and a bigger function. A value set in a c
 slot on both paths of an inner `if` (`beqz ..; addiu $a2,1`) is a plain `whence = 1;`
 before that `if`.
 Example: src/SLES_539.74/func_00104890.cpp
-Solved: func_00104890 (5 tries, 2026-10-27, Opus)
+Solved: func_00104890 (5 tries, 2026-10-27, Opus), func_001053A0 (1st try, its word-seek twin;
+a store in the delay slot of `beql $v0,$zero,<success>` is annulled on fall-through, so it
+belongs at the top of the success block, not before the test)
 
 ## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
 Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
