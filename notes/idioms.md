@@ -199,7 +199,7 @@ Fix: make the file a `.cpp` (functions inside `extern "C" { }`), declare the fla
 is 0/1, so it keeps the `daddiu` store and drops the mask.
 Example: src/SLES_539.74/func_00294F40.cpp
 Solved: func_00294F40 (1st try, 2026-10-27, Opus), func_00104890 (with the switch entry below),
-func_0029B6C0 (`bool ret` for the `daddiu $s1,$zero,1` before `break`)
+func_0029B6C0 (`bool ret` for the `daddiu $s1,$zero,1` before `break`), func_001053A0
 
 ## `andi $r,$zero,0x1; sll $s,$r,N` in a bitfield RMW: the field is set to **0**, not 1
 Sign: a `u8 : 1` read-modify-write `lbu; addiu -mask; and; or; sb` whose inserted value
@@ -254,7 +254,12 @@ in test order gives the tests reversed and a bigger function. A value set in a c
 slot on both paths of an inner `if` (`beqz ..; addiu $a2,1`) is a plain `whence = 1;`
 before that `if`.
 Example: src/SLES_539.74/func_00104890.cpp
-Solved: func_00104890 (5 tries, 2026-10-27, Opus)
+Solved: func_00104890 (5 tries, 2026-10-27, Opus), func_001053A0 (1st try, its word-seek twin;
+a store in the delay slot of `beql $v0,$zero,<success>` is annulled on fall-through, so it
+belongs at the top of the success block, not before the test), func_003112C0 (1st try,
+2026-10-29, Opus: tests `2` then `1`, `b <return 0>`; each case is `if (call() != K) return 0;`
++ setup + `break;`, and the last case's body goes out of line with a `b` back into the shared
+tail; Qwen's if/else-if chain gave the same tests but the wrong block order)
 
 ## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
 Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
@@ -306,4 +311,167 @@ Same file: a lookup result `entry` (pointer) tested for `-1` comes out `beql $a0
 `addiu $v1,$zero,-1` only as `if (entry != 0) return entry->value; return -1;` (the
 `if (entry == 0) return -1;` order gives `bnel`).
 Example: src/SLES_539.74/func_003072A0.c (kind lookup = inline twin of func_003062B0)
-Solved: func_003072A0 (9 tries, 2026-10-27, Opus)
+Solved: func_003072A0 (9 tries, 2026-10-27, Opus), func_001B2F00 (call result `r` typed
+`void *`; its twin func_001B2FB0 was already matched: check `src/` for the twin first, 2026-10-29, Opus)
+
+## Unrolled `{type, ptr}` slot stores: keep the entry address with one reused pointer local
+Sign: k unrolled `if (e->type == 3) *(f32 *)(e->ptr + 4) = v;` tests over an array of
+8-byte `{s32 type; char *ptr;}` slots (script-VM output slots). The original materializes
+each entry's address, `addiu $aN,$base,8` (0x10, ...) in the test's branch delay slot, then
+loads `lw $v0,4($aN)` in the body; mine folds it to `lw $v0,0xC($base)` and is 8 B short per
+slot. Often the last slot *is* folded (`0x1C($base)` directly) in the original too.
+Fix: write each slot through one pointer local assigned on the line just before its test:
+`sl = slots + 1; if (sl->type == 3) { *(f32 *)(sl->ptr + 4) = v; }`. Write a slot directly
+(`slots[3].type`, `n->out[2].type`) where the original folds the offset; slot 0 is the same
+either way. For float values from a local array, read each into a named `f32` on the line
+before its test (`val1 = vals[1];`) so the `lwc1` lands in the test block, as the original.
+For `{tag, bits}` inputs converted up front (`tag == 0 ? (f32)bits : *(f32 *)&bits`), give
+the middle element its own local (`q = p + 1;`) and keep `bits` `s32` (`u32` gives the
+unsigned-convert expansion). If the node base lands in the wrong register, check the
+prototype: func_001DE300 has a second, unused `s32` argument, so the base goes to `$a1`.
+A `static inline f32 get(Tagged *t) { if (t->tag == 0) return (f32)t->val.i; return t->val.f; }`
+also works when it is passed the pointer local (`t = &arg0[1]; buf[1] = get(t);`); called
+with `&arg0[1]` directly the offset folds again. When the whole slot block is materialized too
+(`addiu $a0,$s0,0x18` in the first test's delay slot, then `8($a0)`, `0x14($a0)`), write the
+locals in the caller (`p = t->a; v[0] = get(p); q = p + 1; v[1] = get(q); v[2] = get(&p[2]);`):
+an inline `getvec(v, t->a)` helper folds every offset back onto `$s0`. Also: try_match.py defaults to 2.4 -O2.
+Example: src/SLES_539.74/func_001DC5D0.c, src/SLES_539.74/func_001DE300.c, src/SLES_539.74/func_001C67B0.c
+Solved: func_001DC5D0, func_001DE300 (2026-10-28, Qwen factory-1; checked 2026-10-29, Opus),
+func_001C67B0 (5 tries, 2026-10-29, Opus), func_001C5590 (1st try from its twin
+func_001C5DD0's C, 2026-10-29, Opus), func_001BCA30 (3 tries, 2026-10-29, Opus)
+
+## `lb; dsll32 24` / `dsra32 24` around a byte compare in a string scan: an `s8` local
+Sign: a loop over a `char *` string with `lb $v0,N(p)` in the test, `dsll32 $v0,$v0,24` in
+the branch delay slot and `dsra32 $v0,$v0,24` at the top of the body, before a compare with
+a constant (`'-'` = 0x2D); a second byte of the same string is compared with no shifts.
+Comparing `*p == '-'` directly (`char *` or `s8 *`) gives no shift pair (mine 12 B short).
+Fix: read the tested byte into a plain `s8` local in the loop condition and compare the
+neighbour byte through the pointer: `s8 c; while ((c = *s) != 0) { if (c == '-' &&
+*(s + 1) == '-') { break; } n++; s++; }`. In the same pair of functions, the null guards
+`beql $a0,$zero,<stub>; daddu $v0,$zero,$zero` (stub just before `jr $ra`, `return 1` as
+`b` over it) come from one combined `if (arg0 == 0 || arg1 == 0) { return 0; }`; two
+separate `if`s give `beqz + nop` and a merged tail (8 B short).
+Example: src/SLES_539.74/func_0014CE20.c
+Solved: func_0014CE20 (2026-10-28, Qwen factory-1), func_0014A630 (its twin, 1st try from
+func_0014CE20's C, 2026-10-29, Opus)
+
+## `bgez r; sra v,r,n` / `addiu v,r,2^n-1; sra v,v,n` (plain `bgez`, not `bgezl`): signed `r / 2^n`
+Sign: `bgez $a0, join` with `sra $v0,$a0,n` in the delay slot, then the fall-through
+`addiu $v0,$a0,2^n-1; sra $v0,$v0,n`, `join:`. Hand-written
+`if (r < 0) q = (r + 63) >> 6; else q = r >> 6;` (either order, or a ternary) gives
+`bgezl`/`bltzl` or `slt`+`bnel` (1 word or more off). Often next to the `% 2^n` shape above
+(`bgez; andi` / `beqz; addiu -2^n`).
+Fix: it is CW's expansion of signed division by a power of two: write `r / 64` on an `s32`.
+Round-up-to-64: `if (arg0 % 64 != 0) { arg0 = (arg0 / 64 + 1) * 64; } return arg0;`
+Example: src/SLES_539.74/func_0022AB70.c
+Solved: func_0022AB70 (1st try, 2026-10-29, Opus; byte-identical twin at 0x00168840)
+
+## `beql`/`bc1tl`/`bc1fl` chains whose delay slots load 0/1 into one register, then a join: an inline helper with `return`s
+Sign: a value (a node pointer, a 0/1 flag) set by a chain of tests where each **likely**
+branch carries the result in its delay slot (`beql $a1,$zero,J; daddu $a1,$zero,$zero`,
+`bc1tl J; addiu $v1,$zero,1`, `bc1fl J; daddu $v1,$zero,$zero`, last arm `b J; <const>`), all
+arms meeting at one join that stores/tests the value. Writing it with `if/else` arms assigning
+a local gives plain `beqz`+`nop` and `bc1f`+`nop` skips, the arms reordered or duplicated.
+Fix: put the chain in a `static inline` helper that returns each value early
+(`Node *n = l->cur; if (n == NULL) return NULL; l->cur = n->next; return n->item;`), and
+call it as `x = Helper(...)`. For float tests pass the **values** as parameters (`InRange(*val,
+n->lo, n->hi)`), not the struct: that fixes the load order and the `$f0/$f1/$f2` allocation.
+Branch sense per test: a `bc1t` to the out-of-line arm came from `if (!(hi <= lo)) { inline arm }`;
+a final `bc1tl J; 1` then `b J; 0` came from `if (v >= hi) return 0; return 1;` (the
+`if (v < hi) return 1; return 0;` order gives `bc1fl; 0`).
+Example: src/SLES_539.74/func_001F2670.c
+Solved: func_001F2670 (7 tries, 2026-10-29, Opus; twin func_001F2760 still open)
+
+## Two back-to-back loops, the first one's cursor/value/end registers swapped: give the second loop its own pointer
+Sign: two consecutive pointer loops (fill/copy) where the second starts where the first
+ends; register-only diff confined to the **first** loop, whose cursor/value/end cluster
+takes the second loop's registers (mine loop1 `a1/a0/v1`, orig `a0/v1/a1`), and the
+original's second-loop cursor is the first loop's END register (`addiu $a1,$s0,END`
+reused, no copy). One shared `p` continued across both loops gives the swap.
+Fix: a separate local for the second loop, initialised from the same address as the first
+loop's end: `p = &s->a[0]; do { ... p++; } while (p < &s->a[4]); q = &s->a[4]; do { ...
+q++; } while (q < &s->a[8]);`. CW then reuses the END value as `q`'s start. Bottom-tested
+loops with no `b` at entry come from `do { } while`, not `for`/`while`.
+Example: src/SLES_539.74/func_00181030.cpp
+Solved: func_00181030 (first try, 2026-10-29, Opus)
+
+## Compare chain skips `$a0` (constants and the tested value in `$a1`/`$a2`), bare `jal`s with no `daddu $a0`: those callees take `arg0`
+Sign: a dispatcher copies `arg0` to `$s0`, then its compare chain keeps the tested value and
+the constants in `$a1`/`$a2`/`$v1` and never touches `$a0`; some arms are `jal f; nop` with no
+argument set-up while others do `jal g; daddu $a0,$s0,$zero`. Mine is register-only off: the
+chain takes `$a0` (`addiu $a0,$zero,1`, value in `$a1`) because my prototypes for the bare
+calls take nothing. `$a0` still holds `arg0` there, so CW passes it with no move.
+Fix: give every bare-`jal` callee the `arg0` parameter and pass it (`f(arg0);`), even where
+m2c wrote `f()`; the callee's own file often confirms it (func_00296AF0 takes `s32 arg0`).
+Also: this draft looked 36 bytes long and "structural" at try_match's default -O2; with
+`-- -O3` the plain if/else-if chain was already register-only.
+Example: src/SLES_539.74/func_00296BD0.c
+Solved: func_00296BD0 (7 tries, 2026-10-29, Opus; mh2 catalogue "A switch value in a2 where yours has a1")
+
+## `subu $v0,$sN,$v0` right after a `jal` whose delay slot is `daddu $sN,$v0,$zero`: two different call results, not a self-difference
+Sign: `jal f; lw $a0,..` then `daddu $a0,$sX,$zero; jal g; daddu $sX,$v0,$zero` then
+`subu $v0,$sX,$v0; blezl ...`. The note says "sX == v0, always 0, CW folded my version and
+dropped the whole block (output much shorter)". Wrong reading: the delay slot runs *before*
+`g`, so `$sX` holds `f`'s result and `$v0` after the call is `g`'s. Also seen with it: a
+callee defined as `s16` but used with no `dsll32/dsra32` after its `jal` in this TU.
+Fix: `gain = f(node->obj) - g(obj, 0);` (the `daddu $a0,$sX` before the delay slot means `obj`
+was cached in `$sX` from an earlier compare). Declare the unextended callee `extern s32`.
+`blezl $sN; daddu $v0,$zero,0; addiu $v0,$zero,1` at the end is `if (best > 0) return 1;
+return 0;` (`return best > 0;` gives `slt`). Node/best registers swapped: reorder the locals'
+declarations (here `best` first).
+Example: src/SLES_539.74/func_00292F60.c
+Solved: func_00292F60 (5 tries, 2026-10-29, Opus; no mh2 entry needed)
+
+## `if (addr != 0) { push }` after early returns goes out of line (`bnez` far + `b` back): make `addr` a pointer
+Sign: an `int`-typed address computed as `base + (count << 4)` (later masked `& 0x0FFFFFFF`
+via `dsll32/dsrl32 4`) is tested `if (addr != 0)` around a short store block; the original
+has `beqz $sN, +N` and the block inline, mine has `bnez $sN` to a cold copy near the epilogue
+with a `b` back, and an extra `b` before the `return 1` stub (mine 8 bytes longer). Flipping
+the test, an empty then, constant-left, nesting under positive tests, an inline helper: no change.
+Fix: type the address as a pointer (`u128 *rec = (u128 *)w->base + w->count;`, index it as
+`rec[idx] = 0;`, mask with `(u32)rec & 0x0FFFFFFF`). CW lays out a null-pointer test inline
+where it moves an integer `!= 0` test's body cold. The `sll 4; addu` of `rec + (idx << 4)` is
+`rec[idx]` on the pointer.
+Also, same function: `mtc1 $zero,$f0; c.le.s $f20,$f0; bc1t skip` (orig) vs mine
+`c.lt.s $f0,$f20; bc1f` is `if (!(amount <= 0.0f)) call;`, not `0.0f < amount`.
+Example: src/SLES_539.74/func_001419A0.c
+Solved: func_001419A0 (5 tries, 2026-10-29, Opus; no mh2 entry needed)
+
+## `slt $at,$v0,$zero; beql $at,$zero` on a call result where mine has `bgezl $v0`: write `0 <= r`
+Sign: a signed test of a call result against zero. The original computes `slt $at,$v0,$zero`
+and branches on `$at` (`beql $at,$zero,<hit>`, `bnez $at`...); mine branches on `$v0` itself
+(`bgezl`/`bltz`), one word shorter. `r >= 0`, `!(r < 0)` and a named temp all give `bgezl`.
+Fix: put the constant on the left: `if (0 <= f(...))`. CW then lowers it as a general `slt`
+into `$at`. (`0 < r` likewise gives `slt $at,$zero,$v0`.)
+Also, same function: a flag set to a constant in the delay slot of a `jal`, then zeroed in a
+`beql $sN,$zero` delay slot after the call, is `flag = 0xC4; h = f(); if (h == NULL) flag = 0;`
+(the assignment written before the call; after it, CW puts the test cold, and `h ? 0xC4 : 0`
+gives `movz`). The saved registers and stack slots were in reverse order until the locals were
+declared in reverse order (see "Float temporaries swapped").
+Example: src/SLES_539.74/func_00302FB0.c
+Solved: func_00302FB0 (4 tries, 2026-10-29, Opus; no mh2 entry needed)
+
+## Stack arrays/locals at each other's offsets, frame 0x10 too big: declare them in reverse
+Sign: same code, but the `addiu $aN,$sp,X` addresses of two local buffers are swapped (mine
+puts the first-declared array lowest) and my frame is bigger by padding (`-0x100` vs `-0xF0`).
+Fix: CW stacks locals in **reverse declaration order** (last declared lowest), so declare the
+one at the highest offset first: original `key@0x40`, `query@0x90`, `out@0xEC` is
+`s32 out; char query[0x5C]; char key[0x50];`. The padding went away with the right order;
+no need to change the array types.
+Example: src/SLES_539.74/func_003112C0.c
+Solved: func_003112C0 (2nd try, 2026-10-29, Opus; no mh2 entry needed)
+
+## An 8x unrolled copy loop (sltiu 9 pre-test + remainder loop): library code at `-O4,p`
+Sign: a counted copy with `sltu $at,$zero,n` + `beqz` guard, `sltiu $at,n,0x9` + `bnez` to a
+1x remainder loop, `addiu bound,n,-0x8`, then a body of 8 copies with pointers bumped by 8
+elements (`addiu $v1,$t0,0x1C` hoisted, the 8th `sh` in the back-edge delay slot). Notes call
+it "manual 8-way unroll" and hand-unrolled C never gets the shape. Seen in the MSL/iostream
+area (0x100000-0x108000).
+Fix: it is CW's own unroller, which `-O3` does not run on this loop: put `// flags: -O4,p` on
+line 2 and write a plain `for (i = 0; i < (u32)total; i++) *dst++ = *cur++;` with a `u32 i`.
+A copy that moves only part of each element (`lhu`/`sh` on 4-byte entries) is an inline
+`operator=` copying that one member; it also gives the remainder's `daddu $a1,$t1` copy.
+A 2-word register-only diff at a virtual call (the loaded char in `$a0` vs `$a1`) means the
+virtual takes that char as its argument (`overflow(c)`), with `c` an `s32` (a `u16` adds `andi`).
+Example: src/SLES_539.74/func_00103C10.cpp
+Solved: func_00103C10 (about 12 tries, 2026-10-29, Opus; mh2 "Loops" unroll entry pointed at it)
