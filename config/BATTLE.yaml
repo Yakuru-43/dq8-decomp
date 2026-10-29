@@ -47,6 +47,7 @@ segments:
       - [0x340, asm, text_45F000]
       - [0x380, cpp, func_0045F040]
       - [0x450, asm, text_45F110]
+      - [0x5B0, c, func_0045F270]
       - [0x640, c, func_0045F300]
       - [0x660, asm, text_45F320]
       - [0x920, c, func_0045F5E0]
