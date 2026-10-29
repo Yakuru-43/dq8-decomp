@@ -1959,6 +1959,8 @@ segments:
       - [0xDD760, c, func_001DD760]
       - [0xDD810, c, func_001DD810]
       - [0xDD8A0, asm, game_1DD8A0]
+      - [0xDD900, c, func_001DD900]
+      - [0xDDAA0, asm, game_1DDAA0]
       - [0xDDDA0, c, func_001DDDA0]
       - [0xDDFA0, c, func_001DDFA0]
       - [0xDE1A0, asm, game_1DE1A0]
