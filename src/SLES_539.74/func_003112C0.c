@@ -1,4 +1,3 @@
-// draft (best attempt; not built, never committed)
 // range: 0x3112C0 0x311470
 #include "common.h"
 
@@ -25,28 +24,27 @@ extern s32 func_0014E130(void *, s32);
 extern void func_0014E030(void *);
 
 s32 func_003112C0(struct Owner *o, struct Entry *e) {
-    s32 key[0x14];
-    char query[0x5C];
     s32 out;
-    s32 mode;
+    char query[0x5C];
+    char key[0x50];
 
     query[0] = 0;
-    mode = o->mode;
-    if (mode == 2) {
-        if (func_00203B10(func_00181420(), mode) != 0xB) {
+    switch (o->mode) {
+    case 1:
+        if (func_00203B10(func_00181420(), o->mode) != 5) {
             return 0;
         }
-        func_002BF750(query, o->mode, func_00203940(func_00181420(), o->mode, 0), 0,
-                      1);
-        func_001340C0(key, &D_003D09D0);
-    } else if (mode == 1) {
-        if (func_00203B10(func_00181420(), mode) != 5) {
-            return 0;
-        }
-        func_002BF750(query, o->mode, func_00203940(func_00181420(), o->mode, 0), 0,
-                      1);
+        func_002BF750(query, o->mode, func_00203940(func_00181420(), o->mode, 0), 0, 1);
         func_001340C0(key, &D_003D09A0);
-    } else {
+        break;
+    case 2:
+        if (func_00203B10(func_00181420(), o->mode) != 0xB) {
+            return 0;
+        }
+        func_002BF750(query, o->mode, func_00203940(func_00181420(), o->mode, 0), 0, 1);
+        func_001340C0(key, &D_003D09D0);
+        break;
+    default:
         return 0;
     }
     func_001632D0(query, e->items + (e->count << 4), &out);
