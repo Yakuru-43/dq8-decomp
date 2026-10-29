@@ -12,4 +12,6 @@ fall-through (per the mh2 "if (!x) A else B compiles as if (x) B else A" rule) a
 call's 4th argument is still the pre-call `r` (`daddu $a3,$v0,$zero` in the second jal's
 delay slot), so passing `r` works because the copy is scheduled before the call clobbers v0.
 Example: src/SLES_539.74/func_001B2DC0.c
-Solved: func_001B2DC0 func_001B2E60 2026-10-28 Qwen factory-1
+Solved: func_001B2DC0 func_001B2E60 2026-10-28 Qwen factory-1; func_001CF460
+2026-10-29 Qwen factory-1 (same `if (!r) { r = 0; } else { r = g(...); }` shape,
+guard on func_001CFF60's result)
