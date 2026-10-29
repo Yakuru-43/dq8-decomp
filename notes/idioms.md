@@ -256,7 +256,10 @@ before that `if`.
 Example: src/SLES_539.74/func_00104890.cpp
 Solved: func_00104890 (5 tries, 2026-10-27, Opus), func_001053A0 (1st try, its word-seek twin;
 a store in the delay slot of `beql $v0,$zero,<success>` is annulled on fall-through, so it
-belongs at the top of the success block, not before the test)
+belongs at the top of the success block, not before the test), func_003112C0 (1st try,
+2026-10-29, Opus: tests `2` then `1`, `b <return 0>`; each case is `if (call() != K) return 0;`
++ setup + `break;`, and the last case's body goes out of line with a `b` back into the shared
+tail; Qwen's if/else-if chain gave the same tests but the wrong block order)
 
 ## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
 Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
@@ -444,3 +447,13 @@ gives `movz`). The saved registers and stack slots were in reverse order until t
 declared in reverse order (see "Float temporaries swapped").
 Example: src/SLES_539.74/func_00302FB0.c
 Solved: func_00302FB0 (4 tries, 2026-10-29, Opus; no mh2 entry needed)
+
+## Stack arrays/locals at each other's offsets, frame 0x10 too big: declare them in reverse
+Sign: same code, but the `addiu $aN,$sp,X` addresses of two local buffers are swapped (mine
+puts the first-declared array lowest) and my frame is bigger by padding (`-0x100` vs `-0xF0`).
+Fix: CW stacks locals in **reverse declaration order** (last declared lowest), so declare the
+one at the highest offset first: original `key@0x40`, `query@0x90`, `out@0xEC` is
+`s32 out; char query[0x5C]; char key[0x50];`. The padding went away with the right order;
+no need to change the array types.
+Example: src/SLES_539.74/func_003112C0.c
+Solved: func_003112C0 (2nd try, 2026-10-29, Opus; no mh2 entry needed)
