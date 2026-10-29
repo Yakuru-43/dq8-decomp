@@ -152,7 +152,8 @@ until `__vt__1C` has an alias; to verify now, store the vptr through a twin stru
 plain `void **vtbl` at N and `= D_<vtable>;`, then make the virtual call. Pass `-- -O3` to
 try_match: without it the schedule (e.g. `daddu s0,a0` in the jalr delay slot) looks wrong.
 Example: src/SLES_539.74/func_00218740.cpp, src/SLES_539.74/func_001BA940.cpp
-Solved: func_00218740 (3 tries, 2026-10-27, Opus)
+Solved: func_00218740 (3 tries, 2026-10-27, Opus); func_0045F040 (2026-10-29, Qwen
+factory-6 — vptr at +0x1B0 via `u8 pad0[0x1B0]`, slots 0x18/0x24 = 5th/8th virtual)
 
 ## Two vptr constants in `$v0`/`$v1` the wrong way round: compute the sub-object pointer first
 Sign: a vbase constructor helper (vptr store at +N, `*(o+0)` = second vtable, then
