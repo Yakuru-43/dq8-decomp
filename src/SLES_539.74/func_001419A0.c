@@ -1,12 +1,12 @@
 // range: 0x1419A0 0x141B00
 #include "common.h"
 
-s32 func_0014E130(s32, s32);                        /* extern */
-s32 func_00158980(void *, s32, s32);                 /* extern */
-void *func_0015AEB0(void *, s32);                    /* extern */
-void func_001FD7E0(s32, f32);                        /* extern */
-void func_001FC930(s32, void *, s32);                /* extern */
-extern u128 D_003A0C40;                              /* packet template */
+s32 func_0014E130(s32, s32);
+s32 func_00158980(void *, s32, u128 *);
+void *func_0015AEB0(void *, s32);
+void func_001FD7E0(s32, f32);
+void func_001FC930(s32, void *, s32);
+extern u128 D_003A0C40;
 
 typedef struct MgDraw {
     s32 n;                  /* 0x00 */
@@ -31,7 +31,7 @@ s32 func_001419A0(MgDraw *obj, s32 key, f32 amount) {
     Writer *writer;
     void *texman;
     void *node;
-    s32 rec_addr;
+    u128 *rec;
     s32 idx;
     Entry *entry;
     s32 sub;
@@ -42,25 +42,24 @@ s32 func_001419A0(MgDraw *obj, s32 key, f32 amount) {
     if (texman == NULL || writer == NULL) {
         return 0;
     }
-    rec_addr = writer->base + (writer->count << 4);
-    idx = func_00158980(texman, key, rec_addr);
+    rec = (u128 *)writer->base + writer->count;
+    idx = func_00158980(texman, key, rec);
     if (idx <= 0) {
         return 0;
     }
-    *(u128 *)(rec_addr + (idx << 4)) = 0;
-    *(s32 *)(rec_addr + (idx << 4)) = 0x60000000;
+    rec[idx] = 0;
+    *(s32 *)&rec[idx] = 0x60000000;
     func_0014E130((s32)writer, idx + 1);
-    if (0 != rec_addr) {
+    if (rec != NULL) {
         *(u128 *)obj->buf = D_003A0C40;
-        *(s32 *)(obj->buf + 4) = rec_addr & 0x0FFFFFFF;
+        *(s32 *)(obj->buf + 4) = (u32)rec & 0x0FFFFFFF;
         obj->buf = obj->buf + 0x10;
     }
     entry = func_0015AEB0(texman, key);
     if (entry != NULL) {
         sub = entry->sub;
         if (sub != 0) {
-            if (0.0f >= amount) {
-            } else {
+            if (!(amount <= 0.0f)) {
                 func_001FD7E0(sub, amount);
             }
             func_001FC930(sub, obj, key);
