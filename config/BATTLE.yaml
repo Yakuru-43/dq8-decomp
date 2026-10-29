@@ -52,6 +52,7 @@ segments:
       - [0x660, asm, text_45F320]
       - [0x920, c, func_0045F5E0]
       - [0x970, asm, text_45F630]
+      - [0xA90, c, func_0045F750]
       - [0xB80, c, func_0045F840]
       - [0xB90, c, func_0045F850]
       - [0xBB0, c, func_0045F870]
