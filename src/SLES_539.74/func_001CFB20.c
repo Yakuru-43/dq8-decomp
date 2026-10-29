@@ -1,4 +1,4 @@
-// range: 0x001CFB20 0x001CFBC0
+// range: 0x1CFB20 0x1CFBC0
 #include "common.h"
 
 s32 func_001CFF60(char *, s32);
@@ -13,9 +13,9 @@ typedef struct {
     /* 0x14 */ s32 field_14;
     /* 0x18 */ s32 field_18;
     /* 0x1C */ f32 field_1C;
-} S_CFB20;
+} S_CF460;
 
-s32 func_001CFB20(S_CFB20 *arg0) {
+s32 func_001CFB20(S_CF460 *arg0) {
     s32 id0;
     s32 id1;
     s32 val;

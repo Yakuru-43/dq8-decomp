@@ -1,19 +1,19 @@
-// range: 0x001DBFD0 0x001DC080
+// range: 0x1DBFD0 0x1DC080
 #include "common.h"
 
-typedef struct Slot1DBFD0 {
+typedef struct Slot1DC5D0 {
     /* 0x00 */ s32 type;
     /* 0x04 */ char *ptr;
-} Slot1DBFD0;
+} Slot1DC5D0;
 
 s32 func_00210EC0(s32); /* extern */
 
-s32 func_001DBFD0(Slot1DBFD0 *slots) {
+s32 func_001DBFD0(Slot1DC5D0 *slots) {
     f32 vals[4];
     f32 val1;
     f32 val2;
     s32 result;
-    Slot1DBFD0 *sl;
+    Slot1DC5D0 *sl;
 
     result = func_00210EC0((s32)vals);
     sl = slots;
