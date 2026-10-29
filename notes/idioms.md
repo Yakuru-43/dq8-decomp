@@ -457,3 +457,18 @@ one at the highest offset first: original `key@0x40`, `query@0x90`, `out@0xEC` i
 no need to change the array types.
 Example: src/SLES_539.74/func_003112C0.c
 Solved: func_003112C0 (2nd try, 2026-10-29, Opus; no mh2 entry needed)
+
+## An 8x unrolled copy loop (sltiu 9 pre-test + remainder loop): library code at `-O4,p`
+Sign: a counted copy with `sltu $at,$zero,n` + `beqz` guard, `sltiu $at,n,0x9` + `bnez` to a
+1x remainder loop, `addiu bound,n,-0x8`, then a body of 8 copies with pointers bumped by 8
+elements (`addiu $v1,$t0,0x1C` hoisted, the 8th `sh` in the back-edge delay slot). Notes call
+it "manual 8-way unroll" and hand-unrolled C never gets the shape. Seen in the MSL/iostream
+area (0x100000-0x108000).
+Fix: it is CW's own unroller, which `-O3` does not run on this loop: put `// flags: -O4,p` on
+line 2 and write a plain `for (i = 0; i < (u32)total; i++) *dst++ = *cur++;` with a `u32 i`.
+A copy that moves only part of each element (`lhu`/`sh` on 4-byte entries) is an inline
+`operator=` copying that one member; it also gives the remainder's `daddu $a1,$t1` copy.
+A 2-word register-only diff at a virtual call (the loaded char in `$a0` vs `$a1`) means the
+virtual takes that char as its argument (`overflow(c)`), with `c` an `s32` (a `u16` adds `andi`).
+Example: src/SLES_539.74/func_00103C10.cpp
+Solved: func_00103C10 (about 12 tries, 2026-10-29, Opus; mh2 "Loops" unroll entry pointed at it)
