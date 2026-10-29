@@ -214,6 +214,8 @@ segments:
       - [0xD8D0, c, func_0046C590]
       - [0xD910, c, func_0046C5D0]
       - [0xD980, asm, text_46C640]
+      - [0xDA50, c, func_0046C710]
+      - [0xDAA0, asm, text_46C760]
       - [0xDBC0, c, func_0046C880]
       - [0xDBE0, c, func_0046C8A0]
       - [0xDC10, asm, text_46C8D0]
