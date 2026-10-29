@@ -1563,7 +1563,7 @@ segments:
       - [0xBC310, asm, game_1BC310]
       - [0xBCA30, c, func_001BCA30]
       - [0xBCC30, c, func_001BCC30]
-      - [0xBCE30, asm, game_1BCE30]
+      - [0xBCE30, c, func_001BCE30]
       - [0xBCF90, c, func_001BCF90]
       - [0xBD040, c, func_001BD040]
       - [0xBD0A0, c, func_001BD0A0]
