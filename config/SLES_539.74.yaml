@@ -5886,6 +5886,8 @@ segments:
       - [0x26ECA0, c, func_0036ECA0]
       - [0x26ECB0, c, func_0036ECB0]
       - [0x26ECC0, asm, game_36ECC0]
+      - [0x26EF50, c, func_0036EF50]
+      - [0x26F000, asm, game_36F000]
       - [0x26F0F0, c, func_0036F0F0]
       - [0x26F130, asm, game_36F130]
       - [0x26F810, c, func_0036F810]
