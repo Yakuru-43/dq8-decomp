@@ -88,7 +88,7 @@ segments:
       - [0x5FA0, c, func_00464C60]
       - [0x5FF0, c, func_00464CB0]
       - [0x6030, c, func_00464CF0]
-      - [0x6090, asm, text_464D50]
+      - [0x6090, c, func_00464D50]
       - [0x6130, c, func_00464DF0]
       - [0x61A0, asm, text_464E60]
       - [0x62D0, c, func_00464F90]
