@@ -1,0 +1,4 @@
+
+
+// --- labels kept for calls from decompiled code (tools/keep_funcs.py) ---
+D_003E0148 = 0x3E0148;

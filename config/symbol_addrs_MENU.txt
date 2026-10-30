@@ -1,0 +1,6 @@
+
+
+// --- labels kept for calls from decompiled code (tools/keep_funcs.py) ---
+D_003DF744 = 0x3DF744;
+D_003E1A54 = 0x3E1A54;
+D_00458B90 = 0x458B90;

@@ -92,6 +92,8 @@ segments:
       - [0x4420, asm, text_4630E0]
       - [0x45B0, c, func_00463270]
       - [0x45C0, asm, text_463280]
+      - [0x4A40, c, func_00463700]
+      - [0x4AD0, asm, text_463790]
       - [0x4C40, c, func_00463900]
       - [0x4C80, asm, text_463940]
       - [0x4DD0, c, func_00463A90]
