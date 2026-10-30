@@ -19,14 +19,14 @@ extern s32 D_003E1B5C;
 extern s32 D_003E1B60;
 extern struct Msg *D_003E1B64;
 extern u32 func_0045F300(u32);
-extern struct Msg *func_0014E130(void *, s32);
+extern struct Msg *func_14E130(void *, s32);
 
 void func_0045F270(void *arg0) {
     struct Msg *msg;
     s32 i;
 
     if (arg0 != 0 && D_003E1B58 != 0 && D_003E1B5C != 0 && D_003E1B60 != 0) {
-        D_003E1B64 = func_0014E130(arg0, func_0045F300(0x500));
+        D_003E1B64 = func_14E130(arg0, func_0045F300(0x500));
         msg = D_003E1B64;
         i = 0;
         do {
