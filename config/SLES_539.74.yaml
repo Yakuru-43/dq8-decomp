@@ -5284,6 +5284,7 @@ segments:
       - [0x2279C0, asm, game_3279C0]
       - [0x227A00, c, func_00327A00]
       - [0x227A10, asm, game_327A10]
+      - [0x227A70, c, func_00327A70]
       - [0x227B10, c, func_00327B10]
       - [0x227B20, c, func_00327B20]
       - [0x227B30, c, func_00327B30]
