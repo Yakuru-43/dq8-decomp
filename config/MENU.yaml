@@ -50,6 +50,8 @@ segments:
       - [0x1430, asm, text_4600F0]
       - [0x1EA0, c, func_00460B60]
       - [0x1EE0, asm, text_460BA0]
+      - [0x1F40, c, func_00460C00]
+      - [0x2040, asm, text_460D00]
       - [0x20B0, c, func_00460D70]
       - [0x2120, asm, text_460DE0]
       - [0x2650, c, func_00461310]
