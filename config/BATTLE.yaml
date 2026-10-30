@@ -118,6 +118,8 @@ segments:
       - [0x8690, asm, text_467350]
       - [0x87B0, c, func_00467470]
       - [0x8840, asm, text_467500]
+      - [0x8AD0, cpp, func_00467790]
+      - [0x8BA0, asm, text_467860]
       - [0x9890, c, func_00468550]
       - [0x9950, asm, text_468610]
       - [0x9DB0, c, func_00468A70]
