@@ -2755,7 +2755,6 @@ segments:
       - [0x114E80, asm, game_214E80]
       - [0x1158A0, c, func_002158A0]
       - [0x1158B0, c, func_002158B0]
-      - [0x1158FC, asm, game_2158FC]
       - [0x115900, c, func_00215900]
       - [0x115930, asm, game_215930]
       - [0x117070, c, func_00217070]
