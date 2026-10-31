@@ -1,0 +1,40 @@
+// range: 0x46BCC0 0x46BDA0
+#include "common.h"
+
+void func_0046DE00(void);                    /* extern */
+s32 func_0046D0C0(void);                     /* extern */
+s32 func_2B14A0(s32, s32, s32);              /* extern */
+void func_2D38E0(s32, s32, s32, s32);        /* extern */
+void func_3768A0(s32);                       /* extern */
+void func_27BBF0(void *);                    /* extern */
+char *func_2B0CF0(s32, s32);                 /* extern */
+s32 func_1339E0(s32, char *, ...);           /* extern */
+void func_0046B9A0(s32 *, void *);           /* extern */
+void func_379690(void *, s32, s32, s32);     /* extern */
+
+extern u8 D_003E1A20 __attribute__((section(".sdata")));
+extern s32 D_003E015C;
+
+s32 func_0046BCC0(s32 arg0, s32 arg1) {
+    s32 buf_250[0x58];
+    char buf_50[0x200];
+    s32 win;
+    s32 val;
+    char *fmt;
+
+    func_0046DE00();
+    win = func_0046D0C0();
+    val = win;
+    if (func_2B14A0(win, val, 0) > 0) {
+        D_003E1A20 = 0;
+    } else {
+        func_2D38E0(arg1, 0x1F6D, 0, -1);
+        func_3768A0(arg1);
+        func_27BBF0(buf_250);
+        fmt = func_2B0CF0(win, val);
+        func_1339E0(win, fmt, fmt);
+        func_0046B9A0(buf_250, buf_50);
+        func_379690(buf_250, D_003E015C, 0, 0);
+    }
+    return 1;
+}
