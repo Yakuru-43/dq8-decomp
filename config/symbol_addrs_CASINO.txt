@@ -1,0 +1,1 @@
+_gp = 0x3E7270; // absolute:True data area base (gp-relative addressing, see SLES_539.74)
