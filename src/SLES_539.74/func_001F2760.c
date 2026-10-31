@@ -1,0 +1,81 @@
+// range: 0x1F2760 0x1F2850
+#include "common.h"
+
+typedef struct NodeF2760 {
+    struct NodeF2760 *next;
+    s32 unk4[3];
+    struct NodeF2760 *item;
+    s32 unk14[12];
+    s32 active;
+    s32 hit;
+    s32 unk4C[3];
+    f32 lo;
+    f32 hi;
+} NodeF2760;
+
+typedef struct {
+    s32 unk0;
+    NodeF2760 **table;
+    NodeF2760 *cur;
+} NodeListF2760;
+
+static inline NodeF2760 *NodeList_NextF2760(NodeListF2760 *list) {
+    NodeF2760 *n = list->cur;
+    if (n == NULL) {
+        return NULL;
+    }
+    list->cur = n->next;
+    return n->item;
+}
+
+static inline s32 InRangeF2760(f32 v, f32 lo, f32 hi) {
+    if (!(hi <= lo)) {
+        if (v < lo) {
+            return 0;
+        }
+        if (v >= hi) {
+            return 0;
+        }
+        return 1;
+    }
+    if (lo <= hi) {
+        return 1;
+    }
+    if (v >= lo) {
+        return 1;
+    }
+    if (v < hi) {
+        return 1;
+    }
+    return 0;
+}
+
+s32 func_001F2760(NodeListF2760 *list, s32 index, f32 *val) {
+    NodeF2760 *n;
+    s32 mark;
+    s32 count;
+
+    list->cur = NULL;
+    if (list->table != NULL && index >= 0 && index < 11) {
+        list->cur = list->table[index];
+    }
+    count = 0;
+    for (;;) {
+        n = NodeList_NextF2760(list);
+        if (n == NULL) {
+            list->cur = NULL;
+            return count;
+        }
+        if (!n->active) {
+            mark = 0;
+        } else if (val == NULL) {
+            mark = 1;
+        } else {
+            mark = InRangeF2760(*val, n->lo, n->hi);
+        }
+        n->hit = mark;
+        if (mark != 0) {
+            count++;
+        }
+    }
+}

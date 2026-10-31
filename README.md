@@ -18,15 +18,15 @@ moved into matching C one at a time. Porting that code to PC is the long-term go
 <!-- progress:start -->
 ```
                  code bytes                                     functions
-SLES_539.74      [█░░░░░░░░░░░░░░░░░░░]  7.2%    172/ 2397 KB   [███████░░░░░░░░░░░░░]  35.3%  3390/9598 
+SLES_539.74      [███░░░░░░░░░░░░░░░░░] 13.1%    314/ 2397 KB   [██████████░░░░░░░░░░]  47.5%  4564/9600 
 TITLE (overlay)  [█░░░░░░░░░░░░░░░░░░░]  1.0%      0/   19 KB   [███████░░░░░░░░░░░░░]  33.3%    12/36   
-SHOP (overlay)   [█░░░░░░░░░░░░░░░░░░░]  7.3%      4/   60 KB   [██████░░░░░░░░░░░░░░]  32.2%   109/339  
-MENU (overlay)   [█░░░░░░░░░░░░░░░░░░░]  4.5%      5/  103 KB   [██████░░░░░░░░░░░░░░]  29.5%    98/332  
-CASINO (overlay) [█░░░░░░░░░░░░░░░░░░░]  1.3%      1/  106 KB   [█████░░░░░░░░░░░░░░░]  27.0%    53/196  
-BATTLE (overlay) [█░░░░░░░░░░░░░░░░░░░]  3.5%      5/  143 KB   [█████░░░░░░░░░░░░░░░]  25.9%   159/613  
-ALL game code    [█░░░░░░░░░░░░░░░░░░░]  6.6%    187/ 2828 KB   [███████░░░░░░░░░░░░░]  34.4%  3821/11114
+SHOP (overlay)   [███░░░░░░░░░░░░░░░░░] 15.3%      9/   60 KB   [█████████░░░░░░░░░░░]  43.4%   147/339  
+MENU (overlay)   [██░░░░░░░░░░░░░░░░░░]  9.6%     10/  103 KB   [████████░░░░░░░░░░░░]  41.0%   136/332  
+CASINO (overlay) [█░░░░░░░░░░░░░░░░░░░]  3.1%      3/  106 KB   [███████░░░░░░░░░░░░░]  33.7%    66/196  
+BATTLE (overlay) [██░░░░░░░░░░░░░░░░░░]  7.6%     11/  143 KB   [███████░░░░░░░░░░░░░]  33.3%   204/613  
+ALL game code    [██░░░░░░░░░░░░░░░░░░] 12.3%    347/ 2828 KB   [█████████░░░░░░░░░░░]  46.1%  5129/11116
 ```
-_(refreshed 2026-10-24 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
+_(refreshed 2026-10-31 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->
 
 The SDK regions of the main executable (`sdk_*`, `lib*`, GCC-built) are

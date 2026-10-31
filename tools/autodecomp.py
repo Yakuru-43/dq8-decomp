@@ -15,6 +15,7 @@ tools/gen_configs.py turns into a split.
     autodecomp.py [--bin SLES_539.74] [--jobs 14] [--limit N] [--only func_...]
 """
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -33,6 +34,11 @@ BIN = TC / "usr/bin"
 MWCC = TC / "mwcps2/3.0.1b151-050317/mwccps2.exe"
 CFLAGS = ["-O3", "-nostdinc", "-stderr", f"-I{ROOT / 'include'}"]
 VRAM = {"SLES_539.74": 0x100000}
+# prototypes from the matched sources (tools/types_db.py): m2c's context, and the
+# declarations a draft needs for the callees it no longer declares itself
+TYPES_CONTEXT = ROOT / "build" / "types_context.c"
+TYPES_DB = ROOT / "build" / "types_db.json"
+_types = None
 
 GLABEL = re.compile(r"^glabel (\w+)", re.M)
 ALABEL = re.compile(r"^[ \t]*alabel ", re.M)
@@ -96,13 +102,21 @@ def real_insns(asm):
     return WORD_INSN.sub(r"\1", asm)
 
 
+def known_prototypes():
+    global _types
+    if _types is None:
+        _types = json.loads(TYPES_DB.read_text()) if TYPES_DB.exists() and TYPES_CONTEXT.exists() else {}
+    return _types
+
+
 def draft(name, asm, target="mips-gcc-c"):
     """m2c output for one function, or None."""
     with tempfile.NamedTemporaryFile("w", suffix=".s", delete=False) as t:
         t.write(real_insns(asm))
+    context = ["--context", str(TYPES_CONTEXT)] if known_prototypes() else []
     try:
         r = subprocess.run([str(Path(sys.executable).parent / "m2c"), "--valid-syntax", "--globals", "used",
-                            "--no-cache", "-t", target, "-f", name, t.name],
+                            "--no-cache", "-t", target, *context, "-f", name, t.name],
                            capture_output=True, text=True, timeout=60)
     except subprocess.TimeoutExpired:
         return None
@@ -111,6 +125,12 @@ def draft(name, asm, target="mips-gcc-c"):
     if r.returncode or "M2C_ERROR" in r.stdout:
         return None
     c = r.stdout
+    # callees m2c took from the context aren't declared in its output
+    protos = known_prototypes()
+    called = sorted(set(re.findall(r"\b(func_[0-9A-F]{8})\s*\(", c)) - {name})
+    missing = [protos[f] for f in called if f in protos and not re.search(rf"^\S[^\n(]*\b{f}\(", c, re.M)]
+    if missing:
+        c = "\n".join(missing) + "\n" + c
     # m2c writes `?` for types it could not infer; ternaries are fine
     if re.search(r"(^|[(,]\s*|extern )\?[\s*]", c, re.M):
         return None

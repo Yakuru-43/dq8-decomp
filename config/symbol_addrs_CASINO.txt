@@ -1,0 +1,5 @@
+_gp = 0x3E7270; // absolute:True data area base (gp-relative addressing, see SLES_539.74)
+
+
+// --- labels kept for calls from decompiled code (tools/keep_funcs.py) ---
+D_003E0148 = 0x3E0148;
