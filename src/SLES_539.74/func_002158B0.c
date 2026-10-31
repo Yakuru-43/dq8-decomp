@@ -1,4 +1,4 @@
-// range: 0x2158B0 0x2158FC
+// range: 0x2158B0 0x215900
 #include "common.h"
 
 extern void func_00131188(char *, s32, s32);
