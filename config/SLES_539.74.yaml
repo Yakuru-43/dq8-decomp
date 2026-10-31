@@ -5499,6 +5499,7 @@ segments:
       - [0x239C60, c, func_00339C60]
       - [0x239D00, c, func_00339D00]
       - [0x239DC0, asm, game_339DC0]
+      - [0x239F30, c, func_00339F30]
       - [0x239FE0, c, func_00339FE0]
       - [0x23A090, asm, game_33A090]
       - [0x23A330, c, func_0033A330]
