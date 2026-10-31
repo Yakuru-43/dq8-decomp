@@ -20,8 +20,8 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from autodecomp import (VRAM, functions, rodata_range, symbol_script, verify,  # noqa: E402
-                        with_jump_tables)
+from autodecomp import (VRAM, functions, real_insns, rodata_range, symbol_script,  # noqa: E402
+                        verify, with_jump_tables)
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -71,7 +71,7 @@ def main():
         table_diff(a.bin, a.diff, span)
     if a.m2c:
         with tempfile.NamedTemporaryFile("w", suffix=".s") as t:
-            t.write(with_jump_tables(a.bin, asm))
+            t.write(real_insns(with_jump_tables(a.bin, asm)))
             t.flush()
             r = subprocess.run([str(Path(sys.executable).parent / "m2c"), "--valid-syntax", "--globals", "used",
                                 "--no-cache", "-t", "mipsee-mwcc-c", "-f", a.func, t.name],

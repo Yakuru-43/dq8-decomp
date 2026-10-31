@@ -41,13 +41,19 @@ def src_ranges(binary):
     """Decompiled files: src/<binary>/*.c|cpp starting with `// range: 0xSTART 0xEND`.
 
     Each range starts and ends on function boundaries and replaces that asm.
+    Files under asmfunc/ are left out: .gitignore keeps them out of the repository,
+    so a config listing them depended on which worktree generated it (2026-10-31: 119
+    of them in one checkout, 120 in another, none in a third, and every merge of the
+    committed config conflicted or was refused). Their bytes are the asm's anyway.
     """
     out = []
     base = ROOT / "src" / binary
     for p in sorted(base.rglob("*.c*")):
+        if "asmfunc" in p.relative_to(base).parts:
+            continue
         m = re.match(r"// range: (0x[0-9A-Fa-f]+) (0x[0-9A-Fa-f]+)", p.read_text())
         if m:
-            name = p.relative_to(base).with_suffix("").as_posix()  # e.g. asmfunc/func_X
+            name = p.relative_to(base).with_suffix("").as_posix()
             out.append((int(m.group(1), 16), int(m.group(2), 16), name, p.suffix[1:]))
     return sorted(out)
 
@@ -65,6 +71,8 @@ def src_rodata(binary):
     out = []
     base = ROOT / "src" / binary
     for p in sorted(base.rglob("*.c*")):
+        if "asmfunc" in p.relative_to(base).parts:   # see src_ranges
+            continue
         m = RODATA.search(p.read_text())
         if m:
             name = p.relative_to(base).with_suffix("").as_posix()
