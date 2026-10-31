@@ -7,7 +7,8 @@ The file's `// range: 0xSTART 0xEND` line gives the address and its
 `// flags: ...` line (if any) the extra compiler flags; a `// rodata: 0xSTART
 0xEND` line says the file's .rodata (a switch's jump table) replaces that range
 of the data segment, and it is checked there too.  Prints MATCH or the
-reason (align, compile, data, rodata, size, link, mismatch, padding) per file; exit status
+reason (align, compile, data, rodata, size, link, mismatch, padding) per file, and on
+stderr the line of the compiler's or linker's message that says why; exit status
 1 unless every file matches.  This is the only test that counts a function
 as matched (CLAUDE.md); tools/try_match.py --show is for looking at diffs.
 
@@ -23,6 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+import autodecomp  # noqa: E402
 from autodecomp import VRAM, symbol_script, verify  # noqa: E402
 
 
@@ -63,6 +65,8 @@ def main():
         if why == "align":
             print("          the // range: end must include the padding up to a multiple of 16",
                   file=sys.stderr)
+        elif why in ("compile", "link") and autodecomp.last_error:
+            print(f"          {autodecomp.last_error}", file=sys.stderr)
         ok &= why == "match"
     return 0 if ok else 1
 

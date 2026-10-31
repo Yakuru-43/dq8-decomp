@@ -540,18 +540,33 @@ def symbol_script_for(c, syms_ld, tmp):
     return out
 
 
+last_error = ""   # the compiler's or linker's first useful line from the last verify() failure
+
+
+def error_line(text):
+    """The line of a compiler or linker message that says why, temp paths cut."""
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    best = next((l for l in lines if re.search(r"undefined reference|relocation truncated|error", l, re.I)),
+                lines[0] if lines else "")
+    return re.sub(r"\S*/tmp\w*/", "", best)[:200]
+
+
 def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c", rodata=None, out_bytes=None):
     """'match' if `c` compiles to exactly the original bytes, else the failure reason.
     `suffix` is the source file's extension: mwcc compiles a .cpp file as C++.
     `rodata` is (address, original bytes) for a file whose .rodata (a switch's
     jump table) replaces that range of the data segment: the object's .rodata
     is linked there and must be exactly those bytes. A dict passed as
-    `out_bytes` gets the linked "text" and "rodata" (tools/jtbl.py --diff)."""
+    `out_bytes` gets the linked "text" and "rodata" (tools/jtbl.py --diff).
+    On a compile or link failure, `last_error` says why."""
+    global last_error
+    last_error = ""
     with tempfile.TemporaryDirectory() as tmp:
         src, obj, elf, out = (f"{tmp}/f{suffix}", f"{tmp}/f.o", f"{tmp}/f.elf", f"{tmp}/f.bin")
         Path(src).write_text(c)
         r = subprocess.run([TC / "wibo", MWCC, "-c", *CFLAGS, *flags, src, "-o", obj], capture_output=True, text=True)
         if r.returncode:
+            last_error = error_line(r.stdout + r.stderr)
             return "compile"
         secs = sections(obj)
         if any(secs.get(s, 0) for s in (".data", ".sdata", ".sbss", ".bss", ".sdata2", ".rdata")):
@@ -568,6 +583,7 @@ def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c", rodata=None, out
                             "-T", symbol_script_for(c, syms_ld, tmp), "-e", hex(start),
                             obj, "-o", elf], capture_output=True, text=True)
         if r.returncode:
+            last_error = error_line(r.stderr)
             return "link"
         subprocess.run([BIN / "mips64-linux-gnu-objcopy", "-O", "binary", "-j", ".text", elf, out], check=True)
         mine = Path(out).read_bytes()
