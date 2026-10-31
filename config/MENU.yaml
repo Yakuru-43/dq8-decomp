@@ -150,6 +150,8 @@ segments:
       - [0xB400, c, func_0046A0C0]
       - [0xB410, c, func_0046A0D0]
       - [0xB4A0, asm, text_46A160]
+      - [0xB6A0, c, func_0046A360]
+      - [0xB770, asm, text_46A430]
       - [0xB870, c, func_0046A530]
       - [0xB8B0, asm, text_46A570]
       - [0xB940, c, func_0046A600]
