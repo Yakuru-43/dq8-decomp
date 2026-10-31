@@ -17,4 +17,4 @@ test gives a plain `beq` there instead (tests 2/3 keep plain `beq` and are fine
 with pre-test temps, whose loads land in the pre-test block / the `beq` delay
 slot).
 Example: src/SLES_539.74/func_001DE1A0.c
-Solved: func_001DE1A0 2026-10-29 Qwen factory-1
+Solved: func_001DE1A0 2026-10-29 Qwen factory-1, func_0034E4F0 2026-10-30 Qwen factory-3 (same store duplicated into both if/else arms, join block bare)
