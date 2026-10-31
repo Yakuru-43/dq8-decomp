@@ -8,10 +8,12 @@ reorder-only, reorder+register or structural, with a score; 0 = match). Use it t
 versions/flags and to check a decompiled function before adding it to src/.
 """
 import argparse
+import os
 import struct
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -49,6 +51,34 @@ def func_bytes(obj, symbol):
     return off, text.read_bytes()[off:off + size]
 
 
+def spend_budget(symbol, budget):
+    """Count an attempt on `symbol`; past the budget ("ATTEMPTS,SECONDS"), refuse it.
+
+    Set by run.sh for the factory sessions only. A session told to stop after 20
+    attempts or 25 minutes kept going on one function until the session was cut off
+    (2026-10-28..31: 9-16 sessions per slice in 72 h finished nothing), so the limit
+    is kept here, from the first attempt on the function in this session
+    (build/budget.tsv, cleared by run.sh at the session's start).
+    """
+    attempts, seconds = (int(x) for x in budget.split(","))
+    state = ROOT / "build" / "budget.tsv"
+    rows = {}
+    if state.exists():
+        for line in state.read_text().splitlines():
+            name, first, n = line.split("\t")
+            rows[name] = (float(first), int(n))
+    first, n = rows.get(symbol, (time.time(), 0))
+    spent_min = (time.time() - first) / 60
+    if n >= attempts or spent_min * 60 >= seconds:
+        sys.exit(f"BUDGET SPENT on {symbol}: {n} attempts, {spent_min:.0f} min. Stop here: write the "
+                 f"needs-claude note (the CLASS line of your best attempt first), set the row to "
+                 f"needs-claude and claim the next one.")
+    rows[symbol] = (first, n + 1)
+    state.parent.mkdir(exist_ok=True)
+    state.write_text("".join(f"{k}\t{f}\t{c}\n" for k, (f, c) in rows.items()))
+    print(f"attempt {n + 1}/{attempts} on {symbol}, {spent_min:.0f}/{seconds // 60} min")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
@@ -59,6 +89,8 @@ def main():
     ap.add_argument("--show", action="store_true", help="print both disassemblies side by side")
     ap.add_argument("flags", nargs="*", default=["-O2"])
     a = ap.parse_args()
+    if os.environ.get("DQ8_BUDGET") and not a.show:
+        spend_budget(a.symbol, os.environ["DQ8_BUDGET"])
 
     base = VRAM.get(a.bin, 0x45ECC0)
     orig_all = (ROOT / "extract" / f"{a.bin}.bin").read_bytes()
