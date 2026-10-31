@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """Run decomp-permuter over functions whose m2c draft compiles but mismatches.
 
-    permute_batch.py [--hours 10] [--per-func 180] [--parallel 7] [-j 2]
+    permute_batch.py [--hours 10] [--per-func 180] [--parallel 7] [-j 2] [--needs-claude]
+
+--needs-claude takes the functions sessions gave up on with a register-only,
+reorder-only or reorder+register CLASS (notes/needs-claude/) instead, starting from
+the session's notes/needs-claude/<func>_best.c when there is one
+(~/qwen-runs/permute-nightly.sh).
 
 Candidates come from build/autodecomp_<bin>.tsv (latest result per function:
 mismatch/size/repaired), smallest first, for every binary. A `repaired`
@@ -38,7 +43,8 @@ import autodecomp as a  # noqa: E402
 BINARIES = ["SLES_539.74", "TITLE", "SHOP", "MENU", "CASINO", "BATTLE"]
 PERMUTER = ROOT / ".toolchain" / "permuter" / "permuter.py"
 WORK = ROOT / "build" / "permute"
-DONE = ROOT / "build" / "permute_batch.done"
+DONE = ROOT / "build" / "permute_batch.done"   # build/permute_nc.done with --needs-claude
+NC_MODE = False
 STOP = ROOT / "build" / "permute_batch.stop"
 LOG = ROOT / "build" / "permute_batch.log"
 PIDFILE = ROOT / "build" / "permute_batch.pid"
@@ -85,7 +91,21 @@ def log(msg):
         f.write(line + "\n")
 
 
+NEEDS_CLAUDE = ROOT / "notes" / "needs-claude"
+CLOSE_CLASS = re.compile(r"CLASS (register-only|reorder-only|reorder\+register)")
+
+
+def needs_claude_candidates(binary):
+    """--needs-claude: functions a session gave up on with a register or reorder
+    difference only, the kind of gap the permuter closes, smallest first."""
+    want = {p.stem for p in NEEDS_CLAUDE.glob("func_*.md") if CLOSE_CLASS.search(p.read_text(errors="replace"))}
+    funcs = [f for f in a.functions(binary) if f[0] in want and not a.ALABEL.search(f[3])]
+    return sorted(funcs, key=lambda f: f[2] - f[1])
+
+
 def candidates(binary):
+    if NC_MODE:
+        return needs_claude_candidates(binary)
     tsv = ROOT / "build" / f"autodecomp_{binary}.tsv"
     if not tsv.exists():
         return []
@@ -108,6 +128,9 @@ def base_source(binary, func, asm):
     repaired draft if we have one, otherwise the plainest m2c candidate that
     compiles, and failing that repair one now.
     """
+    best = NEEDS_CLAUDE / f"{func}_best.c"
+    if NC_MODE and best.exists():  # the session's closest attempt, minus its header lines
+        return re.sub(r"^// (range|auto|flags):.*\n", "", best.read_text(), flags=re.M), "a session's best draft"
     saved = ROOT / "build" / "repair" / binary / f"{func}.c"
     if saved.exists():  # m2c draft whose types tools/repair.py fixed for CodeWarrior
         return saved.read_text(), "m2c draft with casts added"
@@ -150,8 +173,11 @@ def hoist_typedefs(c):
     return c[: first.start()] + "".join(blocks) + c[first.start():]
 
 
+BASE_NOTE = {}   # func -> what its permutation started from, for the src/ header
+
+
 def setup(binary, func, asm):
-    source, _ = base_source(binary, func, asm)
+    source, BASE_NOTE[func] = base_source(binary, func, asm)
     if not source:
         return None
     source = hoist_typedefs(source)
@@ -191,10 +217,8 @@ def finalize(binary, func, start, end, d, syms, orig):
         if a.verify(src, start, end, syms, orig) == "match":
             dest = ROOT / "src" / binary / f"{func}.c"
             dest.parent.mkdir(parents=True, exist_ok=True)
-            saved = (ROOT / "build" / "repair" / binary / f"{func}.c").exists()
-            dest.write_text(f"// range: 0x{start:X} 0x{end:X}\n// auto: m2c draft"
-                            f"{' with casts added' if saved else ''} + decomp-permuter, "
-                            "verified byte-exact\n" + src)
+            dest.write_text(f"// range: 0x{start:X} 0x{end:X}\n// auto: {BASE_NOTE.get(func, 'm2c draft')} "
+                            "+ decomp-permuter, verified byte-exact\n" + src)
             return True
     return False
 
@@ -282,7 +306,14 @@ def main():
     ap.add_argument("-j", type=int, default=2)
     ap.add_argument("--max-base", type=int, default=400,
                     help="give up on drafts whose unpermuted score is above this")
+    ap.add_argument("--needs-claude", action="store_true",
+                    help="permute the register/reorder-only needs-claude functions instead "
+                         "(their session's best draft when there is one); own done file")
     args = ap.parse_args()
+    global NC_MODE, DONE
+    NC_MODE = args.needs_claude
+    if NC_MODE:
+        DONE = ROOT / "build" / "permute_nc.done"
 
     if PIDFILE.exists():
         try:
