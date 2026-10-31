@@ -98,8 +98,22 @@ CLOSE_CLASS = re.compile(r"CLASS (register-only|reorder-only|reorder\+register)"
 def needs_claude_candidates(binary):
     """--needs-claude: functions a session gave up on with a register or reorder
     difference only, the kind of gap the permuter closes, smallest first."""
-    want = {p.stem for p in NEEDS_CLAUDE.glob("func_*.md") if CLOSE_CLASS.search(p.read_text(errors="replace"))}
-    funcs = [f for f in a.functions(binary) if f[0] in want and not a.ALABEL.search(f[3])]
+    want = set()
+    for p in NEEDS_CLAUDE.glob("func_*.md"):
+        text = p.read_text(errors="replace")
+        if not CLOSE_CLASS.search(text):
+            continue
+        # the overlays share one load address, so an overlay function's name doesn't say
+        # which binary it is: take it only for the overlay its note names most
+        if binary != "SLES_539.74":
+            named = re.findall(r"\b(TITLE|SHOP|MENU|CASINO|BATTLE)\b", text)
+            if not named or max(set(named), key=named.count) != binary:
+                continue
+        want.add(p.stem)
+    funcs, seen = [], set()
+    for f in a.functions(binary):
+        if f[0] in want and f[0] not in seen and not a.ALABEL.search(f[3]):
+            funcs.append(f); seen.add(f[0])
     return sorted(funcs, key=lambda f: f[2] - f[1])
 
 
