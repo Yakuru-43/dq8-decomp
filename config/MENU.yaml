@@ -129,6 +129,8 @@ segments:
       - [0xAA50, c, func_00469710]
       - [0xAA80, c, func_00469740]
       - [0xAAD0, asm, text_469790]
+      - [0xAB20, c, func_004697E0]
+      - [0xABD0, asm, text_469890]
       - [0xAC90, c, func_00469950]
       - [0xACE0, asm, text_4699A0]
       - [0xAFB0, c, func_00469C70]
