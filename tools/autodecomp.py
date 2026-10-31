@@ -82,10 +82,24 @@ def symbol_script(binary, path):
     path.write_text("".join(f"{n} = 0x{a:X};\n" for n, a in sorted(syms.items())))
 
 
+WORD_INSN = re.compile(r"\.word\s+0x[0-9A-Fa-f]+\s+# ((?:cvt|trunc|round|floor|ceil)\.\w\.\w\s+\$f\d+, \$f\d+) #.*$",
+                       re.M)
+
+
+def real_insns(asm):
+    """The asm with the FPU conversions splat writes as `.word` turned back into instructions.
+
+    rabbitizer emits `cvt.w.s $f0, $f0` (float -> int) as `.word 0x46000024`
+    with the instruction in a comment; m2c skips data words, so every draft
+    lost its float-to-int casts and could never match.
+    """
+    return WORD_INSN.sub(r"\1", asm)
+
+
 def draft(name, asm, target="mips-gcc-c"):
     """m2c output for one function, or None."""
     with tempfile.NamedTemporaryFile("w", suffix=".s", delete=False) as t:
-        t.write(asm)
+        t.write(real_insns(asm))
     try:
         r = subprocess.run([str(Path(sys.executable).parent / "m2c"), "--valid-syntax", "--globals", "used",
                             "--no-cache", "-t", target, "-f", name, t.name],
