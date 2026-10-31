@@ -171,6 +171,7 @@ segments:
       - [0xACA0, asm, text_469960]
       - [0xB270, c, func_00469F30]
       - [0xB280, asm, text_469F40]
+      - [0xB750, c, func_0046A410]
       - [0xB800, c, func_0046A4C0]
       - [0xB840, c, func_0046A500]
       - [0xB850, asm, text_46A510]
