@@ -5662,6 +5662,8 @@ segments:
       - [0x24B2A0, asm, game_34B2A0]
       - [0x24BB40, c, func_0034BB40]
       - [0x24BB50, asm, game_34BB50]
+      - [0x24C250, c, func_0034C250]
+      - [0x24C2F0, asm, game_34C2F0]
       - [0x24CBA0, c, func_0034CBA0]
       - [0x24CBC0, asm, game_34CBC0]
       - [0x24D550, c, func_0034D550]
