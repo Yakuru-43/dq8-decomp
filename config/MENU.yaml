@@ -46,6 +46,7 @@ segments:
       - [0xC50, c, func_0045F910]
       - [0xC60, c, func_0045F920]
       - [0xC70, asm, text_45F930]
+      - [0x1260, c, func_0045FF20]
       - [0x13D0, c, func_00460090]
       - [0x1430, asm, text_4600F0]
       - [0x1EA0, c, func_00460B60]
