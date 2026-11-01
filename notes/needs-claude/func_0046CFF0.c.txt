@@ -1,0 +1,50 @@
+// best draft 2026-10-31 factory-6 session 2 (try_match -- -O4, CLASS structural score=45)
+// range: 0x0046CFF0 0x0046D0F0
+#include "common.h"
+
+typedef struct {
+    /* 0x00 */ u8 pad[0x10C];
+    /* 0x10C */ s32 unk10C;
+} BattleCtx;
+
+s32 func_370500(void);
+BattleCtx *func_162E80(s32);
+void *func_161E80(s32, void *, s32 *);
+void func_130FD0(void *, void *, s32);
+s32 D_003E01D0;
+s32 D_003E01D4;
+M2C_UNK D_004841C0 __attribute__((section(".data")));
+void *D_00482ED0[] __attribute__((section(".data")));
+
+void func_0046CFF0(char *arg0) {
+    s32 size;
+    s32 sel;
+    BattleCtx *ctx;
+    void *hit;
+    s32 temp_v0;
+    s32 i;
+    char *temp_s1;
+    s32 *temp_s4;
+    char *temp_v1;
+
+    sel = func_370500() > 0 ? D_003E01D4 : D_003E01D0;
+    ctx = func_162E80(sel);
+    hit = func_161E80(ctx->unk10C, &D_004841C0, &size);
+    if (hit != 0) {
+        func_130FD0((void *)M2C_FIELD(arg0, s32 *, 0xB68), hit, size);
+        temp_v0 = (s32)M2C_FIELD(arg0, s32 *, 0xB68);
+        M2C_FIELD(arg0, s32 *, 0xB98) = temp_v0;
+    }
+    i = 0;
+    do {
+        hit = func_161E80(ctx->unk10C, D_00482ED0[i], &size);
+        if (hit != 0) {
+            temp_s1 = arg0 + (i * 0x58);
+            temp_s4 = (s32 *)(temp_s1 + 0xBC4);
+            func_130FD0((void *)M2C_FIELD(temp_s1, s32 *, 0xBC4), hit, size);
+            temp_v1 = arg0 + (i * 4);
+            M2C_FIELD(temp_v1, s32 *, 0xCFC) = *temp_s4;
+        }
+        i += 1;
+    } while (i < 4);
+}

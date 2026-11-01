@@ -655,6 +655,9 @@ def try_function(job):
             with open(why_dir / "errors.tsv", "a") as log:
                 log.write(f"{name}\t{kind}\t{r}\t{last_error}\n")
             (why_dir / f"{name}.{kind}.c").write_text(c)
+        if why_dir and r == "mismatch" and not mismatched:
+            # the first draft that compiles to the right size: a base to finish by hand
+            (why_dir / f"{name}.mismatch.c").write_text(f"// flags: {' '.join(extra)}\n" + c if extra else c)
         why = min(why, r, key=lambda x: rank.index(x) if x in rank else -1)
         if r == "match":
             return name, (kind, c, extra), f"match_{kind}"
@@ -710,7 +713,7 @@ def main():
                     help="only functions with divbyzerocheck guards (`break 0, 7`)")
     ap.add_argument("--why", action="store_true",
                     help="log each draft's compile or link error to build/why/<bin>/errors.tsv, "
-                         "next to the draft")
+                         "next to the draft; keep the first mismatching draft as <func>.mismatch.c")
     a = ap.parse_args()
     if a.why:
         (ROOT / "build" / "why" / a.bin).mkdir(parents=True, exist_ok=True)
