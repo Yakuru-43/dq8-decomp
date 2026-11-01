@@ -243,6 +243,7 @@ segments:
       - [0x423A0, c, func_001423A0]
       - [0x424F0, c, func_001424F0]
       - [0x42700, asm, game_142700]
+      - [0x42A10, c, func_00142A10]
       - [0x42B60, c, func_00142B60]
       - [0x42B90, c, func_00142B90]
       - [0x42BC0, asm, game_142BC0]
