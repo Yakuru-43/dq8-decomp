@@ -5338,7 +5338,7 @@ segments:
       - [0x22A880, c, func_0032A880]
       - [0x22A8B0, c, func_0032A8B0]
       - [0x22A8C0, c, func_0032A8C0]
-      - [0x22A8F0, asm, game_32A8F0]
+      - [0x22A8F0, c, func_0032A8F0]
       - [0x22AA40, c, func_0032AA40]
       - [0x22AA50, asm, game_32AA50]
       - [0x22ADA0, c, func_0032ADA0]
