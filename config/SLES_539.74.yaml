@@ -783,6 +783,8 @@ segments:
       - [0x6AE20, asm, game_16AE20]
       - [0x6B2F0, c, func_0016B2F0]
       - [0x6B3E0, asm, game_16B3E0]
+      - [0x6B6F0, c, func_0016B6F0]
+      - [0x6B7E0, asm, game_16B7E0]
       - [0x6B8E0, c, func_0016B8E0]
       - [0x6B920, c, func_0016B920]
       - [0x6B960, asm, game_16B960]
