@@ -57,6 +57,8 @@ segments:
       - [0xB90, c, func_0045F850]
       - [0xBB0, c, func_0045F870]
       - [0xBC0, asm, text_45F880]
+      - [0xDA0, c, func_0045FA60]
+      - [0xED0, asm, text_45FB90]
       - [0x14F0, c, func_004601B0]
       - [0x15D0, c, func_00460290]
       - [0x1610, asm, text_4602D0]
