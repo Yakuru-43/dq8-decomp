@@ -413,11 +413,27 @@ def float_protos(c):
     return out if changed else None
 
 
+DIV_BREAK = re.compile(r"^\s+/\* \w+ \w+ \w+ \*/\s+break\s+0, 7\s*$", re.M)
+BREAK_GUARD = re.compile(r"^[ \t]*if \((?:[^()]*? == 0|0 == [^()]*?)\) \{\n[ \t]*M2C_BREAK\(\w*\);\n[ \t]*\}\n"
+                         r"|^[ \t]*M2C_BREAK\(\w*\);\n", re.M)
+
+
+def div_flags(asm):
+    """The flags for a function whose divides are guarded by `bnez; div; break 0, 7`.
+
+    That guard is CodeWarrior's divbyzerocheck option, not source code: m2c
+    writes it as `if (d == 0) { M2C_BREAK(0); }`, which links to nothing.
+    """
+    return ("-flag", "divbyzerocheck") if DIV_BREAK.search(asm) else ()
+
+
 def candidates(name, asm):
     """Yield (kind, source) attempts, most likely first."""
     seen = set()
     for target in ("mips-gcc-c", "mipsee-mwcc-c"):
         c = draft(name, asm, target)
+        if c and div_flags(asm):
+            c = BREAK_GUARD.sub("", c)
         c = c and fix_externs(c, asm)
         if not c:
             continue
@@ -541,6 +557,13 @@ def symbol_script_for(c, syms_ld, tmp):
 
 
 last_error = ""   # the compiler's or linker's first useful line from the last verify() failure
+why_dir = None    # --why: log each draft's compile/link error here, next to the draft
+
+
+def set_why_dir(path):
+    # also the pool's initializer: workers don't inherit main()'s globals
+    global why_dir
+    why_dir = path
 
 
 def error_line(text):
@@ -615,8 +638,10 @@ def try_function(job):
         # its functions, so this range cannot become one file (the callers would
         # lose their target when the label goes away)
         return name, None, "entry inside"
+    extra = div_flags(asm)
+
     def check(c, flags=()):
-        return verify(c, start, end, syms_ld, orig, flags, rodata=rodata)
+        return verify(c, start, end, syms_ld, orig, (*flags, *extra), rodata=rodata)
 
     # the reason logged is the closest any draft came, not the last draft's:
     # one draft that fails to link must not hide another that only mismatches
@@ -626,9 +651,13 @@ def try_function(job):
     uncompiled = []
     for kind, c in candidates(name, with_jump_tables(binary, asm) if rodata else asm):
         r = check(c)
+        if why_dir and r in ("link", "compile"):
+            with open(why_dir / "errors.tsv", "a") as log:
+                log.write(f"{name}\t{kind}\t{r}\t{last_error}\n")
+            (why_dir / f"{name}.{kind}.c").write_text(c)
         why = min(why, r, key=lambda x: rank.index(x) if x in rank else -1)
         if r == "match":
-            return name, (kind, c, ()), f"match_{kind}"
+            return name, (kind, c, extra), f"match_{kind}"
         if r in ("mismatch", "size", "padding", "rodata"):
             mismatched.append((kind, c))
         elif r == "compile":
@@ -637,7 +666,7 @@ def try_function(job):
     for flags in (("-O4",), ("-O2",)):
         for kind, c in mismatched:
             if check(c, flags) == "match":
-                return name, (kind, c, flags), f"match_{kind}{flags[0]}"
+                return name, (kind, c, (*flags, *extra)), f"match_{kind}{flags[0]}"
     if uncompiled:
         from repair import repair  # imports us: only import it when needed
         # repair the plainest draft first: the structified and swapped variants
@@ -654,10 +683,10 @@ def try_function(job):
                 variants.append(swapped)
             for variant in variants:
                 if check(variant) == "match":
-                    return name, ("repair", variant, ()), "match_repair"
+                    return name, ("repair", variant, extra), "match_repair"
                 for flags in (("-O2",), ("-O4",)):
                     if check(variant, flags) == "match":
-                        return name, ("repair", variant, flags), f"match_repair{flags[0]}"
+                        return name, ("repair", variant, (*flags, *extra)), f"match_repair{flags[0]}"
             # it compiles now but the bytes differ: hand it to the permuter, which
             # searches source orders for exactly this kind of difference
             saved = ROOT / "build" / "repair" / binary / f"{name}.c"
@@ -677,7 +706,15 @@ def main():
     ap.add_argument("--retry", help="only functions whose last result was one of these (comma-separated)")
     ap.add_argument("--dry-run", action="store_true", help="report, don't write src files")
     ap.add_argument("--jumptables", action="store_true", help="only functions that use a jump table")
+    ap.add_argument("--divides", action="store_true",
+                    help="only functions with divbyzerocheck guards (`break 0, 7`)")
+    ap.add_argument("--why", action="store_true",
+                    help="log each draft's compile or link error to build/why/<bin>/errors.tsv, "
+                         "next to the draft")
     a = ap.parse_args()
+    if a.why:
+        (ROOT / "build" / "why" / a.bin).mkdir(parents=True, exist_ok=True)
+        set_why_dir(ROOT / "build" / "why" / a.bin)
 
     base = VRAM.get(a.bin, 0x45ECC0)
     data = (ROOT / "extract" / f"{a.bin}.bin").read_bytes()
@@ -693,6 +730,8 @@ def main():
         funcs = [f for f in funcs if last.get(f[0]) in want]
     if a.jumptables:
         funcs = [f for f in funcs if JTBL_REF.search(f[3])]
+    if a.divides:
+        funcs = [f for f in funcs if DIV_BREAK.search(f[3])]
     funcs = funcs[a.skip:]
     if a.limit:
         funcs = funcs[:a.limit]
@@ -712,7 +751,7 @@ def main():
     stats = {}
     ranges = {n: (s, e) for n, s, e, _, _ in funcs}
     log = open(ROOT / "build" / f"autodecomp_{a.bin}.tsv", "a")
-    with Pool(a.jobs) as pool:
+    with Pool(a.jobs, initializer=set_why_dir, initargs=(why_dir,)) as pool:
         for i, (name, c, why) in enumerate(pool.imap_unordered(try_function, jobs, chunksize=4), 1):
             stats[why] = stats.get(why, 0) + 1
             log.write(f"{name}\t{why}\n")
