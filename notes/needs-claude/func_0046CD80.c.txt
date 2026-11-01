@@ -1,0 +1,16 @@
+// range: 0x46CD80 0x46CE10
+#include "common.h"
+
+M2C_UNK func_2D38E0(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK); /* extern */
+extern M2C_UNK func_0046DDF0(u32);
+
+void func_0046CD80(u32 arg0) {
+    u32 none;
+    u32 some;
+    u32 obj = func_0046DDF0(arg0);
+    none = (u8)!(0 < arg0);
+    some = (u8)!(0 < none);
+    func_2D38E0(obj, 0x1F58, some, -1);
+    func_2D38E0(obj, 0x1F61, some, -1);
+    func_2D38E0(obj, 0x1F4C, none, -1);
+}

@@ -1,0 +1,58 @@
+// range: 0x46AB50 0x46AC10
+// Best draft for func_0046AB50 (CLASS reorder+register score=13) — kept out
+// of src/ so the build stays green; see func_0046AB50.md for the diff.
+#include "common.h"
+
+extern "C" {
+
+extern f32 D_003DF4B4;
+
+typedef struct BattleGlobal {
+    /* 0x00 */ s32 pad0;
+    /* 0x04 */ void *field_04;
+} BattleGlobal;
+
+extern BattleGlobal *D_003E1BB0;
+
+struct AngleObj {
+    u8 pad0[0xC0];
+    virtual s32 f0();
+    virtual s32 f1();
+    virtual f32 get_angle();         /* slot 0x10 */
+    virtual void set_angle(f32);     /* slot 0x14 */
+};
+
+typedef struct AngleArg {
+    /* 0x00 */ s32 tag;
+    /* 0x04 */ s32 bits;
+} AngleArg;
+
+extern AngleObj *func_16AF30(void *, s32);
+extern f32 func_13FB90(f32);
+extern s32 func_15F490(void);
+extern void func_143160(f32, s32);
+
+s32 func_0046AB50(AngleArg *arg0) {
+    AngleArg *a;
+    AngleObj *obj;
+    s32 h;
+    f32 angle;
+
+    a = arg0;
+    obj = func_16AF30(D_003E1BB0->field_04, *(s32 *)((char *)D_003E1BB0->field_04 + 0x44B4));
+    if (obj == 0) {
+        return 0;
+    }
+    if (a->tag == 0) {
+        angle = (f32)a->bits;
+    } else {
+        angle = *(f32 *)&a->bits;
+    }
+    obj->set_angle(func_13FB90(angle));
+    h = func_15F490();
+    angle = obj->get_angle();
+    func_143160(D_003DF4B4 * angle / 180.0f, h);
+    return 1;
+}
+
+}

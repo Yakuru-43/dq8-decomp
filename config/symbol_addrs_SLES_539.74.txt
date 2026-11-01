@@ -13,6 +13,14 @@ DebugPrintf2 = 0x3292F0; // type:func
 // Decompiled (src/SLES_539.74/game_359C90.cpp). Name invented.
 FindEntry__FP5Entryii = 0x359C90; // type:func
 
+// Function starts splat merged into the function before them (queue blocker
+// `entry-inside`): each follows nop padding to a 16-byte boundary, or a stub that
+// ends in `jr`/`b`, and other code calls it.
+func_00168840 = 0x168840; // type:func
+func_0017A440 = 0x17A440; // type:func
+func_001A0C30 = 0x1A0C30; // type:func
+func_001F4AC0 = 0x1F4AC0; // type:func
+
 // --- labels kept for calls from decompiled code (tools/keep_funcs.py) ---
 func_001041C0 = 0x1041C0; // type:func
 func_00107D30 = 0x107D30; // type:func
