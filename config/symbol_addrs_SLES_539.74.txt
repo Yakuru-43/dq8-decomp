@@ -29,3 +29,4 @@ func_0020C3E0 = 0x20C3E0; // type:func
 func_0020CC10 = 0x20CC10; // type:func
 func_00305950 = 0x305950; // type:func
 func_0013D410 = 0x13D410; // type:func
+func_0033F4D0 = 0x33F4D0; // type:func
