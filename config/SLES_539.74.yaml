@@ -397,6 +397,7 @@ segments:
       - [0x4E550, c, func_0014E550]
       - [0x4E560, c, func_0014E560]
       - [0x4E570, asm, game_14E570]
+      - [0x4E750, c, func_0014E750]
       - [0x4E860, c, func_0014E860]
       - [0x4E8A0, asm, game_14E8A0]
       - [0x4ED40, c, func_0014ED40]
