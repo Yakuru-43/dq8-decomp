@@ -1,0 +1,59 @@
+// range: 0x33B460 0x33B5B0
+// best attempt, CLASS structural score=49 (332 vs 332 bytes) — not committed to src/
+#include "common.h"
+
+f32 func_0013BC60(void);
+
+typedef struct {
+    f32 f0;
+    u32 u4;
+    f32 f8;
+    u32 uC;
+} Entry;
+
+typedef struct {
+    Entry parts[64];
+    u8 gap_400[0x800 - 0x400];
+    f32 timers[64];
+    Entry parts2[64];
+    s16 counts[64];
+    u8 gap_D80[0x10];
+    s16 counter;
+} Spawner;
+
+void func_0033B460(Spawner *o, f32 arg1) {
+    Entry *e;
+    Entry *e2;
+    f32 t;
+    s32 i;
+
+    o->counter--;
+    if (o->counter > 0) {
+        return;
+    }
+    for (i = 0; i < 64; i++) {
+        if (o->counts[i] <= 0) {
+            break;
+        }
+    }
+    if (i == 64) {
+        return;
+    }
+    e = &o->parts[i];
+    t = func_0013BC60();
+    e->f0 = 10.0f * t - 5.0f;
+    e->u4 = 0;
+    t = func_0013BC60();
+    e->f8 = 10.0f * t - 5.0f;
+    e->uC = 0x3F800000;
+    o->timers[i] = arg1;
+    e2 = &o->parts2[i];
+    t = func_0013BC60();
+    e2->f0 = t + 2.5f;
+    e2->u4 = 0x3F800000;
+    t = func_0013BC60();
+    e2->f8 = t + 2.5f;
+    e2->uC = 0x3F800000;
+    o->counts[i] = 50;
+    o->counter = 2;
+}
