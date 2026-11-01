@@ -19,9 +19,16 @@ Fix: write the plain `/` or `%`; the guard comes from a compiler flag. Try it wi
 `tools/try_match.py <file> <func> <vram> --show -- -O3 -flag divbyzerocheck`; on a match
 put `// flags: -flag divbyzerocheck` on line 2, under `// range:` (verify.py and the
 build read it there).
+autodecomp does this itself since 2026-11-01: it drops m2c's `if (d == 0) { M2C_BREAK(0); }`
+guards and compiles with the flag (`tools/autodecomp.py --divides` runs just these 206
+functions; `--why` leaves the first mismatching draft, flag line included, in
+`build/why/<bin>/<func>.mismatch.c` as a base to finish with try_match). A verify.py `LINK`
+with `undefined reference to 'M2C_BREAK'` is this idiom.
 Example: src/SLES_539.74/func_002FF0D0.c
 Solved: func_002FF0D0 func_00301200 func_003012F0 func_00301350 func_00302140
-func_0020C5C0 func_00210C90 func_00210F80 func_00212BA0 (2026-10-24, Opus)
+func_0020C5C0 func_00210C90 func_00210F80 func_00212BA0 (2026-10-24, Opus); func_00327A30
+func_0037A7D0 (autodecomp), func_0022A880 func_00164550 func_00199E80 func_001F0050
+func_001A3900 func_001A3750 func_001A6450 func_0022A6F0 (2026-11-01, Opus)
 
 ## jumptable: a switch compiled to a jump table (queue blocker `jumptable`)
 Sign: `lui/addiu %hi/%lo(jtbl_XXXXXXXX)`, `sll`, `addu`, `lw`, `jr` after an
@@ -518,3 +525,30 @@ A 2-word register-only diff at a virtual call (the loaded char in `$a0` vs `$a1`
 virtual takes that char as its argument (`overflow(c)`), with `c` an `s32` (a `u16` adds `andi`).
 Example: src/SLES_539.74/func_00103C10.cpp
 Solved: func_00103C10 (about 12 tries, 2026-10-29, Opus; mh2 "Loops" unroll entry pointed at it)
+
+## `slti $v0`/`bnez $v0` where the original has `slti $at`/`bnez $at`: write the bound one off (`<=`, `>`)
+Sign: a register-only diff at a compare against a constant: mine computes the test into a
+real register (`slti $v0,$s0,0x2`, `slti $v0,$v1,-0x31`), the original into `$at`; often the
+value under test then also sits in another register (`$v1` vs `$v0`) for the whole function.
+Fix: CW uses `$at` when it had to rewrite the comparison itself. Write the same test with the
+constant one off: `n < 2` -> `n <= 1`, `d >= -0x31` -> `d > -0x32`, `t < 0` -> `t <= -1`.
+The register of the tested value usually comes right with it. (`0 <= x` constant-left is the
+`slt $at,$zero,x` variant of the same rule.)
+Example: src/SLES_539.74/func_001F0050.c, src/SLES_539.74/func_00164550.c
+Solved: func_001F0050 func_00164550 func_001A6450 (2026-11-01, Opus)
+
+## Free-slot search + head/tail list append, `else n = NULL` in m2c: one inline helper with `goto found`
+Sign: `b` into a loop over N-byte slots (`lw $v1,0($t0)`; `beqz` -> `sw $zero,next($t0)`),
+`daddu $t0,$zero,$zero` after it, then `lw tail; beqz; sw n,next(tail); sw n,tail(pool);
+sw $zero,next(n); lw head; beqz -> sw n,head(pool)`, then a second `beqz n` before the body.
+m2c's draft has `goto loop`, `} else { var = NULL; }` and the null test twice.
+Fix: one `static inline Node *node_add(NodePool *pool, s32 *index)` holding both halves: a
+`for` loop that sets `n->next = NULL` and `goto found`s, `n = NULL;` after it, `found:
+*index = i; if (n == NULL) return NULL;` then the append; the caller tests `n != NULL`.
+Two nested inlines (find called from add) get outlined; two separate ones lay the blocks out
+differently. If the original's last statement goes out of line with a `b` back, try
+`if (n == NULL) return;` in the caller instead of wrapping the body.
+Example: src/SLES_539.74/func_001A3900.c (0x50 slots), src/SLES_539.74/func_001A6450.c (0x60)
+Solved: func_001A3900 func_001A3750 func_001A6450 (2026-11-01, Opus). Open: the 0x60-slot
+siblings whose original uses `beql` for every one-instruction `if` (func_001A6360,
+func_001A6710, ...): notes/needs-claude/func_001A6710.md
