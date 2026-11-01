@@ -1,0 +1,47 @@
+// Best draft for func_0046AB70 (CASINO), score 54 / 224 B — see func_0046AB70.md
+// range: 0x46AB70 0x46AC60
+#include "common.h"
+
+typedef struct {
+    u8 pad0[0x2];
+    s16 width;
+    s16 stride;
+    u8 pad6[0x50 - 6];
+    u8 *pixels;
+} Surf;
+
+typedef struct {
+    f32 top;
+    f32 left;
+    f32 height;
+    f32 width;
+} Rect;
+
+s32 func_0046AB70(Surf *dst, Surf *src, Rect *dstRect, Rect *srcPos) {
+    Rect s = *srcPos;
+    Rect d = *dstRect;
+    u8 *db = dst->pixels;
+    u8 *sb = src->pixels;
+    s32 dy = *(s32 *)&d.top;
+    s32 sy = *(s32 *)&s.top;
+    s32 w = *(s32 *)&d.width;
+    s32 sx0 = *(s32 *)&s.left;
+    s32 dx0 = ((s32 *)&d)[1];
+    s32 h = *(s32 *)&d.height;
+    s32 dxEnd = dx0 + w;
+    s32 dyEnd = dy + h;
+
+    while (dy < dyEnd) {
+        s32 dx = dx0;
+        s32 sx = sx0;
+        while (dx < dxEnd) {
+            u8 val = *(u8 *)(sb + sx + src->width * (src->stride - sy));
+            *(u8 *)(db + dx + dst->width * (dst->stride - dy)) = val;
+            dx++;
+            sx++;
+        }
+        dy++;
+        sy++;
+    }
+    return 1;
+}
