@@ -3,3 +3,6 @@ _gp = 0x3E7270; // absolute:True data area base (gp-relative addressing, see SLE
 // --- labels kept for calls from decompiled code (tools/keep_funcs.py) ---
 D_003E1BF0 = 0x3E1BF0;
 D_003E1BF8 = 0x3E1BF8;
+D_003E1C54 = 0x3E1C54;
+D_003E1C64 = 0x3E1C64;
+D_003E1C68 = 0x3E1C68;
