@@ -770,3 +770,15 @@ read a `b; sw` delay-slot difference that was only the default try_match flags; 
 try_match with `--ver 3.0.1b151-050317 ... -- -O3 -Isrc` before trusting a scheduling diff.
 Example: src/SLES_539.74/func_0015B190.c
 Solved: func_0015B190 (8 tries, 2026-11-02, Opus; declaration order cur/prev/found via a permutation script fixed the rest)
+
+## `lwc1 $fN,%gp_rel(D)($gp)` above the `sd $ra` save (or above stack stores): the global is a float literal, declare it `const`
+Sign: a gp-relative float load scheduled into the prologue, before `sd $ra` and the frame's
+first stores, while yours lands after them in every statement order (a load never passes a
+store in CW's scheduler, the `sd $ra` included). Look at the data: a lone `.float` in `.sdata`
+with no writer (here 0.01227 = pi/256) is a literal CW put in the gp pool. A literal is not a
+memory read, so it schedules first; `val = 0.012271847f;` gives the code but `.lit4` does not
+link (R_MIPS_LITERAL). Fix: `extern const f32 D __attribute__((section(".sdata")));` -- const
+makes the load free to move, the section keeps it gp-relative (plain `const` alone becomes
+`lui`/`lwc1`, 4 bytes longer).
+Example: src/SLES_539.74/func_001C65D0.c
+Solved: func_001C65D0 (6 tries, 2026-11-02, Opus; Qwen had tried every statement order)
