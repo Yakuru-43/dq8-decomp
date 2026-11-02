@@ -798,3 +798,17 @@ never did. For a loop in MSL's `for (; n > 0; --n, ++num)` form, write a `while`
 `count++; n--;` at the end (the lint refuses the comma).
 Example: src/SLES_539.74/func_00103AB0.cpp
 Solved: func_00103AB0 (about 8 tries, 2026-11-02, Opus; Qwen had 4 attempts at -O3)
+
+## `beqz p` falls into the `p != 0` arm, but that arm's `||` continuation blocks sit after the other arm's: write `if (p == 0) {A} else {B}`
+Sign: `beqz p, A` with the non-null arm B falling through, and B's out-of-line blocks (the
+`c.eq.s`/`bc1f` tail of an `a != b || c != d` chain, `b` back into B) placed **after** A's
+code and A's own continuation blocks, just before the epilogue. With `if (p != 0) {B} else {A}`
+the code is the same size but B's tail lands right after B (block order, ~38 words).
+Fix: write the arms in the other source order, `if (p == 0) { A } else { B }`: CW still emits
+`beqz` to A with B as the fall-through, but lays out the cold blocks in source order, A's
+first. In the same function the last 3 words (`lq $v1`/`lw $a0` vs `lq $a0`/`lw $v1` around a
+`*dst->vec = *sv;` after `dst->vec = &dst->buf;`) flipped with `dst->vec->q = sv->q;` (the
+union's `u128` member instead of the whole union). Check try_match got `-- -O3` first: the
+needs-claude note's "structural, 53 words" was an `-O2` diff; at `-O3` it was 38 words.
+Example: src/SLES_539.74/func_00149240.c
+Solved: func_00149240 (6 tries, 2026-11-02, Opus)
