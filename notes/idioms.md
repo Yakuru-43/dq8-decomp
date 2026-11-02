@@ -818,3 +818,24 @@ union's `u128` member instead of the whole union). Check try_match got `-- -O3` 
 needs-claude note's "structural, 53 words" was an `-O2` diff; at `-O3` it was 38 words.
 Example: src/SLES_539.74/func_00149240.c
 Solved: func_00149240 (6 tries, 2026-11-02, Opus)
+
+## Loop exit falls into `addiu $sN,$zero,-1` that the hit path skips, then `bltz $sN` + `slt $at` range test: find-index + get inlines
+Sign: a name search `b` into a bottom-tested loop (`bnel $a1,$zero,<cold call>` with the field
+load in the back-edge slot), the call block cold after the tail (`jal; bnez $v0,<incr>; nop;
+b <test>; nop`), the loop's fall-through `addiu $sN,$zero,-1` straight into `bltz $sN,<cold>;
+slt $at,$sN,count; beqz $at,<cold>`, then `$sN = items + $sN * size` and a `beql $sN,$zero`.
+The null-key guard jumps to a stub `b <bltz>; addiu $sN,$zero,-1`. No C with a `break` and
+`if (i >= count) i = -1;` gives it (there is no `>= count` test after the loop).
+Fix: two inlines, `static inline s32 find(List *l, s32 key)` (`if (key == 0) return -1;`,
+loop with `if (e->name != 0 && f(key, e->name) == 0) return i;`, `return -1;`) and
+`static inline Elem *get(List *l, s32 i)` with `if (i >= 0 && l->count > i) return &l->items[i];
+return 0;` (`count > i` for the `$at`, see the one-off bound rule); the caller writes
+`e = get(l, find(l, key)); if (e == 0) return 0;`. That fixes the size; if the list, cursor and
+index then sit in rotated s-registers (list numbered before the helper's locals, the element
+pointer coalesced with the list instead of the index), make the lookup one inline that loads
+the list into a local declared **after** `i` and the cursor, with its own `index` result:
+`for (...) if (match) { index = i; goto found; }  index = -1; ... found: if (index >= 0 && ...)`
+(inlines nest only one level, so the find cannot stay a separate helper inside it).
+Example: src/SLES_539.74/func_0021DFE0.c (group lookup as the one inline, item lookup as the
+find/get pair). Its twin func_0021E190 (same 0x1B0 layout) should take the same C.
+Solved: func_0021DFE0 (about 15 tries, 2026-11-02, Opus)
