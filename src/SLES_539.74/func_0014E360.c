@@ -22,14 +22,14 @@ typedef struct Buf14E360 {
 char *func_0014E360(Buf14E360 *buf, s32 mode, s32 min, s32 size)
 {
     BufNode14E360 *node;
-    BufNode14E360 *next;
-    BufNode14E360 *found_node;
     char *found;
-    char *end;
-    s32 units;
+    BufNode14E360 *found_node;
     u32 best;
-    u32 limit;
     u32 gap;
+    char *end;
+    BufNode14E360 *next;
+    s32 units;
+    u32 limit;
 
     units = size / 16;
     buf->cur = 0;
@@ -45,7 +45,7 @@ char *func_0014E360(Buf14E360 *buf, s32 mode, s32 min, s32 size)
         end = (char *)node + node->size * 16;
         gap = (u32)((s32)((char *)next - end) / 16);
         if (mode == 1) {
-            if (gap >= 2) {
+            if (gap > 1) {
                 found = end;
                 found_node = node;
                 break;
@@ -76,13 +76,14 @@ char *func_0014E360(Buf14E360 *buf, s32 mode, s32 min, s32 size)
     found_node->next = buf->cur;
     buf->cur->prev = found_node;
     buf->cur->next->prev = buf->cur;
-    end = (char *)buf->cur + 0x10;
+    node = buf->cur;
+    end = (char *)node + 0x10;
     gap = ((u32)end >> 4) % (u32)units;
     if (gap != 0) {
         end += (units - gap) << 4;
     }
-    buf->cur->size2 = (s32)(end - (char *)buf->cur) / 16;
-    *(s32 *)(end - 4) = buf->cur->size2;
+    node->size2 = (s32)(end - (char *)node) / 16;
+    *(s32 *)(end - 4) = node->size2;
     buf->cur->size = (s32)(end - (char *)buf->cur) / 16;
     buf->alloc_end = end;
     buf->tail = (s32)((char *)buf->cur->next - end) / 16;
