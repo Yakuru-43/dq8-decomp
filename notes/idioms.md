@@ -170,7 +170,9 @@ Fix: type the base as a pointer (`char *`, or the struct pointer it really is), 
 field / local and in the callee's prototype. Integer `+ 8` is scheduled before the `$v0` copy,
 pointer `+ 8` after it. A named temp for `g()` does not change it.
 Example: src/SLES_539.74/func_0030A180.c
-Solved: func_0030A180 (1 try, 2026-10-26, Opus)
+Solved: func_0030A180 (1 try, 2026-10-26, Opus), func_001EA210 (3 tries, 2026-11-02, Opus:
+`$a0`/`$a2` swapped, `(char *, s32, char *)` prototype fixed it; in a `.cpp` file, trust
+`tools/verify.py`: `try_match.py` with no flags showed 100 vs 84 bytes on the matching source)
 
 ## Loop with a top guard and the body inline: `if (cond) do { } while (cond);`
 Sign: the original tests once before the loop (`slt $at,$zero,$sN; beqz $at,<after>` with
