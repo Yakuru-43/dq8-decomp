@@ -566,7 +566,11 @@ Example: src/SLES_539.74/func_001F0050.c, src/SLES_539.74/func_00164550.c,
 src/SLES_539.74/func_00338080.c, src/BATTLE/func_00468550.c
 Solved: func_001F0050 func_00164550 func_001A6450 (2026-11-01, Opus); func_00338080
 (2026-10-30, Qwen factory-3), func_004607A0 func_00468550 func_00468490 (2026-10-28..30, Qwen
-factory-6), func_00164200 func_00164160 (`<= -50` for `< -49`, 2026-10-31, Qwen factory-1)
+factory-6), func_00164200 func_00164160 (`<= -50` for `< -49`, 2026-10-31, Qwen factory-1),
+func_0020E1A0 (four `n >= A && n <= B` ranges after a jump-table switch; the `tools/jtbl.py
+--m2c` draft with `void *` params also fixed an `$s1`/`$s2` arg swap, 2026-11-02, Opus),
+func_0014E360 (`sltiu $v0,gap,2` in a `beql` delay slot: `u32 gap > 1` for `>= 2`; it also
+moved the hoisted mode constants 1/2/3 into `$a2`/`$v1`/`$v0`, 2026-11-02, Opus)
 
 ## Free-slot search + head/tail list append, `else n = NULL` in m2c: one inline helper with `goto found`
 Sign: `b` into a loop over N-byte slots (`lw $v1,0($t0)`; `beqz` -> `sw $zero,next($t0)`),
@@ -705,3 +709,147 @@ return, `c = f(); if (c != -1) c = ...`, plain `*s->gptr++` and `gptr()`+`gbump(
 the field) each leave 4-6 words off. See also the inline member accessors entry above.
 Example: src/SLES_539.74/func_00103910.cpp
 Solved: func_00103910 (about 9 tries, 2026-11-02, Opus)
+
+## Float compare chain with plain `bc1t`/`bc1f` + `nop` (no `bc1tl`), the changed-value body inline after the first test: `if (a != b || c != d || e != f) { body }`
+Sign: a "set if changed" (vector setter, colour, position): `c.eq.s; bc1t <next test>; nop`,
+the copy body (`lq/sq`, a dirty flag `sb` **before** `b <ret>; nop`) falls through after the
+first test, the later tests laid out after it with `bc1f` back to the body and a final
+`bc1t <jr ra>; nop; b <body+4>; lq` (the first body word cross-jumped). Mine has
+`bc1tl` with the next `lwc1` hoisted into its delay slot and the flag `sb` in the `b` delay
+slot: that is the `if (x == x && y == y && z == z) return; body;` spelling.
+Fix: write the test positively around the body, `if (p->x != v->x || p->y != v->y || p->z != v->z)
+{ copy; dirty = 1; }`. If a null/first-use arm comes before it, end that arm with its own
+`return;` (an `else if` makes the last `bc1t` land on the body's `b <ret>` instead of `jr ra`,
+score 1). A first-use init that the original stores then reloads (`sw p,0x14(a0)` ... `lw v1,0x14(a0)`)
+goes through an inline member `void InitPos() { pos = &buf; flags... }` then `n->pos->q = v->q`.
+Example: src/SLES_539.74/func_0014AA80.cpp
+Solved: func_0014AA80 (7 tries, 2026-11-02, Opus)
+
+## Search loop whose call-and-test block sits after the tail with `b <tail>; nop`, and a bare `daddu $s0,$zero,$zero` on the loop exit: an inline find helper with `return p;`
+Sign: a guarded record scan (`beql g,$zero,<tail>; daddu $s0,$zero,$zero`, then `while (i < N)`
+with `bnel $v0,$zero,<call>` into a block **after** the caller's tail: `jal f; ...; bnez $v0,<incr>;
+nop; b <tail>; nop`), the loop exit falling into `daddu $s0,$zero,$zero` right before the tail
+`beql $s0,$zero,<epi>`. Mine (`goto found` / `break` + `p = 0;` in one function) lays the call
+block between the loop and the tail, 8 B short, with the `p = 0` skipped by a `b`.
+Fix: move the search into `static inline Entry *find(char *name)`: `if (g == 0) return 0;`, the
+loop with `if (p->a != 0) { if (f(p->name, name) == 0) return p; }`, `return 0;` at the end. The
+caller does `p = find(arg0); if (p == 0) return 0; ...`. The inline's returns become the join
+the original has, and CW places the hit block cold.
+Example: src/SLES_539.74/func_00161F70.c
+Solved: func_00161F70 (first try, 2026-11-02, Opus)
+
+## Integer temporaries in `$a0`/`$a1`/`$v1` swapped, or a store late in the `jal` delay slot: try every local declaration order, put the store before the call
+Sign: same size and schedule, but an index, a copy pointer and a counter sit in each other's
+argument/temp registers (`addiu $a1,$v0,-1` vs mine `$a0`; `lb $v0,0($a0)` vs `0($a1)`), and/or
+a `*dst = 0` that the original stores in the delay slot of the following `jal` while mine stores
+it earlier or after a `b`. Fix: a store can only land in a call's delay slot if the C writes it
+**before** the call (`*dir = 0; strcpy(name, &path[i + 1]);`), and an if/else beats an early
+`return` for the shared exit stub. For the registers, permute the order the locals are declared
+in (3 locals = 6 orders, one try each): `src, i, n` and `i, n, src` were wrong, `i, src, n`
+matched. `&path[i + 1]` vs `path + i + 1` also changes the tail (`addiu v0,i,1; addu a1,path,v0`).
+Example: src/SLES_539.74/func_00161BA0.c
+Solved: func_00161BA0 (4 tries, 2026-11-02, Opus), func_00162BC0 (loop pointer/counter in
+`$s1`/`$s0` swapped: declare `u8 *e;` before `s32 i;`; 2nd try, 2026-11-02, Opus),
+func_0014E360 (six loop values in `$t2..$t7` rotated; declaring them in the reverse of the
+original's `$t` order, `found, found_node, best, gap, end, next`, matched first try, 2026-11-02, Opus)
+
+## `addiu $v0,$zero,K` between `addiu $sp` and the `sd $ra` saves, `sw $v0,%gp_rel(G)` in the first `jal`'s delay slot: `G = K;` before the call
+Sign: a constant loaded before the frame saves, apparently dead, and a gp-relative `sw $v0` in
+the delay slot of the first call (`jal PollSema; sw $v0,%gp_rel(D_003E0308)`). `$v0` there is
+not the call result: the store runs before the call. Fix: the first statement is a plain
+global store of the constant, `D_003E0308 = 1; if (PollSema(D_003DFBA0) < 0) ...`. CW hoists
+the `li` into the prologue and the store into the delay slot. Also read every delay-slot load
+of a call's `$a0` as that call's argument (`jal WaitSema; lw $a0,%gp_rel(D_003DFBA4)` is
+`WaitSema(D_003DFBA4)`, not a loop-invariant local). If your draft shows `jal; nop` everywhere,
+check that you compared with `-- -O3`: the default flags do not fill delay slots.
+Example: src/SLES_539.74/func_00162BC0.c (twins func_00162CA0, func_00162D30 store 0)
+Solved: func_00162BC0 (2 tries, 2026-11-02, Opus; Qwen's note had read the `li` as dead code)
+
+## `addu $v1,$idx,$base` (index term in `rs`) for an array slot address: byte offset from the array member
+Sign: register-only diff of one word, the address of a struct-array element (`sll $v1,$v1,2`
+then `addu`), where the original puts the scaled index first (`addu $v1,$v1,$a0`) and every
+`&s->arr[i]`, `s->arr + i`, `i + s->arr`, `(char *)s + 0x30 + i * 4` gives base first.
+Fix: take the byte offset from the array member itself:
+`slot = (Node **)((u8 *)s->arr + i * 4);` (either operand order in C works). Then the
+`lw 0x30` / `addiu 0x30` fold off the indexed sum as in the original. Also: Qwen's note had
+read a `b; sw` delay-slot difference that was only the default try_match flags; run
+try_match with `--ver 3.0.1b151-050317 ... -- -O3 -Isrc` before trusting a scheduling diff.
+Example: src/SLES_539.74/func_0015B190.c
+Solved: func_0015B190 (8 tries, 2026-11-02, Opus; declaration order cur/prev/found via a permutation script fixed the rest)
+
+## `lwc1 $fN,%gp_rel(D)($gp)` above the `sd $ra` save (or above stack stores): the global is a float literal, declare it `const`
+Sign: a gp-relative float load scheduled into the prologue, before `sd $ra` and the frame's
+first stores, while yours lands after them in every statement order (a load never passes a
+store in CW's scheduler, the `sd $ra` included). Look at the data: a lone `.float` in `.sdata`
+with no writer (here 0.01227 = pi/256) is a literal CW put in the gp pool. A literal is not a
+memory read, so it schedules first; `val = 0.012271847f;` gives the code but `.lit4` does not
+link (R_MIPS_LITERAL). Fix: `extern const f32 D __attribute__((section(".sdata")));` -- const
+makes the load free to move, the section keeps it gp-relative (plain `const` alone becomes
+`lui`/`lwc1`, 4 bytes longer).
+Example: src/SLES_539.74/func_001C65D0.c
+Solved: func_001C65D0 (6 tries, 2026-11-02, Opus; Qwen had tried every statement order)
+
+## streambuf byte loop whose virtual-call arm sits at the tail (after the bulk copy, `b` back + `nop; nop`): `-O4,p` + an inline `gbump_post()` member
+Sign: library streambuf code (0x1029xx-0x105xxx, get area at +0x04/+0x08/+0x0C, vptr at +0x00).
+In a read loop, `sltu; beql $at,$zero,<far>; lw $t9,0($sN)`, the load arm `lw; addiu; sw; lbu $v0;
+nop` **falls through** into the `-1` test, and the `lw $t9,0x28($t9); jalr; ...; b <test>; nop; nop`
+block lies after the other out-of-line blocks, just before the epilogue. Mine ends the load arm
+`b <test>; lbu` and puts the virtual call inline right after it (12 B short), at every polarity,
+ternary, `goto`, or `return` inside an inline helper.
+Fix: both of `// flags: -O4,p` (at `-O3` the same source is 30 B off) and the post-increment
+through an inline member `u8 *gbump_post() { return field_08++; }` used as `*gbump_post()` inside
+an inline `sbumpc()` (`if (gptr() < egptr()) return *gbump_post(); return uflow();`). With
+those two, every arm order and loop shape (`while`, `do`/`while`) matched. Plain `*field_08++`
+never did. For a loop in MSL's `for (; n > 0; --n, ++num)` form, write a `while` with the
+`count++; n--;` at the end (the lint refuses the comma).
+Example: src/SLES_539.74/func_00103AB0.cpp
+Solved: func_00103AB0 (about 8 tries, 2026-11-02, Opus; Qwen had 4 attempts at -O3)
+
+## `beqz p` falls into the `p != 0` arm, but that arm's `||` continuation blocks sit after the other arm's: write `if (p == 0) {A} else {B}`
+Sign: `beqz p, A` with the non-null arm B falling through, and B's out-of-line blocks (the
+`c.eq.s`/`bc1f` tail of an `a != b || c != d` chain, `b` back into B) placed **after** A's
+code and A's own continuation blocks, just before the epilogue. With `if (p != 0) {B} else {A}`
+the code is the same size but B's tail lands right after B (block order, ~38 words).
+Fix: write the arms in the other source order, `if (p == 0) { A } else { B }`: CW still emits
+`beqz` to A with B as the fall-through, but lays out the cold blocks in source order, A's
+first. In the same function the last 3 words (`lq $v1`/`lw $a0` vs `lq $a0`/`lw $v1` around a
+`*dst->vec = *sv;` after `dst->vec = &dst->buf;`) flipped with `dst->vec->q = sv->q;` (the
+union's `u128` member instead of the whole union). Check try_match got `-- -O3` first: the
+needs-claude note's "structural, 53 words" was an `-O2` diff; at `-O3` it was 38 words.
+Example: src/SLES_539.74/func_00149240.c
+Solved: func_00149240 (6 tries, 2026-11-02, Opus)
+
+## Loop exit falls into `addiu $sN,$zero,-1` that the hit path skips, then `bltz $sN` + `slt $at` range test: find-index + get inlines
+Sign: a name search `b` into a bottom-tested loop (`bnel $a1,$zero,<cold call>` with the field
+load in the back-edge slot), the call block cold after the tail (`jal; bnez $v0,<incr>; nop;
+b <test>; nop`), the loop's fall-through `addiu $sN,$zero,-1` straight into `bltz $sN,<cold>;
+slt $at,$sN,count; beqz $at,<cold>`, then `$sN = items + $sN * size` and a `beql $sN,$zero`.
+The null-key guard jumps to a stub `b <bltz>; addiu $sN,$zero,-1`. No C with a `break` and
+`if (i >= count) i = -1;` gives it (there is no `>= count` test after the loop).
+Fix: two inlines, `static inline s32 find(List *l, s32 key)` (`if (key == 0) return -1;`,
+loop with `if (e->name != 0 && f(key, e->name) == 0) return i;`, `return -1;`) and
+`static inline Elem *get(List *l, s32 i)` with `if (i >= 0 && l->count > i) return &l->items[i];
+return 0;` (`count > i` for the `$at`, see the one-off bound rule); the caller writes
+`e = get(l, find(l, key)); if (e == 0) return 0;`. That fixes the size; if the list, cursor and
+index then sit in rotated s-registers (list numbered before the helper's locals, the element
+pointer coalesced with the list instead of the index), make the lookup one inline that loads
+the list into a local declared **after** `i` and the cursor, with its own `index` result:
+`for (...) if (match) { index = i; goto found; }  index = -1; ... found: if (index >= 0 && ...)`
+(inlines nest only one level, so the find cannot stay a separate helper inside it).
+Example: src/SLES_539.74/func_0021DFE0.c (group lookup as the one inline, item lookup as the
+find/get pair). Its twin func_0021E190 (same 0x1B0 layout) should take the same C.
+Solved: func_0021DFE0 (about 15 tries, 2026-11-02, Opus)
+
+## A struct copy done member by member, arrays as countdown loops: C++ class with a constructor
+Sign: `*dst = *src` collapses into one uniform word/doubleword loop (`addiu $a1,$zero,N;
+ld/ld/sd/sd`) but the original copies each member with its own `lw/sw`, `lwc1/swc1`, `ld/sd`,
+skips the alignment padding (no load/store touches the gap), and copies each array member
+with its own countdown loop (`addiu $a3,$zero,N` hoisted, `addiu $a3,-1` at the top, `bgtz`
+back edge; 2 elements per iteration for even lengths, 1 for odd).
+Fix: write the file as `.cpp` and give the struct a user constructor (`Entry() {}`): CW then
+uses the implicit memberwise `operator=`. Members whose loads are grouped before their
+stores (`lwc1 f1; lwc1 f0; swc1; swc1`, `ld; ld; sd; sd`) are a small nested struct
+(`struct { f32 x, y; }`, `struct { s64 a, b; }`); members copied load/store one at a time are
+plain scalars; an odd-length run of single copies is scalars, not an array (arrays loop).
+Example: src/SLES_539.74/func_00144AA0.cpp
+Solved: func_00144AA0 (4 tries, 2026-11-02, Opus; no mh2 entry needed)
