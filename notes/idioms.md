@@ -758,3 +758,15 @@ of a call's `$a0` as that call's argument (`jal WaitSema; lw $a0,%gp_rel(D_003DF
 check that you compared with `-- -O3`: the default flags do not fill delay slots.
 Example: src/SLES_539.74/func_00162BC0.c (twins func_00162CA0, func_00162D30 store 0)
 Solved: func_00162BC0 (2 tries, 2026-11-02, Opus; Qwen's note had read the `li` as dead code)
+
+## `addu $v1,$idx,$base` (index term in `rs`) for an array slot address: byte offset from the array member
+Sign: register-only diff of one word, the address of a struct-array element (`sll $v1,$v1,2`
+then `addu`), where the original puts the scaled index first (`addu $v1,$v1,$a0`) and every
+`&s->arr[i]`, `s->arr + i`, `i + s->arr`, `(char *)s + 0x30 + i * 4` gives base first.
+Fix: take the byte offset from the array member itself:
+`slot = (Node **)((u8 *)s->arr + i * 4);` (either operand order in C works). Then the
+`lw 0x30` / `addiu 0x30` fold off the indexed sum as in the original. Also: Qwen's note had
+read a `b; sw` delay-slot difference that was only the default try_match flags; run
+try_match with `--ver 3.0.1b151-050317 ... -- -O3 -Isrc` before trusting a scheduling diff.
+Example: src/SLES_539.74/func_0015B190.c
+Solved: func_0015B190 (8 tries, 2026-11-02, Opus; declaration order cur/prev/found via a permutation script fixed the rest)
