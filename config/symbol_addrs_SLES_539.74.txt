@@ -33,3 +33,4 @@ func_0033F4D0 = 0x33F4D0; // type:func
 func_0014D810 = 0x14D810; // type:func
 func_002991E0 = 0x2991E0; // type:func
 func_00299660 = 0x299660; // type:func
+func_00350200 = 0x350200; // type:func
