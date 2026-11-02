@@ -560,6 +560,8 @@ segments:
       - [0x61590, asm, game_161590]
       - [0x617E0, c, func_001617E0]
       - [0x61840, asm, game_161840]
+      - [0x61BA0, c, func_00161BA0]
+      - [0x61C70, asm, game_161C70]
       - [0x61E00, c, func_00161E00]
       - [0x61E80, c, func_00161E80]
       - [0x61ED0, c, func_00161ED0]
