@@ -568,7 +568,9 @@ Solved: func_001F0050 func_00164550 func_001A6450 (2026-11-01, Opus); func_00338
 (2026-10-30, Qwen factory-3), func_004607A0 func_00468550 func_00468490 (2026-10-28..30, Qwen
 factory-6), func_00164200 func_00164160 (`<= -50` for `< -49`, 2026-10-31, Qwen factory-1),
 func_0020E1A0 (four `n >= A && n <= B` ranges after a jump-table switch; the `tools/jtbl.py
---m2c` draft with `void *` params also fixed an `$s1`/`$s2` arg swap, 2026-11-02, Opus)
+--m2c` draft with `void *` params also fixed an `$s1`/`$s2` arg swap, 2026-11-02, Opus),
+func_0014E360 (`sltiu $v0,gap,2` in a `beql` delay slot: `u32 gap > 1` for `>= 2`; it also
+moved the hoisted mode constants 1/2/3 into `$a2`/`$v1`/`$v0`, 2026-11-02, Opus)
 
 ## Free-slot search + head/tail list append, `else n = NULL` in m2c: one inline helper with `goto found`
 Sign: `b` into a loop over N-byte slots (`lw $v1,0($t0)`; `beqz` -> `sw $zero,next($t0)`),
@@ -747,7 +749,9 @@ in (3 locals = 6 orders, one try each): `src, i, n` and `i, n, src` were wrong, 
 matched. `&path[i + 1]` vs `path + i + 1` also changes the tail (`addiu v0,i,1; addu a1,path,v0`).
 Example: src/SLES_539.74/func_00161BA0.c
 Solved: func_00161BA0 (4 tries, 2026-11-02, Opus), func_00162BC0 (loop pointer/counter in
-`$s1`/`$s0` swapped: declare `u8 *e;` before `s32 i;`; 2nd try, 2026-11-02, Opus)
+`$s1`/`$s0` swapped: declare `u8 *e;` before `s32 i;`; 2nd try, 2026-11-02, Opus),
+func_0014E360 (six loop values in `$t2..$t7` rotated; declaring them in the reverse of the
+original's `$t` order, `found, found_node, best, gap, end, next`, matched first try, 2026-11-02, Opus)
 
 ## `addiu $v0,$zero,K` between `addiu $sp` and the `sd $ra` saves, `sw $v0,%gp_rel(G)` in the first `jal`'s delay slot: `G = K;` before the call
 Sign: a constant loaded before the frame saves, apparently dead, and a gp-relative `sw $v0` in
