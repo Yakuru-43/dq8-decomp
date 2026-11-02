@@ -744,4 +744,17 @@ it earlier or after a `b`. Fix: a store can only land in a call's delay slot if 
 in (3 locals = 6 orders, one try each): `src, i, n` and `i, n, src` were wrong, `i, src, n`
 matched. `&path[i + 1]` vs `path + i + 1` also changes the tail (`addiu v0,i,1; addu a1,path,v0`).
 Example: src/SLES_539.74/func_00161BA0.c
-Solved: func_00161BA0 (4 tries, 2026-11-02, Opus)
+Solved: func_00161BA0 (4 tries, 2026-11-02, Opus), func_00162BC0 (loop pointer/counter in
+`$s1`/`$s0` swapped: declare `u8 *e;` before `s32 i;`; 2nd try, 2026-11-02, Opus)
+
+## `addiu $v0,$zero,K` between `addiu $sp` and the `sd $ra` saves, `sw $v0,%gp_rel(G)` in the first `jal`'s delay slot: `G = K;` before the call
+Sign: a constant loaded before the frame saves, apparently dead, and a gp-relative `sw $v0` in
+the delay slot of the first call (`jal PollSema; sw $v0,%gp_rel(D_003E0308)`). `$v0` there is
+not the call result: the store runs before the call. Fix: the first statement is a plain
+global store of the constant, `D_003E0308 = 1; if (PollSema(D_003DFBA0) < 0) ...`. CW hoists
+the `li` into the prologue and the store into the delay slot. Also read every delay-slot load
+of a call's `$a0` as that call's argument (`jal WaitSema; lw $a0,%gp_rel(D_003DFBA4)` is
+`WaitSema(D_003DFBA4)`, not a loop-invariant local). If your draft shows `jal; nop` everywhere,
+check that you compared with `-- -O3`: the default flags do not fill delay slots.
+Example: src/SLES_539.74/func_00162BC0.c (twins func_00162CA0, func_00162D30 store 0)
+Solved: func_00162BC0 (2 tries, 2026-11-02, Opus; Qwen's note had read the `li` as dead code)
