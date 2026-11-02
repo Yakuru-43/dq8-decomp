@@ -782,3 +782,19 @@ makes the load free to move, the section keeps it gp-relative (plain `const` alo
 `lui`/`lwc1`, 4 bytes longer).
 Example: src/SLES_539.74/func_001C65D0.c
 Solved: func_001C65D0 (6 tries, 2026-11-02, Opus; Qwen had tried every statement order)
+
+## streambuf byte loop whose virtual-call arm sits at the tail (after the bulk copy, `b` back + `nop; nop`): `-O4,p` + an inline `gbump_post()` member
+Sign: library streambuf code (0x1029xx-0x105xxx, get area at +0x04/+0x08/+0x0C, vptr at +0x00).
+In a read loop, `sltu; beql $at,$zero,<far>; lw $t9,0($sN)`, the load arm `lw; addiu; sw; lbu $v0;
+nop` **falls through** into the `-1` test, and the `lw $t9,0x28($t9); jalr; ...; b <test>; nop; nop`
+block lies after the other out-of-line blocks, just before the epilogue. Mine ends the load arm
+`b <test>; lbu` and puts the virtual call inline right after it (12 B short), at every polarity,
+ternary, `goto`, or `return` inside an inline helper.
+Fix: both of `// flags: -O4,p` (at `-O3` the same source is 30 B off) and the post-increment
+through an inline member `u8 *gbump_post() { return field_08++; }` used as `*gbump_post()` inside
+an inline `sbumpc()` (`if (gptr() < egptr()) return *gbump_post(); return uflow();`). With
+those two, every arm order and loop shape (`while`, `do`/`while`) matched. Plain `*field_08++`
+never did. For a loop in MSL's `for (; n > 0; --n, ++num)` form, write a `while` with the
+`count++; n--;` at the end (the lint refuses the comma).
+Example: src/SLES_539.74/func_00103AB0.cpp
+Solved: func_00103AB0 (about 8 tries, 2026-11-02, Opus; Qwen had 4 attempts at -O3)
