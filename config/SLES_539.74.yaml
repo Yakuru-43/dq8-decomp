@@ -98,7 +98,7 @@ segments:
       - [0x3910, cpp, func_00103910]
       - [0x3960, c, func_00103960]
       - [0x3970, c, func_00103970]
-      - [0x3980, asm, text_103980]
+      - [0x3980, cpp, func_00103980]
       - [0x3AB0, cpp, func_00103AB0]
       - [0x3BE0, c, func_00103BE0]
       - [0x3BF0, c, func_00103BF0]
