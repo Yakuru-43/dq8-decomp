@@ -3081,6 +3081,8 @@ segments:
       - [0x13A680, asm, game_23A680]
       - [0x13B4E0, c, func_0023B4E0]
       - [0x13B5B0, asm, game_23B5B0]
+      - [0x13BA00, c, func_0023BA00]
+      - [0x13BB60, asm, game_23BB60]
       - [0x13C1C0, c, func_0023C1C0]
       - [0x13C1D0, asm, game_23C1D0]
       - [0x13DC70, c, func_0023DC70]
