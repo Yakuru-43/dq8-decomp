@@ -264,6 +264,7 @@ segments:
       - [0x44380, asm, game_144380]
       - [0x44620, c, func_00144620]
       - [0x44640, asm, game_144640]
+      - [0x44AA0, cpp, func_00144AA0]
       - [0x44C60, c, func_00144C60]
       - [0x44C70, asm, game_144C70]
       - [0x45240, c, func_00145240]
