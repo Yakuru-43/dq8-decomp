@@ -705,3 +705,18 @@ return, `c = f(); if (c != -1) c = ...`, plain `*s->gptr++` and `gptr()`+`gbump(
 the field) each leave 4-6 words off. See also the inline member accessors entry above.
 Example: src/SLES_539.74/func_00103910.cpp
 Solved: func_00103910 (about 9 tries, 2026-11-02, Opus)
+
+## Float compare chain with plain `bc1t`/`bc1f` + `nop` (no `bc1tl`), the changed-value body inline after the first test: `if (a != b || c != d || e != f) { body }`
+Sign: a "set if changed" (vector setter, colour, position): `c.eq.s; bc1t <next test>; nop`,
+the copy body (`lq/sq`, a dirty flag `sb` **before** `b <ret>; nop`) falls through after the
+first test, the later tests laid out after it with `bc1f` back to the body and a final
+`bc1t <jr ra>; nop; b <body+4>; lq` (the first body word cross-jumped). Mine has
+`bc1tl` with the next `lwc1` hoisted into its delay slot and the flag `sb` in the `b` delay
+slot: that is the `if (x == x && y == y && z == z) return; body;` spelling.
+Fix: write the test positively around the body, `if (p->x != v->x || p->y != v->y || p->z != v->z)
+{ copy; dirty = 1; }`. If a null/first-use arm comes before it, end that arm with its own
+`return;` (an `else if` makes the last `bc1t` land on the body's `b <ret>` instead of `jr ra`,
+score 1). A first-use init that the original stores then reloads (`sw p,0x14(a0)` ... `lw v1,0x14(a0)`)
+goes through an inline member `void InitPos() { pos = &buf; flags... }` then `n->pos->q = v->q`.
+Example: src/SLES_539.74/func_0014AA80.cpp
+Solved: func_0014AA80 (7 tries, 2026-11-02, Opus)
