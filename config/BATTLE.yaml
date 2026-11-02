@@ -123,6 +123,7 @@ segments:
       - [0x8690, asm, text_467350]
       - [0x87B0, c, func_00467470]
       - [0x8840, asm, text_467500]
+      - [0x8950, c, func_00467610]
       - [0x8AD0, cpp, func_00467790]
       - [0x8BA0, asm, text_467860]
       - [0x97D0, c, func_00468490]
