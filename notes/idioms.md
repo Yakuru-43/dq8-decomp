@@ -687,3 +687,19 @@ a declared local gets an `$sX`). For the shift, put the call result in a local: 
 order); as a call argument, `half = f(...); g(w, 0x2736, 0x66 - (half >> 1));`. Try both.
 Example: src/SHOP/func_0046A320.c, src/SHOP/func_00464530.c
 Solved: func_0046A320 (2026-10-31), func_00464530 (2026-11-01), Qwen factory-6
+
+## Join block `b <epi>; daddu $v0,$v1,$zero` with the other arm placed after it and `b` back: join variable + inline member
+Sign: a two-way result where the original keeps the value in `$v1` on both arms and copies it
+once in a shared join block (`b <epilogue>; daddu $v0,$v1,$zero`); one arm falls into the join
+(often the `-1` already in `$v1` from the compare, the `bnel` delay-slot load nullified), the
+other is laid out after it and ends `b <join>; <last op>` (e.g. `lbu $v1,0($v1)`). Mine has
+the copy at the end of the epilogue (`ld ra; daddu v0,v1`) and the second arm falls into it,
+or `lbu $v0` direct, or `bne` instead of `bnel` (score 4-5, same size). Typical of streambuf
+code: `uflow` = `underflow() == EOF ? EOF : *gptr++` (vtable +0x24, gptr at +0x08).
+Fix: a single `s32 c;` assigned in an if/else and returned once, the test through a
+`static inline bool is_eof(s32 c)` helper, and the post-increment through an **inline member
+function** (`u8 *gbump_post() { return gptr++; }`, `c = *s->gbump_post();`). The ternary, early
+return, `c = f(); if (c != -1) c = ...`, plain `*s->gptr++` and `gptr()`+`gbump(1)` (reloads
+the field) each leave 4-6 words off. See also the inline member accessors entry above.
+Example: src/SLES_539.74/func_00103910.cpp
+Solved: func_00103910 (about 9 tries, 2026-11-02, Opus)
