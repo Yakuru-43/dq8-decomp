@@ -720,3 +720,16 @@ score 1). A first-use init that the original stores then reloads (`sw p,0x14(a0)
 goes through an inline member `void InitPos() { pos = &buf; flags... }` then `n->pos->q = v->q`.
 Example: src/SLES_539.74/func_0014AA80.cpp
 Solved: func_0014AA80 (7 tries, 2026-11-02, Opus)
+
+## Search loop whose call-and-test block sits after the tail with `b <tail>; nop`, and a bare `daddu $s0,$zero,$zero` on the loop exit: an inline find helper with `return p;`
+Sign: a guarded record scan (`beql g,$zero,<tail>; daddu $s0,$zero,$zero`, then `while (i < N)`
+with `bnel $v0,$zero,<call>` into a block **after** the caller's tail: `jal f; ...; bnez $v0,<incr>;
+nop; b <tail>; nop`), the loop exit falling into `daddu $s0,$zero,$zero` right before the tail
+`beql $s0,$zero,<epi>`. Mine (`goto found` / `break` + `p = 0;` in one function) lays the call
+block between the loop and the tail, 8 B short, with the `p = 0` skipped by a `b`.
+Fix: move the search into `static inline Entry *find(char *name)`: `if (g == 0) return 0;`, the
+loop with `if (p->a != 0) { if (f(p->name, name) == 0) return p; }`, `return 0;` at the end. The
+caller does `p = find(arg0); if (p == 0) return 0; ...`. The inline's returns become the join
+the original has, and CW places the hit block cold.
+Example: src/SLES_539.74/func_00161F70.c
+Solved: func_00161F70 (first try, 2026-11-02, Opus)
