@@ -839,3 +839,17 @@ the list into a local declared **after** `i` and the cursor, with its own `index
 Example: src/SLES_539.74/func_0021DFE0.c (group lookup as the one inline, item lookup as the
 find/get pair). Its twin func_0021E190 (same 0x1B0 layout) should take the same C.
 Solved: func_0021DFE0 (about 15 tries, 2026-11-02, Opus)
+
+## A struct copy done member by member, arrays as countdown loops: C++ class with a constructor
+Sign: `*dst = *src` collapses into one uniform word/doubleword loop (`addiu $a1,$zero,N;
+ld/ld/sd/sd`) but the original copies each member with its own `lw/sw`, `lwc1/swc1`, `ld/sd`,
+skips the alignment padding (no load/store touches the gap), and copies each array member
+with its own countdown loop (`addiu $a3,$zero,N` hoisted, `addiu $a3,-1` at the top, `bgtz`
+back edge; 2 elements per iteration for even lengths, 1 for odd).
+Fix: write the file as `.cpp` and give the struct a user constructor (`Entry() {}`): CW then
+uses the implicit memberwise `operator=`. Members whose loads are grouped before their
+stores (`lwc1 f1; lwc1 f0; swc1; swc1`, `ld; ld; sd; sd`) are a small nested struct
+(`struct { f32 x, y; }`, `struct { s64 a, b; }`); members copied load/store one at a time are
+plain scalars; an odd-length run of single copies is scalars, not an array (arrays loop).
+Example: src/SLES_539.74/func_00144AA0.cpp
+Solved: func_00144AA0 (4 tries, 2026-11-02, Opus; no mh2 entry needed)
