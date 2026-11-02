@@ -733,3 +733,15 @@ caller does `p = find(arg0); if (p == 0) return 0; ...`. The inline's returns be
 the original has, and CW places the hit block cold.
 Example: src/SLES_539.74/func_00161F70.c
 Solved: func_00161F70 (first try, 2026-11-02, Opus)
+
+## Integer temporaries in `$a0`/`$a1`/`$v1` swapped, or a store late in the `jal` delay slot: try every local declaration order, put the store before the call
+Sign: same size and schedule, but an index, a copy pointer and a counter sit in each other's
+argument/temp registers (`addiu $a1,$v0,-1` vs mine `$a0`; `lb $v0,0($a0)` vs `0($a1)`), and/or
+a `*dst = 0` that the original stores in the delay slot of the following `jal` while mine stores
+it earlier or after a `b`. Fix: a store can only land in a call's delay slot if the C writes it
+**before** the call (`*dir = 0; strcpy(name, &path[i + 1]);`), and an if/else beats an early
+`return` for the shared exit stub. For the registers, permute the order the locals are declared
+in (3 locals = 6 orders, one try each): `src, i, n` and `i, n, src` were wrong, `i, src, n`
+matched. `&path[i + 1]` vs `path + i + 1` also changes the tail (`addiu v0,i,1; addu a1,path,v0`).
+Example: src/SLES_539.74/func_00161BA0.c
+Solved: func_00161BA0 (4 tries, 2026-11-02, Opus)
