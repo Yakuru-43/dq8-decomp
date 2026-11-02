@@ -170,7 +170,9 @@ Fix: type the base as a pointer (`char *`, or the struct pointer it really is), 
 field / local and in the callee's prototype. Integer `+ 8` is scheduled before the `$v0` copy,
 pointer `+ 8` after it. A named temp for `g()` does not change it.
 Example: src/SLES_539.74/func_0030A180.c
-Solved: func_0030A180 (1 try, 2026-10-26, Opus)
+Solved: func_0030A180 (1 try, 2026-10-26, Opus), func_001EA210 (3 tries, 2026-11-02, Opus:
+`$a0`/`$a2` swapped, `(char *, s32, char *)` prototype fixed it; in a `.cpp` file, trust
+`tools/verify.py`: `try_match.py` with no flags showed 100 vs 84 bytes on the matching source)
 
 ## Loop with a top guard and the body inline: `if (cond) do { } while (cond);`
 Sign: the original tests once before the loop (`slt $at,$zero,$sN; beqz $at,<after>` with
@@ -185,8 +187,12 @@ Also: a stack local one slot too high (mine `0x6E`, orig `0x6C`) next to a buffe
 local typed too small: here `func_00130FD0` is memcpy, so the `u16` result is a `u32` copied
 into and returned as `(u16)val` (still `lhu`). The lint refuses `(--x->f < 0)` (double-negate
 false hit): `if ((x->f -= 1) < 0)` gives the same code; `x->f--; if (x->f < 0)` does not.
-Example: src/SLES_539.74/func_00105E30.c
-Solved: func_00105E30 (8 tries, 2026-10-26, Opus)
+No guard at all (the body is entered unconditionally, e.g. a ctor/init loop `jal f; ...;
+sltu $v0,$sX,$sY; bnez $v0,<top>; nop` with no `b` at entry): a bare `do { } while (p < end);`;
+the `for` form adds the entry `b` to the bottom test.
+Example: src/SLES_539.74/func_00105E30.c, src/CASINO/func_0046B6B0.c (no guard)
+Solved: func_00105E30 (8 tries, 2026-10-26, Opus); func_0046B6B0 func_00476C40 (no-guard
+do-while, 2026-10-28/29, Qwen factory-6)
 
 ## Indirect call through `$t9`: a C++ virtual call, vptr placed after the data
 Sign: the diff is only the register of an indirect call: orig `lw $t9,N($a0); lw $t9,S($t9);
@@ -202,7 +208,10 @@ plain `void **vtbl` at N and `= D_<vtable>;`, then make the virtual call. Pass `
 try_match: without it the schedule (e.g. `daddu s0,a0` in the jalr delay slot) looks wrong.
 Example: src/SLES_539.74/func_00218740.cpp, src/SLES_539.74/func_001BA940.cpp
 Solved: func_00218740 (3 tries, 2026-10-27, Opus); func_0045F040 (2026-10-29, Qwen
-factory-6 — vptr at +0x1B0 via `u8 pad0[0x1B0]`, slots 0x18/0x24 = 5th/8th virtual)
+factory-6 — vptr at +0x1B0 via `u8 pad0[0x1B0]`, slots 0x18/0x24 = 5th/8th virtual);
+func_00166D90 func_00166E30 func_00167720 (2026-10-31, Qwen factory-1 — vptr mid-object at
+0xC0 with fields stored past it at 0x130+: put the 0xC0 bytes of data and the virtuals in a
+base class and the tail fields in a derived class, src/SLES_539.74/func_00166D90.cpp)
 
 ## Two vptr constants in `$v0`/`$v1` the wrong way round: compute the sub-object pointer first
 Sign: a vbase constructor helper (vptr store at +N, `*(o+0)` = second vtable, then
@@ -309,7 +318,10 @@ a store in the delay slot of `beql $v0,$zero,<success>` is annulled on fall-thro
 belongs at the top of the success block, not before the test), func_003112C0 (1st try,
 2026-10-29, Opus: tests `2` then `1`, `b <return 0>`; each case is `if (call() != K) return 0;`
 + setup + `break;`, and the last case's body goes out of line with a `b` back into the shared
-tail; Qwen's if/else-if chain gave the same tests but the wrong block order)
+tail; Qwen's if/else-if chain gave the same tests but the wrong block order); func_00468F50
+(2026-10-31, Qwen factory-6: chain 9 then 13 = `case 13:` before `case 9:`, which also lets the
+case-9 loop fall into the shared exit), func_00327810 (2026-11-01, Qwen factory-3: tests
+0x50,0x4F,0x4E,0x1A8 in reverse source order; the default value assigned before the `switch`)
 
 ## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
 Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
@@ -328,7 +340,10 @@ Example: src/SLES_539.74/func_00104FE0.cpp
 Solved: func_00104FE0 (about 25 tries over three sessions, 2026-10-27, Opus), func_00105B70
 (its wide twin over 4-byte slots: func_00104FE0's C with `u32 buf_24[16]`, `n == 16` / `n = 1`
 and a `u16` store matched on the first try, 2026-10-27, Opus; the `andi 0xFFFF` in the
-`beqz gptr` delay slot is `u16 ch = result;` before the nested `if`)
+`beqz gptr` delay slot is `u16 ch = result;` before the nested `if`); func_00465F20
+func_00465E80 (2026-10-29, Qwen factory-6: bounds check `bltz $a1,<epi>; slti $at,$a1,N;
+beqz $at,<epi>` with the body inline is `if (idx >= 0) { if (idx < N) { call; } }`, no
+early return; `if (idx >= N) return;` inverts it and duplicates the epilogue)
 
 ## `bgez r; andi v,r,0xFF` / `beqz v; addiu v,v,-0x100` inline after a call: signed `r % 256`
 Sign: straight after a `jal` (often `func_00132D38`, the rand), `bgez $v0, skip` with
@@ -413,8 +428,13 @@ Sign: `bgez $a0, join` with `sra $v0,$a0,n` in the delay slot, then the fall-thr
 (`bgez; andi` / `beqz; addiu -2^n`).
 Fix: it is CW's expansion of signed division by a power of two: write `r / 64` on an `s32`.
 Round-up-to-64: `if (arg0 % 64 != 0) { arg0 = (arg0 / 64 + 1) * 64; } return arg0;`
+The hand-written forms also change the layout: their extra `bltz` block keeps an
+`if (x) { fixup; } next;` fixup inline where the original lays it cold with a `b` back to
+`next` (func_0014E0B0), and hand-written `%`/`/` sign fixups made every guard of
+func_00140DD0 come out cold (30-40 B long, "structural"); `/`, `%` and a `switch` matched first try.
 Example: src/SLES_539.74/func_0022AB70.c
-Solved: func_0022AB70 (1st try, 2026-10-29, Opus; byte-identical twin at 0x00168840)
+Solved: func_0022AB70 (1st try, 2026-10-29, Opus; byte-identical twin at 0x00168840);
+func_0014E0B0 and its twin func_0014E030 (2026-10-29, Qwen factory-1), func_00140DD0 (2026-11-01, Qwen factory-1)
 
 ## `beql`/`bc1tl`/`bc1fl` chains whose delay slots load 0/1 into one register, then a join: an inline helper with `return`s
 Sign: a value (a node pointer, a 0/1 flag) set by a chain of tests where each **likely**
@@ -500,6 +520,9 @@ gives `movz`). The saved registers and stack slots were in reverse order until t
 declared in reverse order (see "Float temporaries swapped").
 Example: src/SLES_539.74/func_00302FB0.c
 Solved: func_00302FB0 (4 tries, 2026-10-29, Opus; no mh2 entry needed)
+Not for `> 0`: `blezl $sX,<cold>` with the cold arm's arg load in the delay slot is the plain
+`if (r > 0)`; `0 < r` gives `slt $at,$zero,$sX; beql` (one word more). func_00467D20
+(2026-10-30, Qwen factory-6, src/SHOP/func_00467D20.c)
 
 ## Stack arrays/locals at each other's offsets, frame 0x10 too big: declare them in reverse
 Sign: same code, but the `addiu $aN,$sp,X` addresses of two local buffers are swapped (mine
@@ -534,8 +557,16 @@ Fix: CW uses `$at` when it had to rewrite the comparison itself. Write the same 
 constant one off: `n < 2` -> `n <= 1`, `d >= -0x31` -> `d > -0x32`, `t < 0` -> `t <= -1`.
 The register of the tested value usually comes right with it. (`0 <= x` constant-left is the
 `slt $at,$zero,x` variant of the same rule.)
-Example: src/SLES_539.74/func_001F0050.c, src/SLES_539.74/func_00164550.c
-Solved: func_001F0050 func_00164550 func_001A6450 (2026-11-01, Opus)
+Same rule against a variable or for unsigned tests: the second test of `i >= 0 || i < count`
+in `$at` is `count > i`; `sltiu $at,$v0,0x21; bnez $at` for a length guard is `if (n > 0x20)`
+on a `u32`, not `>= 0x21`. A range guard whose `slti $at,n,0x0` is duplicated into both arms
+of a preceding select (and tested once after the join with `bnez $at`) is `if (-1 < n && n < 4)`:
+`n >= 0` fuses into one `bltz`, `0 <= n` gives `slt $at,$sN,$zero` (wrong opcode).
+Example: src/SLES_539.74/func_001F0050.c, src/SLES_539.74/func_00164550.c,
+src/SLES_539.74/func_00338080.c, src/BATTLE/func_00468550.c
+Solved: func_001F0050 func_00164550 func_001A6450 (2026-11-01, Opus); func_00338080
+(2026-10-30, Qwen factory-3), func_004607A0 func_00468550 func_00468490 (2026-10-28..30, Qwen
+factory-6), func_00164200 func_00164160 (`<= -50` for `< -49`, 2026-10-31, Qwen factory-1)
 
 ## Free-slot search + head/tail list append, `else n = NULL` in m2c: one inline helper with `goto found`
 Sign: `b` into a loop over N-byte slots (`lw $v1,0($t0)`; `beqz` -> `sw $zero,next($t0)`),
@@ -552,3 +583,125 @@ Example: src/SLES_539.74/func_001A3900.c (0x50 slots), src/SLES_539.74/func_001A
 Solved: func_001A3900 func_001A3750 func_001A6450 (2026-11-01, Opus). Open: the 0x60-slot
 siblings whose original uses `beql` for every one-instruction `if` (func_001A6360,
 func_001A6710, ...): notes/needs-claude/func_001A6710.md
+
+## `addiu/daddu $t0..$t2` in a `jal` delay slot, or a callee reading `$t0..$t2` with no set-up: parameters 5 to 7
+Sign: a call's delay slot sets `$t0` (`addiu $t0,$zero,K`, `daddu $t0,$a2,$zero`,
+`addiu $t0,$vX,-K`) and the value looks dead (the next block reloads `$t0`); or a callee
+reads `$t0`/`$t1`/`$t2` at entry before writing them. A 4-argument prototype loses those words
+(CLASS structural, everything after shifts).
+Fix: the EE ABI passes arguments 5..8 in `$t0..$t3`. Declare the callee with the extra
+parameters (`M2C_UNK func_379760(void *, M2C_UNK *, s32, s32, s32);`) and pass them like any
+argument; CW schedules the `$t0` set-up into the delay slot itself and recomputes a shared
+expression per call. In the callee, declare plain extra parameters. Window buffers passed as
+`addiu $a0,$sp,0x20` need 16-byte alignment: give the struct a `u128` first member (mwccps2
+rejects `__attribute__((aligned(16)))`).
+Example: src/SHOP/func_004626B0.c, src/MENU/func_0046D4E0.c, src/CASINO/func_0046C200.c
+Solved: func_004626B0 (2026-10-30), func_0046C200 (2026-10-31), func_0046D4E0 (2026-11-01),
+all Qwen factory-6
+
+## Call guard `jal f; beql $v0,$zero,<epi>; daddu $v0,$zero,$zero` then the second call inline: `if (!r) { r = 0; } else { r = g(...); }`
+Sign: a call result tested against 0 whose zero path branches to the shared epilogue with
+`v0 = 0` in the `beql` delay slot, the nonzero path falling into a second call. Mine
+(`if (r == 0) return 0; return g(...);`) gives `bnez` plus a private `b <epi>; daddu $v0,$zero,$zero`
+stub, 8 B long; `if (r != 0) r = g(...); return r;` is worse.
+Fix: `if (!r) { r = 0; } else { r = g(...); } return r;`: the `!` puts the zero arm on the
+branch and the (already true) `r = 0;` becomes the delay-slot `daddu`. `r` can still be passed
+to `g`. Same family, a nonzero constant: `addiu $v0,$zero,K; bnel $v1,$v0,<epi>; lw $v0,A` then
+`b <epi>; lw $v0,B` is `if (g == K) { return B; } return A;` (the `!= K` spelling gives `beql`
+with the two loads swapped); in an if/else-if chain write the `== 0` arm first.
+Example: src/SLES_539.74/func_001B2DC0.c, src/SLES_539.74/func_00182260.c
+Solved: func_001B2DC0 func_001B2E60 (2026-10-28), func_001CF460 (2026-10-29), func_00182260
+func_001822C0 (2026-10-29), func_00159EB0 (2026-10-31), all Qwen factory-1
+
+## Search with a shared tail: `beql` + the store in the delay slot at both the null guard and the tail
+Sign: a search whose null guard, hit paths and loop exit meet at one tail `return r ? r + off : 0`
+(or a `-1` default). The original has `beql $aN,$zero,<tail>; daddu $rN,$zero,$zero` at the guard
+and `beql $rN,$zero,<jr>; daddu $v0,$zero,$zero` + fall-through `addiu $v0,$rN,off` at the tail;
+mine has a plain `beqz` with the zero CSE'd above it and an inverted tail `bnel`. For a `-1`
+default the original's entry is `beqz base,<cold>; addiu $v0,$zero,-1` with the null arm out of line.
+Fix: zero in the guard's then arm, `if (p == 0) { r = 0; } else { ...loop...; r = 0; }`, and
+the tail `if (r != 0) { return r + off; } return 0;`. For the `-1` default route the result
+through a local: `ret = -1;` as the first statement, `if (e != 0) { ret = e->val; }`, one
+`return ret;` (`if (e != 0) return ...; return -1;` never hoists the `-1`).
+Example: src/SLES_539.74/func_003397F0.c, src/SLES_539.74/func_00339950.c
+Solved: func_003397F0 func_00339B00 func_00339950 func_00339A40 (2026-10-30, Qwen factory-3)
+
+## Select whose arm order or tail placement is wrong: write it as one ternary
+Sign: (a) a two-arm select where each arm is one op (`v = (s32)f` / `v = i`): the original has
+`bnel` with the else load in its delay slot and falls from the then arm into the join, mine adds
+`b <join>; nop` (8 B long). (b) two real arms feeding one shared tail (`return (f32)q / K;`): the
+original ends the inline arm with `b <tail>; mflo` and puts the tail last after the cold arm; mine
+places the tail right after the inline arm and adds a `b` back (8 B long).
+Fix: one ternary, the inline arm's expression first:
+`v = (e->isFloat == 1) ? (s32)e->v.f : e->v.i;`,
+`q = (v > 0) ? ((v - 49) << 7) / 78 : ((v + 50) << 7) / 78;`. Keep if/else for arms that are
+real blocks with no shared tail. Tagged `{type; union {i; f}}` float reads: a `bnel`-to-join
+with `lwc1` in the delay slot is the ternary `fz = t->type == 0 ? (f32)t->v.i : t->v.f;`; a
+plain `bnez` with `addiu reg,base,8` in the delay slot is the if/else statement into a named
+`f32` then a separate store, with the bases taken from a running pointer local (`ty = tx + 1`).
+Example: src/SLES_539.74/func_001C57D0.c, src/SLES_539.74/func_00164200.c, src/SLES_539.74/func_0023E5C0.c
+Solved: func_001C57D0 func_001C6120 (2026-10-29), func_00164200 func_00164160 func_001642A0
+func_00164340 (2026-10-31), Qwen factory-1; func_0023E5C0 func_0023EE10 func_00239260
+func_0023FE50 (2026-10-29/30, Qwen factory-2)
+
+## Count-down loop closes with `bnez` where mine has `bgtz`: a `u32` counter
+Sign: score 1, only the back-edge word differs: original `bnez $n,<loop>`, mine `bgtz`
+(`do { *p++ = 0; } while (--n != 0)`-shaped clear loop).
+Fix: declare the counter `u32`; a signed counter makes CW turn `!= 0` into `> 0`.
+Example: src/SLES_539.74/func_00224680.c
+Solved: func_00224680 func_00225300 (2026-10-31, Qwen factory-2)
+
+## A store the obvious C puts once after an if/else or switch, stored at the end of every arm in the original
+Sign: each arm ends with the same `sw` (one in its `b <join>` delay slot, its `lui` hoisted to the
+arm top), the join block is bare; mine has one store in the join (4-8 B short).
+Fix: write the assignment in every arm, before each `break;` or arm end.
+Example: src/SLES_539.74/func_001DE1A0.c
+Solved: func_001DE1A0 (2026-10-29, Qwen factory-1), func_0034E4F0 (2026-10-30, Qwen factory-3)
+
+## Stored `!r` flag: `sltu; xori 0x1; andi 0xFF` once, stored from that register: `(u8)` on an `s32` local
+Sign: `sltu $v0,$zero,$v0; xori $a0,$v0,0x1`, one `andi $a0,$a0,0xFF` (often in a later branch
+delay slot), then `sw $a0,N(..)`. A `u8` local gives two `andi`; `(u8)(r == 0)` folds to `sltiu`.
+Fix: `s32 flag; flag = (u8)!(0 < r);` with `u32 r` (or `(u8)((r != 0) ^ 1)` in a `.cpp`);
+`^ 1` also keeps a branch test materialized: `while ((0 < D_x) ^ 1)` gives
+`sltu; xori; bnez` where `!(0 < x)` folds to `beqz`.
+Example: src/SLES_539.74/func_001C78F0.c, src/BATTLE/func_0046B790.cpp
+Solved: func_001C78F0 (2026-10-29, Qwen factory-1), func_0046B790 (2026-10-29, Qwen factory-6),
+func_00163380 (2026-10-31, Qwen factory-1)
+
+## Cold call in an `else` with its arg load in the `beql`/`bnel` delay slot: positive test, body first
+Sign: `slt $at,$v0,$v1; beql $at,$zero,<far>; lw $a0,N($s0)` (or a `bnel` on a global byte), body
+inline, the out-of-line block a call whose first arg is that delay-slot load. Mine, written as
+an early return (`if (x >= g) { cold(); return; } body;`), puts the cold call inline.
+Fix: `if (x < g) { body } else { cold(...); }`: the hot arm first, the cold call in the `else`.
+For a byte flag test pick the polarity that makes the long arm the `else`
+(`if (D_x == 0) { hot } else { long }`).
+Example: src/SHOP/func_00466790.c
+Solved: func_00466790 (2026-10-30), func_0046A360 (2026-10-31), Qwen factory-6
+
+## `argN + K` or `K - (f() >> n)` kept in one register: assign it to a named local once
+Sign: the original computes `argN + K` once into `$sX` and passes `$sX` at every call; mine
+reassigns the parameter or inlines the sum and gets an `addiu` at every call site. Or a tail
+`return K - (f(...) >> n);` / call arg where the original shifts `$v0` in place then
+`li` + `subu $v0,$v0,$v1`, mine the other order.
+Fix: a fresh local assigned once, `t = arg0 + 2;` (a parameter's second web is rematerialized,
+a declared local gets an `$sX`). For the shift, put the call result in a local: as a return,
+`t = f(...) >> 1; return K - t;` (one assignment; `t = f(); t = t >> 1;` keeps the wrong
+order); as a call argument, `half = f(...); g(w, 0x2736, 0x66 - (half >> 1));`. Try both.
+Example: src/SHOP/func_0046A320.c, src/SHOP/func_00464530.c
+Solved: func_0046A320 (2026-10-31), func_00464530 (2026-11-01), Qwen factory-6
+
+## Join block `b <epi>; daddu $v0,$v1,$zero` with the other arm placed after it and `b` back: join variable + inline member
+Sign: a two-way result where the original keeps the value in `$v1` on both arms and copies it
+once in a shared join block (`b <epilogue>; daddu $v0,$v1,$zero`); one arm falls into the join
+(often the `-1` already in `$v1` from the compare, the `bnel` delay-slot load nullified), the
+other is laid out after it and ends `b <join>; <last op>` (e.g. `lbu $v1,0($v1)`). Mine has
+the copy at the end of the epilogue (`ld ra; daddu v0,v1`) and the second arm falls into it,
+or `lbu $v0` direct, or `bne` instead of `bnel` (score 4-5, same size). Typical of streambuf
+code: `uflow` = `underflow() == EOF ? EOF : *gptr++` (vtable +0x24, gptr at +0x08).
+Fix: a single `s32 c;` assigned in an if/else and returned once, the test through a
+`static inline bool is_eof(s32 c)` helper, and the post-increment through an **inline member
+function** (`u8 *gbump_post() { return gptr++; }`, `c = *s->gbump_post();`). The ternary, early
+return, `c = f(); if (c != -1) c = ...`, plain `*s->gptr++` and `gptr()`+`gbump(1)` (reloads
+the field) each leave 4-6 words off. See also the inline member accessors entry above.
+Example: src/SLES_539.74/func_00103910.cpp
+Solved: func_00103910 (about 9 tries, 2026-11-02, Opus)
