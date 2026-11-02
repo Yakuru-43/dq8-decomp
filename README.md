@@ -23,8 +23,8 @@ TITLE (overlay)  [█░░░░░░░░░░░░░░░░░░░] 
 SHOP (overlay)   [███░░░░░░░░░░░░░░░░░] 16.2%     10/   60 KB   [█████████░░░░░░░░░░░]  44.2%   150/339  
 MENU (overlay)   [██░░░░░░░░░░░░░░░░░░] 10.3%     11/  103 KB   [████████░░░░░░░░░░░░]  42.2%   140/332  
 CASINO (overlay) [█░░░░░░░░░░░░░░░░░░░]  3.2%      3/  106 KB   [███████░░░░░░░░░░░░░]  34.2%    67/196  
-BATTLE (overlay) [██░░░░░░░░░░░░░░░░░░]  8.3%     12/  143 KB   [███████░░░░░░░░░░░░░]  34.3%   210/613  
-ALL game code    [███░░░░░░░░░░░░░░░░░] 13.1%    370/ 2828 KB   [█████████░░░░░░░░░░░]  47.0%  5230/11120
+BATTLE (overlay) [██░░░░░░░░░░░░░░░░░░]  8.8%     13/  143 KB   [███████░░░░░░░░░░░░░]  34.7%   213/613  
+ALL game code    [███░░░░░░░░░░░░░░░░░] 13.1%    371/ 2828 KB   [█████████░░░░░░░░░░░]  47.1%  5233/11120
 ```
 _(refreshed 2026-11-02 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->

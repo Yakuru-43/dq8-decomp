@@ -1,0 +1,52 @@
+// range: 0x00338590 0x00338670
+// best attempt, 216 vs 224 bytes; see notes/needs-claude/func_00338590.md
+#include "common.h"
+
+typedef struct BufE130 {
+    u8 gap00[0x20];
+    s32 flag20; /* 0x20 */
+    u8 gap24[4];
+    char *base28; /* 0x28 */
+    s32 count2C;  /* 0x2C */
+    u8 gap30[4];
+    s32 limit34; /* 0x34 */
+    u8 gap38[0x1C];
+    s32 spin54; /* 0x54 */
+} BufE130;
+
+typedef struct ObjE1260 {
+    u8 gap00[4];
+    char *end04; /* 0x4 */
+} ObjE1260;
+
+extern BufE130 *D_003E1258;
+extern ObjE1260 *D_003E1260;
+void *func_00166760(void);
+s32 func_003240F0(s8 *, char *, s32);
+char *func_0014E130(BufE130 *, s32);
+
+static inline s32 Blocks16(s32 n) {
+    return (n % 16) != 0 ? n / 16 + 1 : n / 16;
+}
+
+s32 func_00338590(void) {
+    char *end;
+    BufE130 *buf;
+    s8 *item;
+    s32 n;
+
+    if (D_003E1260 == NULL) {
+        return 0;
+    }
+    item = func_00166760();
+    buf = D_003E1258;
+    if ((item == NULL) || (item[0] == 0)) {
+        end = NULL;
+    } else {
+        end = buf->base28 + (buf->count2C << 4);
+        n = func_003240F0(item, end, (buf->limit34 - buf->count2C) << 4);
+        func_0014E130(buf, Blocks16(n));
+    }
+    D_003E1260->end04 = end;
+    return 1;
+}
