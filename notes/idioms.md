@@ -566,7 +566,9 @@ Example: src/SLES_539.74/func_001F0050.c, src/SLES_539.74/func_00164550.c,
 src/SLES_539.74/func_00338080.c, src/BATTLE/func_00468550.c
 Solved: func_001F0050 func_00164550 func_001A6450 (2026-11-01, Opus); func_00338080
 (2026-10-30, Qwen factory-3), func_004607A0 func_00468550 func_00468490 (2026-10-28..30, Qwen
-factory-6), func_00164200 func_00164160 (`<= -50` for `< -49`, 2026-10-31, Qwen factory-1)
+factory-6), func_00164200 func_00164160 (`<= -50` for `< -49`, 2026-10-31, Qwen factory-1),
+func_0020E1A0 (four `n >= A && n <= B` ranges after a jump-table switch; the `tools/jtbl.py
+--m2c` draft with `void *` params also fixed an `$s1`/`$s2` arg swap, 2026-11-02, Opus)
 
 ## Free-slot search + head/tail list append, `else n = NULL` in m2c: one inline helper with `goto found`
 Sign: `b` into a loop over N-byte slots (`lw $v1,0($t0)`; `beqz` -> `sw $zero,next($t0)`),
