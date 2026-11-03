@@ -15,19 +15,20 @@ typedef struct AllocList {
 } AllocList;
 
 AllocNode *func_0014E640(AllocList *list, u32 size, u32 align) {
-    AllocNode *node = list->first;
+    AllocNode *node;
     AllocNode *next;
-    AllocNode *end;
     AllocNode *result;
-    u32 need = size + align;
+    AllocNode *end;
     s32 gap;
     u32 units;
     u32 rem;
 
+    node = list->first;
+    size += align;
     while ((next = node->next) != 0) {
         end = node + node->size;
         gap = next - end;
-        if (gap >= need) {
+        if (gap >= size) {
             end->next = next;
             result = end + 1;
             node->next = end;
@@ -35,7 +36,7 @@ AllocNode *func_0014E640(AllocList *list, u32 size, u32 align) {
             end->prev = node;
             next = end->next;
             next->prev = end;
-            end->size = need;
+            end->size = size;
             rem = units % align;
             if (rem != 0) {
                 result += align - rem;

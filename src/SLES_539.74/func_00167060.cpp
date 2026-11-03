@@ -1,7 +1,9 @@
-// Best draft for func_00167060 (needs-claude; see func_00167060.md).
-// Second function verified byte-identical; the thunk's `jr` tail call is open.
 // range: 0x00167060 0x00167130
+// flags: -Cpp_exceptions off
 #include "common.h"
+
+/* Built without C++ exceptions: only then does CW turn the virtual call in
+ * func_00167060 into a frameless `jr $t9` tail call. */
 
 extern "C" {
 
@@ -74,7 +76,7 @@ struct Unit : Object {
 };
 
 s32 func_00167060(Unit *obj) {
-    return obj->v44();              /* want: lw,lw,jr,nop — never emitted */
+    return obj->v44();
 }
 
 void func_00167070(Unit *src, Unit *dst) {
