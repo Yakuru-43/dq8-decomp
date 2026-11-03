@@ -684,7 +684,8 @@ Fix: `s32 flag; flag = (u8)!(0 < r);` with `u32 r` (or `(u8)((r != 0) ^ 1)` in a
 `sltu; xori; bnez` where `!(0 < x)` folds to `beqz`.
 Example: src/SLES_539.74/func_001C78F0.c, src/BATTLE/func_0046B790.cpp
 Solved: func_001C78F0 (2026-10-29, Qwen factory-1), func_0046B790 (2026-10-29, Qwen factory-6),
-func_00163380 (2026-10-31, Qwen factory-1)
+func_00163380 (2026-10-31, Qwen factory-1), func_00160120 (loop test on a `u32` call result,
+`while ((0 < f(buf, &g)) ^ 1)` gives `sltu; xori; bnel` back to the body; 1st try, 2026-11-03, Opus)
 
 ## Cold call in an `else` with its arg load in the `beql`/`bnel` delay slot: positive test, body first
 Sign: `slt $at,$v0,$v1; beql $at,$zero,<far>; lw $a0,N($s0)` (or a `bnel` on a global byte), body
@@ -765,7 +766,9 @@ Example: src/SLES_539.74/func_00161BA0.c
 Solved: func_00161BA0 (4 tries, 2026-11-02, Opus), func_00162BC0 (loop pointer/counter in
 `$s1`/`$s0` swapped: declare `u8 *e;` before `s32 i;`; 2nd try, 2026-11-02, Opus),
 func_0014E360 (six loop values in `$t2..$t7` rotated; declaring them in the reverse of the
-original's `$t` order, `found, found_node, best, gap, end, next`, matched first try, 2026-11-02, Opus)
+original's `$t` order, `found, found_node, best, gap, end, next`, matched first try, 2026-11-02, Opus),
+func_00160120 (`i++` / `G = 2` written before `sleep(10000)` lands them in its delay slot with the
+arg load before the `jal`; 2nd try, 2026-11-03, Opus)
 
 ## `addiu $v0,$zero,K` between `addiu $sp` and the `sd $ra` saves, `sw $v0,%gp_rel(G)` in the first `jal`'s delay slot: `G = K;` before the call
 Sign: a constant loaded before the frame saves, apparently dead, and a gp-relative `sw $v0` in
