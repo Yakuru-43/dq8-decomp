@@ -905,8 +905,12 @@ Sign: register-only diff, one local (`addiu`/`slti`/`sw` triplet) in `$a1` where
 and a `DebugPrintf`/`DebugPrintf2` call later on the same path with only `$a0` set up in your C.
 Fix: read the format string in `asm/<BIN>/data/` (`D_003D2078` is `"execode %d\n"`): declare the
 print variadic, `M2C_UNK DebugPrintf2(M2C_UNK *, ...);`, and pass the value, `DebugPrintf2(&D_x, n);`.
-Example: src/SLES_539.74/func_00324210.c
-Solved: func_00324350 func_00324210 (2026-10-29, Qwen factory-3)
+Also: parameters stored at the entry and then never read, and the whole body's loop temps start at
+`$a3`/`$t0`/`$t1` (yours `$a1`/`$a2`), a print with only `$a0` set at the end: the parameters are
+still live in `$a1`/`$a2` for the print (`"vram %d - %d\n"`, `DebugPrintf(D_x, arg1, arg2);`).
+Example: src/SLES_539.74/func_00324210.c, src/SLES_539.74/func_0015B3F0.c
+Solved: func_00324350 func_00324210 (2026-10-29, Qwen factory-3), func_0015B3F0 (2026-11-03, Opus;
+Qwen's note blamed allocation; also needed typed struct fields and an entry pointer local in loop 1)
 
 ## `bltzl $vN; srl` then `andi 1; or; mtc1; cvt.s.w; add.s f,f,f`: a plain `(f32)(u32)x`; read the constant's bits
 Sign: after a `lbu`/`lhu`/`lw`, `bltzl $v1,<near>` with `srl $a3,$v1,1` in its delay slot, a
