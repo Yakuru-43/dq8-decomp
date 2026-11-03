@@ -916,3 +916,14 @@ Fix: a cast, `(f32)(u32)p[i]`, no `if`. Also decode a `lui K; mtc1` float before
 Example: src/SLES_539.74/func_0014B9B0.c
 Solved: func_0014B9B0 (1st try, 2026-11-03, Opus; Qwen had read 0x3C00 as 1.0f). Twin
 func_0014BA50 (`lhu`) should take the same C.
+
+## Register-only diff plus one `nop` delay slot after `try_match ... -- -flag divbyzerocheck`: the flags replaced `-O3`
+Sign: the note says the flag was passed "on the try_match CLI" (`-- -flag divbyzerocheck`,
+no `-O3`), and the diff is same size and block order with a few locals renumbered (`$t1`/`$t0`
+vs `$t0`/`$a3`) and a `nop` where the original has `daddu $v0,$zero,$zero` in a `b` delay slot.
+try_match's flags **replace** its default flag list, so that run had no `-O3` at all.
+Fix: before touching the C, rerun with the whole set:
+`tools/try_match.py <file> <func> <vram> -- -O3 -nostdinc -Iinclude -Isrc -flag divbyzerocheck`
+(or just `tools/verify.py`, which reads the `// flags:` line). Qwen's draft was already a match.
+Example: src/SLES_539.74/func_0014E640.c
+Solved: func_0014E640 (1st try, 2026-11-03, Opus; Qwen's best C matched unchanged)
