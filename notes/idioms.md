@@ -1063,3 +1063,25 @@ called from an inline (the callee is emitted as a separate function): expand nes
 helpers (here the slot lookup) by hand inside the outer one.
 Example: src/SLES_539.74/func_00160350.c
 Solved: func_00160350 (17 tries, 2026-11-03, Opus; Qwen's switch form was 4 B short)
+
+## `bnel cond,$zero,<next insn>; sh $zero,G` or `bltzl v,<out>; lh v,H` + out-of-line `b back; sh v,G`: plain conditional stores (likely-branch slots are nullified)
+Sign: a likely branch whose target is the very next instruction, a store in its delay slot
+(`slt; bnel $v0,$zero,.+8; sh $zero,G`): it looks unconditional but a `bnel`/`beql` slot only
+runs when the branch is taken, so it is `if (cond) G = 0;`. Same for a `bltzl` whose slot
+loads a *different* global and whose target is a 2-word block `b <back>; sh $v0,G`: the store
+writes that other global, `if (G < 0) G = H;` (a menu cursor wrap), not `G = 0`. Read the
+delay-slot register before guessing the stored value.
+Fix: `if (G < 0) { G = max; } if (max < G) { G = 0; }` as written; no special spelling.
+Example: src/MENU/func_00463CF0.c
+Solved: func_00463CF0 (2026-11-03, Opus; Qwen read the wrap as a second clamp to 0)
+
+## Product of a global copy kept in an `$sX` across calls (`lh $s2,G; sll/addu/sll $s0 = $s2*12` before the `jal`), mine computes it after the calls: read the global in the product
+Sign: the original loads a global into `$sX`, computes `x * K` into another `$sY` before
+the first `jal` and only adds it after the calls (frame one saved register bigger); mine,
+with `cur = G; off = cur * K;`, sinks the multiply to its use after the calls and keeps
+`cur` live instead (one `$sX` short, frame 0x10 smaller). A pure function of a local is
+sunk; one that reads memory cannot move past a call.
+Fix: `cur = G; off = G * K;` (the two loads CSE into one `lh`), then the calls using `cur`
+and `off`.
+Example: src/MENU/func_00463CF0.c
+Solved: func_00463CF0 (2026-11-03, Opus)
