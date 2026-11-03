@@ -241,7 +241,7 @@ segments:
       - [0x17CE0, c, func_004769A0]
       - [0x17CF0, asm, text_4769B0]
       - [0x17D20, c, func_004769E0]
-      - [0x17D60, asm, text_476A20]
+      - [0x17D60, c, func_00476A20]
       - [0x17E00, c, func_00476AC0]
       - [0x17E40, c, func_00476B00]
       - [0x17E60, asm, text_476B20]
