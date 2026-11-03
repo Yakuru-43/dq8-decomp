@@ -325,7 +325,11 @@ tail; Qwen's if/else-if chain gave the same tests but the wrong block order); fu
 case-9 loop fall into the shared exit), func_00327810 (2026-11-01, Qwen factory-3: tests
 0x50,0x4F,0x4E,0x1A8 in reverse source order; the default value assigned before the `switch`),
 func_00468610 (2026-11-02, Qwen factory-6: two cases, tests 0x22 then 0x21, `case 0x21:` written
-first; m2c's `/* irregular */` switch already lists the arms in this order)
+first; m2c's `/* irregular */` switch already lists the arms in this order), func_0029C320
+(2026-11-03, Opus, 3 tries: tests 1,4,2,3,0 = `case 0: case 3: case 2: case 4: <shared body>`
+then `case 1:` last; the grouped labels reverse too. A "dead" `addiu $v0,$zero,K` in the first
+`beql` delay slot that a later `jal` delay slot stores (`sw $v0,N($sp)`) is the case body's
+first statement `x = K;`, placed before the call)
 
 ## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
 Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
