@@ -1,0 +1,77 @@
+// range: 0x312DF0 0x3130F0
+#include "common.h"
+
+s32 func_002D34C0(void);
+void func_002D4240(s32, s32, s32, s32);
+void func_002D58C0(s32, s32, void *, s32);
+void func_002D66B0(s32, s32, s32, s32, s32);
+void func_002D4FC0(s32, s32, s32, s32);
+void func_00131188(void *, s32, s32);
+void func_002646C0(s32, void *);
+s32 func_0035E590(s32);
+void func_00364130(s32, void *, s32);
+void *func_0036F280(void *);
+void func_0036F550(void *, s32, s32, s32);
+void func_002E1F40(void *, s32);
+void func_001339E0(void *, void *, s32);
+
+extern s32 D_00452BE0[4] __attribute__((section(".data")));
+extern s32 D_00452BF0[4] __attribute__((section(".data")));
+extern u8 D_00452C20[] __attribute__((section(".data")));
+extern u8 D_00452DA0[] __attribute__((section(".data")));
+extern s32 D_003E1180;
+extern u8 D_003D0A18[];
+
+void func_00312DF0(void) {
+    u8 buf[0x40];
+    s32 sys;
+    s32 i;
+    s32 r;
+    void *obj;
+    u8 *rec;
+    s32 n;
+    u8 *p;
+    u8 *da;
+
+    sys = func_002D34C0();
+    func_002D4240(sys, 0x13AC, 0, 1);
+    func_002D4240(sys, 0x13AC, 1, 0);
+    func_00131188(D_00452DA0, 0, 0x20);
+    func_00131188(D_00452C20, 0, 0x180);
+    for (i = 0; i < 4; i++) {
+        if (D_00452BE0[i] != 0) {
+            p = buf;
+            if (p != 0) {
+                n = 0x40;
+                do {
+                    *p = 0;
+                    n = n - 1;
+                    p = p + 1;
+                } while (n != 0);
+            }
+            r = func_0035E590(*(s32 *)D_00452BE0[i]);
+            func_00364130(**(s32 **)D_00452BE0[i], buf, r);
+            obj = func_0036F280(buf);
+            rec = D_00452C20 + i * 96;
+            func_002646C0(*(s32 *)obj, rec);
+            func_0036F550(rec, 0, 0, 1);
+            func_002D58C0(sys, i * 2 + 0x13AD, rec, 0);
+            func_002D66B0(sys, i * 2 + 0x13AD, 0, 30, i * 25 + 30);
+            func_002D4240(sys, i * 2 + 0x13AD, 1, 0);
+            if (D_00452BF0[i] < 2) {
+                func_002D4240(sys, i * 2 + 0x13AE, 0, 0);
+            } else {
+                func_002646C0(*((s32 *)obj + 1), rec);
+                func_0036F550(rec, 1, 0, 1);
+                func_002E1F40(rec, 0xFD25);
+                func_002D58C0(sys, i * 2 + 0x13AD, rec, 0);
+                da = D_00452DA0 + i * 8;
+                func_001339E0(da, D_003D0A18, D_00452BF0[i]);
+                func_002D58C0(sys, i * 2 + 0x13AE, da, 0);
+                func_002D66B0(sys, i * 2 + 0x13AE, 0, 250, i * 25 + 30);
+                func_002D4240(sys, i * 2 + 0x13AE, 1, 0);
+            }
+        }
+    }
+    func_002D4FC0(sys, 0x138D, -1, D_003E1180 * 25 + 60);
+}
