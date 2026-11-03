@@ -656,7 +656,11 @@ plain `bnez` with `addiu reg,base,8` in the delay slot is the if/else statement 
 Example: src/SLES_539.74/func_001C57D0.c, src/SLES_539.74/func_00164200.c, src/SLES_539.74/func_0023E5C0.c
 Solved: func_001C57D0 func_001C6120 (2026-10-29), func_00164200 func_00164160 func_001642A0
 func_00164340 (2026-10-31), Qwen factory-1; func_0023E5C0 func_0023EE10 func_00239260
-func_0023FE50 (2026-10-29/30, Qwen factory-2)
+func_0023FE50 (2026-10-29/30, Qwen factory-2); func_001C7620 (2026-10-29, Qwen factory-1: the tag
+test stays through the arg, `*(s32 *)(arg0 + 8) == 0`, only the two value reads go through
+`y = (Val *)(arg0 + 8);`), func_0023BA00 (2026-11-02, Qwen factory-2: `Arg *ap = &args[1];`,
+not `&args[1].value`, which folds the `+4` into the `addiu`; one `f32 val;` for both arms and
+the member store after the if/else)
 
 ## Count-down loop closes with `bnez` where mine has `bgtz`: a `u32` counter
 Sign: score 1, only the back-edge word differs: original `bnez $n,<loop>`, mine `bgtz`
