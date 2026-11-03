@@ -1017,3 +1017,16 @@ statement order (`f224 = ...; f220 = ...; count = ...;` came out `count, f220, f
 Example: src/SLES_539.74/func_00102840.c
 Solved: func_00102840 (about 15 tries, 2026-11-03, Opus; Qwen had -O3 and s32/u32 locals)
 
+## `sltiu $at, vN, -1` + `bnez $at` guard (yours `addiu -1` + `bne`): `x > max - 1`; three `lwc1` then three `swc1`: a 3-float struct assignment
+Sign: the original tests a `u32` against all-ones with `sltiu $at,$v0,-0x1; bnez $at` (skip
+when below 0xFFFFFFFF); every C form of `>= 0xFFFFFFFF`/`== -1` becomes `addiu $v0,$zero,-1` +
+`bne` (one word more, everything after shifted). Typical of MSL container length checks
+(`"tree::insert length error"`, `"... length error"` strings next to the warn call).
+Fix: `if (size > max_size() - 1)` with `static inline u32 max_size() { return 0xFFFFFFFF; }`
+(CW folds `>=` to `==` but keeps `>` as `sltiu -1`). Second sign in the same family: a
+copy that loads all three words into `$f2/$f1/$f0` before storing (the first `lwc1` in a
+`beql` slot), yours load/store pairs through `$f0`: assign a `struct { f32 w[3]; }` in one
+statement (`*(StrWords *)buf = *(const StrWords *)&v;`). Also, Qwen's 1-arg-shifted saved
+registers came from try_match run without `-- -O3`.
+Example: src/SLES_539.74/func_002756D0.cpp
+Solved: func_002756D0 (3 tries, 2026-11-03, Opus; twins 0x275880/0x275A30/0x275BE0 likely)
