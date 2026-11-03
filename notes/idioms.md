@@ -942,3 +942,18 @@ tail-calls (even a plain `extern "C"` call gets `jal` + frame). The rest of the 
 unchanged by the flag here. Test: `try_match.py ... -- -O3 -Cpp_exceptions off`.
 Example: src/SLES_539.74/func_00167060.cpp
 Solved: func_00167060 (1st try with the flag, 2026-11-03, Opus)
+
+## `bnel p,$zero,<tail>` (delay slot = the arm's first load) where mine has `beql p,$zero` with the other arm out of line: a bare `if (p)`
+Sign: a two-way pointer test where both arms end in a return. The original has
+`bnel $v0,$zero,<far>; lw $t9,0($s0)`, the `p == 0` arm falling through inline and the `p != 0`
+arm (often a virtual call) at the tail; an earlier out-of-line then-block sits after the
+inline arm's closing `b`. Mine gets `beql $v0,$zero,<far>` with the `p == 0` arm out of line,
+same size, a block rotation (~39 words). Source order, `if/else` in either order, early return,
+`goto` past a `return`, a join variable, inline helpers and `-O4,p` all give the same layout.
+Fix: test the pointer bare, `if (reader->gptr()) { ...; return ...; }` then the other arm, not
+`if (reader->gptr() != 0)`. CW decides which arm falls through from the test's spelling.
+Try `if (p)` / `if (!p)` against `!= 0` / `== 0` whenever an arm swap no source order moves.
+(Aside: CW places an out-of-line then-block after the next block that ends in a `b`, so the
+fall-through arm decides where the other cold blocks land.)
+Example: src/SLES_539.74/func_00104EB0.cpp
+Solved: func_00104EB0 (2 Qwen passes at 39 words; about 12 tries, 2026-11-03, Opus)
