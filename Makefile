@@ -58,15 +58,22 @@ $(BUILD)/%.bss.s.o: $$(wildcard %.bss.s)
 	@mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) -o $@ $(or $<,/dev/null)
 
+# A `// rodata:` file (switch jump tables) can hold several .rodata sections, each
+# 16-aligned with zero padding between them; the link's SUBALIGN(4) would drop that
+# padding (func_0035EE10, 2026-11-03), so merge them into one section first.
+RODATA_MERGE = @if grep -q '^// rodata:' $<; then $(LD) -EL -m elf32ltsmip -r -o $@.r $@ && mv $@.r $@; fi
+
 # a `// flags: ...` line near the top of a source file adds per-file flags
 $(BUILD)/%.cpp.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(WIBO) $(MWCC) -c $(CFLAGS) $(shell sed -n '1,5s|^// flags: ||p' $<) $< -o $@
+	$(RODATA_MERGE)
 	$(PYTHON) tools/set_abi.py $@
 
 $(BUILD)/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	$(WIBO) $(MWCC) -c $(CFLAGS) $(shell sed -n '1,5s|^// flags: ||p' $<) $< -o $@
+	$(RODATA_MERGE)
 	$(PYTHON) tools/set_abi.py $@
 
 $(BUILD)/%.bin.o: %.bin
