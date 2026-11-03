@@ -1,0 +1,90 @@
+// range: 0x45F8F0 0x45FB10
+#include "common.h"
+
+extern void func_22B410(void);
+extern s32 func_264240(void);
+extern void func_21FED0(s8 *);
+extern s32 func_164C60(void *);
+extern s32 func_164100(void *, s32);
+extern s32 func_18A9F0(s32);
+extern void func_18AB20(s32, s32, f32, f32, f32);
+extern s32 func_2F60A0(void *);
+extern void func_2F6340(void *, s32);
+extern void func_2F5E40(void *, s32);
+extern void func_21F970(void *, s32, s32);
+extern void func_2F0BB0(void *, s32);
+extern void func_2F0B70(void *, s32);
+extern void func_2EA2A0(void *, s32);
+extern void func_221310(void *, s32);
+extern void func_2223F0(void *, s32, s32, s32);
+extern void func_22AB50(s32);
+
+typedef struct {
+    char pad0[0x17C];
+    s16 unk17C;
+    s16 unk17E;
+} S_state;
+
+extern S_state *D_00464398;
+extern s8 D_415A40 __attribute__((section(".data")));
+extern u8 D_3FAFB0 __attribute__((section(".data")));
+
+extern s16 D_003E1C90 __attribute__((section(".sdata")));
+extern s16 D_003E0208 __attribute__((section(".sdata")));
+extern s32 D_003DFC24 __attribute__((section(".sdata")));
+extern s32 D_003E1C54 __attribute__((section(".sdata")));
+
+s32 func_0045F8F0(void) {
+    s16 mode;
+    s16 target;
+    s16 ticks;
+
+    func_22B410();
+    if (D_415A40 != 0) {
+        if (func_264240() != 0) {
+            return 0;
+        }
+        func_21FED0(&D_415A40);
+    }
+    mode = D_003E1C90;
+    target = -1;
+    if (mode == 0x3E8) {
+        if (func_18A9F0(D_003E1C54) != 0) {
+            return 1;
+        }
+    } else if (mode == 0x2711) {
+        if ((func_2F60A0(D_00464398) == 3) && (func_164C60(&D_3FAFB0) != 0) &&
+            (func_164100(&D_3FAFB0, D_003DFC24) != 0)) {
+            func_22AB50(0);
+            target = 0;
+        }
+    } else if (mode == 0x2710) {
+        if (func_164C60(&D_3FAFB0) != 0) {
+            target = 0;
+        } else {
+            D_003E1C90 = 0x2711;
+            func_2F6340(D_00464398, 0);
+            func_2F5E40(D_00464398, 4);
+            func_21F970(D_00464398, 0x20, 0x122);
+            func_2F0BB0(D_00464398, 0x1C0);
+            func_2F0B70(D_00464398, 5);
+            func_2EA2A0(D_00464398, 0x47);
+            func_221310(D_00464398, 0);
+            func_2223F0(D_00464398, D_00464398->unk17C - 0xC,
+                        D_00464398->unk17E - 0xA, 0x1D8);
+        }
+    }
+    ticks = D_003E0208;
+    if (0 <= ticks) {
+        target = ticks;
+        D_003E0208 = -1;
+    }
+    if (0 <= target) {
+        if (target == 0) {
+            func_18AB20(D_003E1C54, 0x1E, 0.0f, 0.0f, 0.0f);
+            target = 0x3E8;
+        }
+        D_003E1C90 = target;
+    }
+    return 0;
+}
