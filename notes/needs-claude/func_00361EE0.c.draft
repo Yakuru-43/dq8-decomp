@@ -1,0 +1,125 @@
+// range: 0x361EE0 0x362230
+#include "common.h"
+
+s32 func_0015F490(void);
+s32 func_001419A0(s32, s32, f32);
+s32 func_00141BF0(s32);
+void func_0013F980(s32);
+void func_0013E320(s32, s32);
+void func_0013E2B0(s32, s32);
+void func_0013E3F0(s32, s32);
+void func_0013E3E0(s32, s32, s32);
+void func_0013E420(s32, s32);
+void func_0013E410(s32, s32);
+void func_0013F6C0(s32, s32);
+void func_0013ECD0(s32, s32, s32, s32, s32);
+void func_0013EF90(s32, s32, s32, s32);
+void func_0013F450(s32);
+void func_0013E2F0(s32, s32);
+void func_0013EB30(s32, s16 *);
+void func_0013EBF0(s32, s32, s32);
+s32 func_00145450(s32);
+s32 func_00145440(s32);
+void func_00141B00(s32);
+
+extern s16 D_003E1414;
+extern f32 D_003E1418;
+extern s32 D_003E141C;
+extern s16 *D_0045867C __attribute__((section(".data")));
+extern s16 D_00458680 __attribute__((section(".data")));
+extern s16 D_00458682 __attribute__((section(".data")));
+extern s16 D_00458684 __attribute__((section(".data")));
+extern s16 D_00458686 __attribute__((section(".data")));
+extern s32 D_0045868C __attribute__((section(".data")));
+extern s32 D_00458690 __attribute__((section(".data")));
+extern f32 D_00458694 __attribute__((section(".data")));
+
+s32 func_00361EE0(void) {
+    s16 *table;
+    s32 mg;
+    s32 draw;
+    s32 scale;
+    s32 sub;
+    s32 count;
+    s32 param;
+    f32 f;
+    s32 ret;
+
+    if (D_0045867C == 0) {
+        ret = 1;
+    } else {
+        mg = func_0015F490();
+        table = D_0045867C;
+        func_001419A0(mg, -1, 1.0f);
+        func_001419A0(mg, table[0], 1.0f);
+        switch (D_003E1414) {
+        case 0:
+            D_003E1414 = 1;
+            D_003E1418 = 0.0f;
+            D_003E141C = 0;
+            break;
+        case 1:
+            count = D_003E141C + 1;
+            D_003E141C = count;
+            if (count >= D_0045868C) {
+                D_003E1414 = 2;
+            }
+            break;
+        case 2:
+            f = D_003E1418 + D_00458694;
+            D_003E1418 = f;
+            if (f > 1.0f) {
+                D_003E1418 = 1.0f;
+                D_003E1414 = 3;
+                D_003E141C = 0;
+            }
+            break;
+        case 3:
+            count = D_003E141C + 1;
+            D_003E141C = count;
+            if (count == D_00458690) {
+                D_003E1414 = 4;
+            }
+            break;
+        case 4:
+            f = D_003E1418 - D_00458694;
+            D_003E1418 = f;
+            if (f < 0.0f) {
+                D_003E1418 = 0.0f;
+                D_003E1414 = 5;
+            }
+            break;
+        }
+        scale = (s32)(128.0f * D_003E1418);
+        draw = func_00141BF0(mg);
+        func_0013F980(draw);
+        func_0013E320(draw, 0);
+        func_0013E2B0(draw, 0);
+        func_0013E3F0(draw, 1);
+        func_0013E3E0(draw, 1, 0);
+        func_0013E420(draw, 1);
+        func_0013E410(draw, 1);
+        func_0013F6C0(draw, 6);
+        func_0013ECD0(draw, 0, 0, 0, 0x80);
+        func_0013EF90(draw, 0, 0, 0);
+        sub = func_00145450(mg);
+        param = func_00145440(mg);
+        func_0013EF90(draw, sub, param, 0);
+        func_0013F450(draw);
+        func_0013E3F0(draw, 1);
+        func_0013E3E0(draw, 5, 1);
+        func_0013E2F0(draw, 0);
+        func_0013E320(draw, 1);
+        func_0013F6C0(draw, 6);
+        func_0013EB30(draw, D_0045867C);
+        func_0013ECD0(draw, scale, scale, scale, 0x80);
+        func_0013EBF0(draw, 0, 0);
+        func_0013EF90(draw, D_00458680, D_00458682, 0);
+        func_0013EBF0(draw, table[1], table[2]);
+        func_0013EF90(draw, D_00458684, D_00458686, 0);
+        func_0013F450(draw);
+        func_00141B00(mg);
+        ret = D_003E1414 == 5;
+    }
+    return ret;
+}
