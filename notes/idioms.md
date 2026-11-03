@@ -1030,3 +1030,19 @@ statement (`*(StrWords *)buf = *(const StrWords *)&v;`). Also, Qwen's 1-arg-shif
 registers came from try_match run without `-- -O3`.
 Example: src/SLES_539.74/func_002756D0.cpp
 Solved: func_002756D0 (3 tries, 2026-11-03, Opus; twins 0x275880/0x275A30/0x275BE0 likely)
+
+## GS A+D packet built as u32 words: `ori 0xFFFF; dsll 16; ori 0xFFFF` mask, `and`/`dsrl32` + `dsll32; dsra32` per word, `or` source registers swapped: SDK `SCE_GS_SET_*` values through one reused `u64` local
+Sign: 32-bit params widened with `dsll32 0; dsra32 0` then shifted by 32/48/56 (`dsll32 0/16/24`) and
+`or`ed (GS BITBLTBUF/TRXPOS/TRXREG: A+D addresses 0x50..0x53 stored next to them); each 64-bit value is
+stored as two words, `and v,mask` and `dsrl32; and`, each followed by a `dsll32 0; dsra32 0`. Written
+inline the `or` operands come out evaluated in the other order or with rs/rt swapped (register-only,
+3 words); with three separate locals the colouring moves the constants (`0x3F` into `$a3` not `$t6`).
+Fix: SDK-shaped macros (`((u64)(dbp) << 32) | ((u64)(dbw) << 48) | ...`), `LO32(v)` =
+`(u32)((v) & 0xFFFFFFFFUL)` and `HI32(v)` = `(u32)(((v) >> 32) & 0xFFFFFFFFUL)` (the `UL` mask on a
+`u64` is not a noop and passes the lint; a plain `(u32)` cast drops the `and` and is 36 B short),
+and ONE `u64 reg;` assigned before each LO/HI pair: `reg = GS_TRXPOS(0, 0, dsax, dsay, 0);`. Also
+here: a `bgtzl` loop test reached by an entry `b` with the clamp `slti $at; beqz $at` + `addiu K` in
+its delay slot was `n = K; if (x < K) n = x;` inside a `while`; the ternary `(x < K) ? x : K` gave a
+top `blezl` guard and `beql` instead (100 words off).
+Example: src/SLES_539.74/func_00158CE0.c
+Solved: func_00158CE0 (8 tries, 2026-11-03, Opus; Qwen had u32 fields, 368 B)
