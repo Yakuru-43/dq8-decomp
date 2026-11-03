@@ -1,0 +1,54 @@
+// BEST (score 168, 684 vs 656) — see func_00327C60.md for the load/typing wall.
+// range: 0x327C60 0x327EF0
+#include "common.h"
+
+extern "C" {
+
+struct Keyed {
+    s32 field_00;              /* precedes the vptr: vptr at +0x4 */
+    virtual s32 v08(void);
+    virtual s32 v0C(void);
+    virtual s32 v10(void);
+    virtual s32 v14(void);
+    virtual f32 SetExtent(f32 lo, f32 hi);
+};
+
+static inline f32 Decode16(s16 raw) {
+    if (raw < 0) {
+        u16 u = (u16)raw;
+        f32 v = (f32)((u >> 1) | (u & 1));
+        return v + v;
+    }
+    return (f32)raw;
+}
+
+f32 func_00327C60(struct Keyed *obj, const u16 *key, s32 mode, s32 time) {
+    f32 result;
+
+    if (mode == 0) {
+        if (time >= 0) {
+            f32 lo = Decode16(key[3]);
+            f32 hi = Decode16(key[4]);
+            result = Decode16(key[0]);
+            f32 end = Decode16(key[1]);
+            f32 half = Decode16(key[2]);
+            f32 t = (f32)time;
+
+            if (t > lo) {
+                if (t < hi) {
+                    result = result + (t - lo) * ((end - result) / (hi - lo));
+                } else {
+                    result = end;
+                }
+            }
+            result = result + obj->SetExtent(-half, half);
+        } else {
+            result = obj->SetExtent(Decode16(key[0]), Decode16(key[1]));
+        }
+    } else {
+        result = obj->SetExtent(Decode16(key[5]), Decode16(key[6]));
+    }
+    return result;
+}
+
+}
