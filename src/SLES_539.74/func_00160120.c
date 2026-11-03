@@ -18,7 +18,6 @@ void func_00117898(s32);
 s32 func_00160120(void) {
     s32 out;
     u8 buf[0x2C];
-    u32 r;
     s32 i;
 
     DebugPrintf(D_003C23E8);
@@ -30,18 +29,18 @@ s32 func_00160120(void) {
             break;
         }
         i = 0;
-        while (!(0 < (r = func_0012A970(buf, &D_003F80C0)))) {
+        while ((0 < func_0012A970(buf, &D_003F80C0)) ^ 1) {
             if (i % 100 == 0) {
                 DebugPrintf(D_003C2408);
             }
-            func_00117898(10000);
             i++;
+            func_00117898(10000);
         }
         if (func_0012B928() == 0) {
             break;
         }
-        func_00117898(10000);
         D_003E0320 = 2;
+        func_00117898(10000);
     }
     out = 0;
     func_0012BB80(2, &out);
