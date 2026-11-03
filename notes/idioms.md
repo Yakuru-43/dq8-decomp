@@ -904,3 +904,15 @@ Fix: read the format string in `asm/<BIN>/data/` (`D_003D2078` is `"execode %d\n
 print variadic, `M2C_UNK DebugPrintf2(M2C_UNK *, ...);`, and pass the value, `DebugPrintf2(&D_x, n);`.
 Example: src/SLES_539.74/func_00324210.c
 Solved: func_00324350 func_00324210 (2026-10-29, Qwen factory-3)
+
+## `bltzl $vN; srl` then `andi 1; or; mtc1; cvt.s.w; add.s f,f,f`: a plain `(f32)(u32)x`; read the constant's bits
+Sign: after a `lbu`/`lhu`/`lw`, `bltzl $v1,<near>` with `srl $a3,$v1,1` in its delay slot, a
+`mtc1; b <join>; cvt.s.w` fast arm, then `andi 1; or; mtc1; nop; cvt.s.w; add.s $f2,$f2,$f2`.
+That is CodeWarrior's own unsigned-to-float expansion, not a sign test in the source (it keeps
+it even after a `lbu`). A hand-written `if (b < 0) {...}` lays the arms out differently.
+Fix: a cast, `(f32)(u32)p[i]`, no `if`. Also decode a `lui K; mtc1` float before naming it:
+`0x3C00` is 1/128 (0.0078125), not 1.0f (`0x3F80`); a real factor is never folded away, so
+`(1.0f / 128.0f) * (f32)(u32)p[i] * scale[i]` gives both `mul.s`.
+Example: src/SLES_539.74/func_0014B9B0.c
+Solved: func_0014B9B0 (1st try, 2026-11-03, Opus; Qwen had read 0x3C00 as 1.0f). Twin
+func_0014BA50 (`lhu`) should take the same C.
