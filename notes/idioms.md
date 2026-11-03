@@ -978,3 +978,21 @@ Fix: make the file `.cpp` (functions inside `extern "C" { }`) and write
 Example: src/SLES_539.74/func_00159A40.cpp
 Solved: func_00159A40 (1st .cpp try after 3 C forms, 2026-11-03, Opus; Qwen had tried
 4 C forms)
+
+## `lbu; addiu -0x21; and; or; sb` then `lhu; addiu -0x1C1; and; or; sh` at the same offset: one `u16` bitfield struct, the masks are `~0x20`/`~0x1C0`
+Sign: byte and halfword RMWs on the same member offset, masks like `-0x21`, `-0x1C1`,
+`-0x3`. Read them as `~(mask << pos)`: `-0x21 == ~0x20` (a 1-bit field at bit 5),
+`-0x1C1 == ~0x1C0` (a 3-bit field at bits 6..8). They do **not** clear bit 0; a note that
+says "two fields share bit 0" or "same bitfield stored twice" misread the mask. A field
+that spans the byte boundary gets the `lhu`/`sh`; fields inside the low byte get
+`lbu`/`sb`; a read of bits 2..4 gives `lbu; dsll32 27; dsrl32 29`.
+Fix: one struct of `u16` bitfields, LSB first, e.g. `u16 b0:2; u16 mode:3; u16 flag:1;
+u16 state:3; u16 rest:7;`, and plain `o->flag = 1; o->state = 4;` writes. No union, no
+second view. Constant-0 values keep `andi $zero` (entry above). For a `switch`, CW
+compares the cases high to low (`beq 2`, `beq 1`, `beql 0`) but lays the bodies out in
+source order, so the first body after the compares is the case written first; a body
+that falls into the next one is a missing `break`.
+Check with `tools/verify.py`: `try_match.py` defaults to `-O2` and an older compiler, so
+its diff showed unscheduled blocks and +28 bytes for C that `verify.py` matched.
+Example: src/SLES_539.74/func_0015BDE0.c
+Solved: func_0015BDE0 (2nd try, 2026-11-03, Opus; Qwen had a union and two typed views)
