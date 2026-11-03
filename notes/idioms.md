@@ -957,3 +957,13 @@ Try `if (p)` / `if (!p)` against `!= 0` / `== 0` whenever an arm swap no source 
 fall-through arm decides where the other cold blocks land.)
 Example: src/SLES_539.74/func_00104EB0.cpp
 Solved: func_00104EB0 (2 Qwen passes at 39 words; about 12 tries, 2026-11-03, Opus)
+
+## Constant store (`addiu $vN,$zero,K; ...; sw`) emitted after a `bgez`/`sra` signed-divide expansion, mine has it above the `bgez`: write the store after the arithmetic
+Sign: same size, a few words in one block differ: the original runs the `/2^n` expansion
+(`bgez r; sra` / `addiu; sra`) first and loads the constant + `sw` after its join; mine
+loads the constant before the `bgez` and puts the `sw` in its delay slot. CW keeps the
+source order of a store against the branchy divide expansion.
+Fix: move `*p = K;` below the statement holding the `/` (inside the same case or arm).
+Example: src/SLES_539.74/func_0015DA00.c
+Solved: func_0015DA00 (2nd try, 2026-11-03, Opus; Qwen had tried "before vs after the /2"
+only with the `return` form, and its best C file was lost)
