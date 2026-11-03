@@ -5486,6 +5486,8 @@ segments:
       - [0x2375B0, asm, game_3375B0]
       - [0x237660, c, func_00337660]
       - [0x2376E0, asm, game_3376E0]
+      - [0x237740, c, func_00337740]
+      - [0x237B20, asm, game_337B20]
       - [0x237FE0, c, func_00337FE0]
       - [0x237FF0, c, func_00337FF0]
       - [0x238060, c, func_00338060]
