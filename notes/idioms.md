@@ -95,7 +95,9 @@ Fix: copy the twin's C and change only the types. Shape: one local for the teste
 *unshifted* `b` in every expression (`(b >> 2) << 8`, no shared `b >>= 1`), and each
 next byte read into a local (`b1 = p[1];`) on the line just above the test that follows.
 Example: src/SLES_539.74/func_00100EE0.c (twin of src/SLES_539.74/func_00100F80.c)
-Solved: func_00100EE0 (first try from the twin, 2026-10-26, Opus)
+Solved: func_00100EE0 (first try from the twin, 2026-10-26, Opus), func_0016B2F0 (2026-11-01,
+Qwen factory-1: a switch whose arms each restate a matched getter twin, func_0016B8E0/func_0016B920;
+copy each twin's body verbatim into a `static inline` and call it in the arm, `p = get(o, i); break;`)
 
 ## Virtual-base constructor: a dead `daddu s0,a1` + `(s16)` flag test at entry
 Sign: entry does `daddu s0,a1,zero; dsll32 v0,s0,16; dsra32 v0,v0,16; bnez v0,..` and
@@ -321,7 +323,9 @@ belongs at the top of the success block, not before the test), func_003112C0 (1s
 tail; Qwen's if/else-if chain gave the same tests but the wrong block order); func_00468F50
 (2026-10-31, Qwen factory-6: chain 9 then 13 = `case 13:` before `case 9:`, which also lets the
 case-9 loop fall into the shared exit), func_00327810 (2026-11-01, Qwen factory-3: tests
-0x50,0x4F,0x4E,0x1A8 in reverse source order; the default value assigned before the `switch`)
+0x50,0x4F,0x4E,0x1A8 in reverse source order; the default value assigned before the `switch`),
+func_00468610 (2026-11-02, Qwen factory-6: two cases, tests 0x22 then 0x21, `case 0x21:` written
+first; m2c's `/* irregular */` switch already lists the arms in this order)
 
 ## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
 Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
@@ -490,7 +494,9 @@ was cached in `$sX` from an earlier compare). Declare the unextended callee `ext
 return 0;` (`return best > 0;` gives `slt`). Node/best registers swapped: reorder the locals'
 declarations (here `best` first).
 Example: src/SLES_539.74/func_00292F60.c
-Solved: func_00292F60 (5 tries, 2026-10-29, Opus; no mh2 entry needed)
+Solved: func_00292F60 (5 tries, 2026-10-29, Opus; no mh2 entry needed), func_0046A6D0
+(2026-10-31, Qwen factory-6: `daddu $s1,$v0` in the second of two bare `jal`s is
+`handle = A(); B();`, not `A(); handle = B();`)
 
 ## `if (addr != 0) { push }` after early returns goes out of line (`bnez` far + `b` back): make `addr` a pointer
 Sign: an `int`-typed address computed as `base + (count << 4)` (later masked `& 0x0FFFFFFF`
@@ -505,7 +511,11 @@ where it moves an integer `!= 0` test's body cold. The `sll 4; addu` of `rec + (
 Also, same function: `mtc1 $zero,$f0; c.le.s $f20,$f0; bc1t skip` (orig) vs mine
 `c.lt.s $f0,$f20; bc1f` is `if (!(amount <= 0.0f)) call;`, not `0.0f < amount`.
 Example: src/SLES_539.74/func_001419A0.c
-Solved: func_001419A0 (5 tries, 2026-10-29, Opus; no mh2 entry needed)
+Solved: func_001419A0 (5 tries, 2026-10-29, Opus; no mh2 entry needed), func_0026BD00
+(2026-10-30, Qwen factory-2: `if (o->f != 0) free_like(o->f);` before a store tail went cold
+with the tail's first store duplicated; `void *f` field + `void free_like(void *)` kept it
+inline), func_004689C0 (2026-10-30, Qwen factory-6: an `s32` global tested `!= 0` inverted the
+if/else, declared `extern char *D_g` it gives `beqz` + hot path inline)
 
 ## `slt $at,$v0,$zero; beql $at,$zero` on a call result where mine has `bgezl $v0`: write `0 <= r`
 Sign: a signed test of a call result against zero. The original computes `slt $at,$v0,$zero`
@@ -646,7 +656,11 @@ plain `bnez` with `addiu reg,base,8` in the delay slot is the if/else statement 
 Example: src/SLES_539.74/func_001C57D0.c, src/SLES_539.74/func_00164200.c, src/SLES_539.74/func_0023E5C0.c
 Solved: func_001C57D0 func_001C6120 (2026-10-29), func_00164200 func_00164160 func_001642A0
 func_00164340 (2026-10-31), Qwen factory-1; func_0023E5C0 func_0023EE10 func_00239260
-func_0023FE50 (2026-10-29/30, Qwen factory-2)
+func_0023FE50 (2026-10-29/30, Qwen factory-2); func_001C7620 (2026-10-29, Qwen factory-1: the tag
+test stays through the arg, `*(s32 *)(arg0 + 8) == 0`, only the two value reads go through
+`y = (Val *)(arg0 + 8);`), func_0023BA00 (2026-11-02, Qwen factory-2: `Arg *ap = &args[1];`,
+not `&args[1].value`, which folds the `+4` into the `addiu`; one `f32 val;` for both arms and
+the member store after the if/else)
 
 ## Count-down loop closes with `bnez` where mine has `bgtz`: a `u32` counter
 Sign: score 1, only the back-edge word differs: original `bnez $n,<loop>`, mine `bgtz`
@@ -670,7 +684,8 @@ Fix: `s32 flag; flag = (u8)!(0 < r);` with `u32 r` (or `(u8)((r != 0) ^ 1)` in a
 `sltu; xori; bnez` where `!(0 < x)` folds to `beqz`.
 Example: src/SLES_539.74/func_001C78F0.c, src/BATTLE/func_0046B790.cpp
 Solved: func_001C78F0 (2026-10-29, Qwen factory-1), func_0046B790 (2026-10-29, Qwen factory-6),
-func_00163380 (2026-10-31, Qwen factory-1)
+func_00163380 (2026-10-31, Qwen factory-1), func_00160120 (loop test on a `u32` call result,
+`while ((0 < f(buf, &g)) ^ 1)` gives `sltu; xori; bnel` back to the body; 1st try, 2026-11-03, Opus)
 
 ## Cold call in an `else` with its arg load in the `beql`/`bnel` delay slot: positive test, body first
 Sign: `slt $at,$v0,$v1; beql $at,$zero,<far>; lw $a0,N($s0)` (or a `bnel` on a global byte), body
@@ -751,7 +766,9 @@ Example: src/SLES_539.74/func_00161BA0.c
 Solved: func_00161BA0 (4 tries, 2026-11-02, Opus), func_00162BC0 (loop pointer/counter in
 `$s1`/`$s0` swapped: declare `u8 *e;` before `s32 i;`; 2nd try, 2026-11-02, Opus),
 func_0014E360 (six loop values in `$t2..$t7` rotated; declaring them in the reverse of the
-original's `$t` order, `found, found_node, best, gap, end, next`, matched first try, 2026-11-02, Opus)
+original's `$t` order, `found, found_node, best, gap, end, next`, matched first try, 2026-11-02, Opus),
+func_00160120 (`i++` / `G = 2` written before `sleep(10000)` lands them in its delay slot with the
+arg load before the `jal`; 2nd try, 2026-11-03, Opus)
 
 ## `addiu $v0,$zero,K` between `addiu $sp` and the `sd $ra` saves, `sw $v0,%gp_rel(G)` in the first `jal`'s delay slot: `G = K;` before the call
 Sign: a constant loaded before the frame saves, apparently dead, and a gp-relative `sw $v0` in
@@ -775,7 +792,10 @@ Fix: take the byte offset from the array member itself:
 read a `b; sw` delay-slot difference that was only the default try_match flags; run
 try_match with `--ver 3.0.1b151-050317 ... -- -O3 -Isrc` before trusting a scheduling diff.
 Example: src/SLES_539.74/func_0015B190.c
-Solved: func_0015B190 (8 tries, 2026-11-02, Opus; declaration order cur/prev/found via a permutation script fixed the rest)
+Solved: func_0015B190 (8 tries, 2026-11-02, Opus; declaration order cur/prev/found via a permutation script fixed the rest),
+func_00327A70 (2026-10-30, Qwen factory-3: two scaled terms, row and column; a typed member
+array `struct { u8 pad[0x40]; f32 vals[2][7]; } *t; v = t->vals[mode == 0][i];` put both
+index-first and kept 0x40 in the `lwc1`)
 
 ## `lwc1 $fN,%gp_rel(D)($gp)` above the `sd $ra` save (or above stack stores): the global is a float literal, declare it `const`
 Sign: a gp-relative float load scheduled into the prologue, before `sd $ra` and the frame's
@@ -852,4 +872,73 @@ stores (`lwc1 f1; lwc1 f0; swc1; swc1`, `ld; ld; sd; sd`) are a small nested str
 (`struct { f32 x, y; }`, `struct { s64 a, b; }`); members copied load/store one at a time are
 plain scalars; an odd-length run of single copies is scalars, not an array (arrays loop).
 Example: src/SLES_539.74/func_00144AA0.cpp
-Solved: func_00144AA0 (4 tries, 2026-11-02, Opus; no mh2 entry needed)
+Solved: func_00144AA0 (4 tries, 2026-11-02, Opus; no mh2 entry needed), func_00313A70
+(2026-10-30, Qwen factory-3, plain C: the original copies scalars one by one and each array
+region with its own counted loop; wrap each array region in a struct type and write one
+assignment per member, `dst->table = src->table;` per region, scalars one per line)
+
+## Global loaded `lui %hi`/`%lo` (or `lui; ld`) where yours is gp-relative: `section(".data")` on the extern
+Sign: the original addresses a global absolutely (`lui $aN,%hi(D_x)` + `addiu`/`lw`/`ld %lo`),
+yours gives `addiu/lw $aN,%gp_rel(D_x)($gp)` (4 B short per access, CLASS structural): CW puts
+a plain `extern` of 8 bytes or less in `.sdata`. Common in the overlays (SHOP/MENU/BATTLE data
+at 0x47xxxx) and for 8-byte globals (`u64`/`s64`).
+Fix: `extern M2C_UNK D_x __attribute__((section(".data")));` (or the real type, `extern char
+*D_x ...`, `extern s64 D_x[12] ...` indexed as `D_x[1]`). Overlay calls to functions outside
+your overlay use the short asm name the linker script defines (`func_379600`, see
+`linker/<BIN>_undefined_funcs_auto.txt`); verify.py can say MATCH while `make` fails the link.
+Example: src/SHOP/func_00463050.c, src/SLES_539.74/func_00157C00.c
+Solved: func_00463050 func_004689C0 (2026-10-30, Qwen factory-6), func_00157C00 (2026-10-30,
+Qwen factory-1); used in about 60 overlay files since
+
+## A `c1 0x4` word between `nop`s after a `cvt.s.w`/`lwc1`: `sqrtf()`
+Sign: spimdisasm prints an undecoded COP1 word (`04000046` = `sqrt.s $f0,$f0` prints `c1 0x4`;
+other registers give other values, e.g. `c1 0x84`) between `nop`s, no `c.xx.s` anywhere to
+set a condition, both paths of the preceding branch meeting at it.
+Fix: `extern f32 sqrtf(f32);` and `x = sqrtf(x);`. CW emits `sqrt.s` and the `nop`s itself.
+`grep -l 'c1 *0x4$' asm/<BIN>/*.s` lists the other users.
+Example: src/SLES_539.74/func_001DD8A0.c, src/SLES_539.74/func_001BC430.c
+Solved: func_001DD8A0 (2026-10-29, Qwen factory-1), func_001BC430 (1st try, 2026-11-03, Opus;
+same script-VM node without the `kind` test). Not tried yet: the users in asm/SLES_539.74/game_2DC7E0.s and game_1831B0.s
+
+## One value in an argument register (`$a1`) for no reason, a debug print on that path: the print takes the value
+Sign: register-only diff, one local (`addiu`/`slti`/`sw` triplet) in `$a1` where yours uses `$v1`,
+and a `DebugPrintf`/`DebugPrintf2` call later on the same path with only `$a0` set up in your C.
+Fix: read the format string in `asm/<BIN>/data/` (`D_003D2078` is `"execode %d\n"`): declare the
+print variadic, `M2C_UNK DebugPrintf2(M2C_UNK *, ...);`, and pass the value, `DebugPrintf2(&D_x, n);`.
+Example: src/SLES_539.74/func_00324210.c
+Solved: func_00324350 func_00324210 (2026-10-29, Qwen factory-3)
+
+## `bltzl $vN; srl` then `andi 1; or; mtc1; cvt.s.w; add.s f,f,f`: a plain `(f32)(u32)x`; read the constant's bits
+Sign: after a `lbu`/`lhu`/`lw`, `bltzl $v1,<near>` with `srl $a3,$v1,1` in its delay slot, a
+`mtc1; b <join>; cvt.s.w` fast arm, then `andi 1; or; mtc1; nop; cvt.s.w; add.s $f2,$f2,$f2`.
+That is CodeWarrior's own unsigned-to-float expansion, not a sign test in the source (it keeps
+it even after a `lbu`). A hand-written `if (b < 0) {...}` lays the arms out differently.
+Fix: a cast, `(f32)(u32)p[i]`, no `if`. Also decode a `lui K; mtc1` float before naming it:
+`0x3C00` is 1/128 (0.0078125), not 1.0f (`0x3F80`); a real factor is never folded away, so
+`(1.0f / 128.0f) * (f32)(u32)p[i] * scale[i]` gives both `mul.s`.
+Example: src/SLES_539.74/func_0014B9B0.c
+Solved: func_0014B9B0 (1st try, 2026-11-03, Opus; Qwen had read 0x3C00 as 1.0f). Twin
+func_0014BA50 (`lhu`) should take the same C.
+
+## Register-only diff plus one `nop` delay slot after `try_match ... -- -flag divbyzerocheck`: the flags replaced `-O3`
+Sign: the note says the flag was passed "on the try_match CLI" (`-- -flag divbyzerocheck`,
+no `-O3`), and the diff is same size and block order with a few locals renumbered (`$t1`/`$t0`
+vs `$t0`/`$a3`) and a `nop` where the original has `daddu $v0,$zero,$zero` in a `b` delay slot.
+try_match's flags **replace** its default flag list, so that run had no `-O3` at all.
+Fix: before touching the C, rerun with the whole set:
+`tools/try_match.py <file> <func> <vram> -- -O3 -nostdinc -Iinclude -Isrc -flag divbyzerocheck`
+(or just `tools/verify.py`, which reads the `// flags:` line). Qwen's draft was already a match.
+Example: src/SLES_539.74/func_0014E640.c
+Solved: func_0014E640 (1st try, 2026-11-03, Opus; Qwen's best C matched unchanged)
+
+## Frameless virtual tail call `lw $t9; lw $t9; jr $t9; nop`: `// flags: -Cpp_exceptions off`
+Sign: a 16-byte thunk `lw $t9,N($a0); lw $t9,S($t9); jr $t9; nop` (often a vtable entry, or
+two functions merged in one asm region). The `.cpp` virtual call gives the right `$t9` loads
+but always a 0x10 frame + `jalr` + epilogue; `return o->f();`, `void`, `-O4,p` change nothing.
+Plain C function pointers do tail-call but use `$v0`.
+Fix: keep the C++ virtual call (vptr at N, slot S, see the `$t9` entry above) and add
+`// flags: -Cpp_exceptions off` in the first 5 lines. With exceptions on, mwccps2 C++ never
+tail-calls (even a plain `extern "C"` call gets `jal` + frame). The rest of the file was
+unchanged by the flag here. Test: `try_match.py ... -- -O3 -Cpp_exceptions off`.
+Example: src/SLES_539.74/func_00167060.cpp
+Solved: func_00167060 (1st try with the flag, 2026-11-03, Opus)
