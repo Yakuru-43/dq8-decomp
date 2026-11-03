@@ -1119,3 +1119,18 @@ Fix (.cpp): `static inline bool Roll(f32 roll, f32 rate) { bool ok = false; if (
 arguments. Return type and the `ret` flag `bool` when the 1 is `daddiu`.
 Example: src/SLES_539.74/func_0029B870.cpp
 Solved: func_0029B870 (about 12 tries, 2026-11-03, Opus; Qwen at score 107 in .c)
+
+## Table `lh`/`lw` loads scheduled after every other argument and stack store, all else right: declare the table `extern const`
+Sign: a call whose arguments include two reads from a global data table
+(`lui; addiu %lo(T); addu; lh $t2,0(..); lh $t3,2(..)`); the original issues the table
+loads early (before the last `sd` stack argument, the `cvt.w.s`, the reload of a struct field
+for another argument), yours issues them last, right before the `jal`. Opcodes and registers
+otherwise identical. Locals for the two values, a pointer to the row, a struct-pair type,
+`s16` prototype parameters, explicit casts: none move them to the right place (a local moves
+them too far up).
+Fix: `extern const s16 T[];`. A non-const table load may alias the stack stores and the other
+loads, so CW keeps it behind them; const data is free to schedule early. Try it on any
+`.rodata`-looking table (address in the 0x3Cxxxx range) whose loads land late.
+Example: src/SLES_539.74/func_00213FB0.c
+Solved: func_00213FB0 (about 15 tries, 2026-11-03, Opus; Qwen at score 92)
+
