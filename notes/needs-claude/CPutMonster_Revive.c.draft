@@ -1,0 +1,114 @@
+// range: 0x355140 0x355440
+#include "common.h"
+
+M2C_UNK DebugPrintf(); /* extern */
+extern M2C_UNK D_003D3930 __attribute__((section(".data")));
+extern M2C_UNK D_003D3980 __attribute__((section(".data")));
+extern M2C_UNK D_003D37E0 __attribute__((section(".data")));
+extern M2C_UNK D_003D37F0 __attribute__((section(".data")));
+
+union Vec4_355140 {
+    /* 0x00 */ u128 q;
+    /* 0x00 */ struct { f32 x, y, z, w; } v;
+};
+
+struct Slot355140 {
+    /* 0x00 */ s32 type;
+    /* 0x10 */ union Vec4_355140 vec;
+    /* 0x20 */ s32 unk20;
+    /* 0x24 */ s32 key;
+    /* 0x28 */ s32 unk28;
+};
+
+static inline s32 FindSlot355140(char *base, s32 key) {
+    s32 i;
+
+    if (key < 0) {
+        return -1;
+    }
+    for (i = 0; i < 0x20; i++) {
+        if (*(s32 *)(base + i * 0x30 + 0x24) == key) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static inline s32 FindType355140(char *base, s32 type) {
+    s32 i;
+
+    for (i = 0; i < 0x20; i++) {
+        if (*(s32 *)(base + i * 0x30) == type) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void CPutMonster_Revive(char *base, s32 key) {
+    struct Slot355140 *slot;
+    struct Slot355140 *dst;
+    struct Slot355140 *src;
+    s32 idx;
+    s32 type3;
+    s32 k;
+    s32 n;
+    s32 s;
+
+    idx = FindSlot355140(base, key);
+    slot = (struct Slot355140 *)(base + idx * 0x30);
+    if (slot->type == 1) {
+        return;
+    }
+    if (idx < 0) {
+        DebugPrintf(&D_003D3930);
+        return;
+    }
+    if (slot->type == 4) {
+        type3 = FindType355140(base, 3);
+        if (0 <= type3) {
+            src = (struct Slot355140 *)(base + type3 * 0x30);
+            k = FindSlot355140(base, src->key);
+            if (k >= 0) {
+                dst = (struct Slot355140 *)(base + k * 0x30);
+                dst->type = 0;
+                dst->unk20 = -1;
+                dst->key = -1;
+                dst->unk28 = -1;
+                dst->vec.q = 0;
+                while (k < 0x1F) {
+                    n = k + 1;
+                    dst = (struct Slot355140 *)(base + k * 0x30);
+                    src = (struct Slot355140 *)(base + n * 0x30);
+                    k = n;
+                    dst->type = src->type;
+                    dst->vec.v = src->vec.v;
+                    dst->unk20 = src->unk20;
+                    dst->key = src->key;
+                    dst->unk28 = src->unk28;
+                }
+                dst = (struct Slot355140 *)(base + 0x5D0);
+                dst->type = 0;
+                dst->unk20 = -1;
+                dst->key = -1;
+                dst->unk28 = -1;
+                dst->vec.q = 0;
+            }
+        } else {
+            type3 = FindType355140(base, 2);
+            if (type3 >= 0) {
+                src = (struct Slot355140 *)(base + type3 * 0x30);
+                src->type = 4;
+            }
+        }
+    }
+    slot->type = 1;
+    DebugPrintf(&D_003D3980);
+    for (s = 0; s < 0x20; s++) {
+        dst = (struct Slot355140 *)(base + s * 0x30);
+        if (dst->type != 0) {
+            DebugPrintf(&D_003D37F0, s, dst->unk20, dst->key);
+        }
+    }
+    DebugPrintf(&D_003D37E0);
+}
