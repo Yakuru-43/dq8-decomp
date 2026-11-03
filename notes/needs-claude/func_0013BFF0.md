@@ -46,3 +46,9 @@ returns, helpers as externs) → structural. Not permutable — the VU0 words
 never appear. Suggested handling like the 0x27DFxx family: an `asm void`
 asmfunc stub (byte-exact, excluded from the metric) or map as `asm`.
 MH2 ref not consulted (no FPU-side near miss to fix).
+
+**Re-checked 2026-11-03 (factory-1):** best C again → `CLASS structural
+score=190 (150 words differ, 620 vs 460 bytes)`. Confirmed no committed
+non-asmfunc src file anywhere uses `lqc2/sqc2/vmul.xyzw/vwaitq` — the VU0
+chunks are not C-expressible. The row had reverted to `todo`; re-marked
+`needs-claude`.
