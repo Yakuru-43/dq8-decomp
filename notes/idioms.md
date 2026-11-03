@@ -996,3 +996,20 @@ Check with `tools/verify.py`: `try_match.py` defaults to `-O2` and an older comp
 its diff showed unscheduled blocks and +28 bytes for C that `verify.py` matched.
 Example: src/SLES_539.74/func_0015BDE0.c
 Solved: func_0015BDE0 (2nd try, 2026-11-03, Opus; Qwen had a union and two typed views)
+
+## Member-array copy loop in the library area stays indexed at `-O3` (`sll; addu; sq 0x120(...)`), the original walks `obj` itself (`sq 0x120($t3)`, `$t3 = $a0` stepped): `-O4,p`
+Sign: 0x100000-0x108000 (MSL/library). The original copy loop stores through a copy of the
+struct pointer with the member offset in the store (`daddu $t3,$a0,$zero` ... `sq $t2,0x120($t3)`;
+`addiu $t3,$t3,0x10` in the back-edge delay slot; or `$a0` itself stepped when it is dead after);
+mine recomputes `sll i; addu obj` every pass in every C form (index, `*dst++`, `ptr[i]`,
+do-while). Also `lwu` field loads followed by `dsll32/dsra32` before pointer adds, `daddiu`
+on a counter, and `sltu` loop tests on a `dsll32/dsra32`-extended `int i`.
+Fix: put `// flags: -O4,p` on line 2 (`try_match.py --show src sym vram -- -O4,p`); at
+`-O4,p` the plain `for (i = 0; i < n; i++) obj->q120[i] = *ptr++;` gives the reduced walker and
+the `sltu $at,$zero,n` guard, where the guarded do-while does not. The `lwu`/extend/`daddiu`/
+`sltu` signs are `u64` locals (`u64 count = obj->count;` from a `u32`/`s32` field) with an
+`s32 i`. With everything else matching, the entry load order is the reverse of the
+statement order (`f224 = ...; f220 = ...; count = ...;` came out `count, f220, f224`).
+Example: src/SLES_539.74/func_00102840.c
+Solved: func_00102840 (about 15 tries, 2026-11-03, Opus; Qwen had -O3 and s32/u32 locals)
+
