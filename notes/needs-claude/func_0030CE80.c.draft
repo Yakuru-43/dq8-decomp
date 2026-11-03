@@ -1,0 +1,105 @@
+/* factory-3 2026-11-03 best attempt (try_match CLASS structural score=183,
+ * 752 vs 756 B). NOT committed to src/: frame came out 0xA0 with an extra
+ * $s3 (want 0x90 + s0/s1/s2 + f20 only), and *(s64 *) from the func_00356910
+ * result compiled to an aligned `ld` (want the `ldr/ldl` pair).
+ */
+// range: 0x30CE80 0x30D180
+#include "common.h"
+
+extern M2C_UNK D_00421AD0 __attribute__((section(".data")));
+extern s32 func_00359620(M2C_UNK *, s32, void *, s32, s32, s32, s32, s32, s32);
+extern s32 func_00359A90(M2C_UNK *, s32, void *, s32, s32, s32, s32, s32, s32);
+s32 func_00310490(s32);                              /* extern */
+s32 func_00310520(s32);                              /* extern */
+extern s32 func_0030D1A0(s32 arg0);
+extern M2C_UNK func_0030D180(s64 *, s64 *);
+extern void func_0030D4F0(s32 arg0, s32 *arg1);
+extern s32 func_0030D5A0(s32 *arg0, s64 arg1);
+char *func_00356910(char *, s32);                    /* extern */
+f32 func_00356880(void *arg0);                       /* extern */
+s32 func_003564C0(void *, s32);                      /* extern */
+s32 func_003568B0(void *);                           /* extern */
+void *func_00356480(void *, s32);                    /* extern */
+
+s32 func_0030CE80(s32 *obj, s32 arg1) {
+    s64 bufF;
+    s64 bufE;
+    s64 bufD;
+    s64 bufC;
+    s64 bufB;
+    s64 bufA;
+    s32 work;
+    s32 cnt;
+    f32 ratio;
+
+    if (M2C_FIELD(obj, s32 *, 0x14C) <= 0) {
+        M2C_FIELD(obj, s32 *, 0x14C) = arg1;
+        M2C_FIELD(obj, s32 *, 0x150) = M2C_FIELD(obj, s32 *, 0x10C);
+        M2C_FIELD(obj, s32 *, 0x154) = 0;
+        switch (M2C_FIELD(obj, s32 *, 0x14C)) {
+        case 4:
+            M2C_FIELD(obj, s32 *, 0x148) = M2C_FIELD(obj, s32 *, 0x144);
+            break;
+        case 3:
+            M2C_FIELD(obj, s32 *, 0x148) = M2C_FIELD(obj, s32 *, 0x140);
+            break;
+        case 2:
+            M2C_FIELD(obj, s32 *, 0x148) = func_00310490(M2C_FIELD(obj, s32 *, 0x13C));
+            break;
+        case 1:
+            M2C_FIELD(obj, s32 *, 0x148) = func_00310520(M2C_FIELD(obj, s32 *, 0x13C));
+            break;
+        }
+        return 1;
+    }
+    switch (M2C_FIELD(obj, s32 *, 0x14C)) {
+    case 4:
+    case 3:
+        M2C_FIELD(obj, s32 *, 0x148) = M2C_FIELD(obj, s32 *, 0x144);
+        return 1;
+    case 2:
+        M2C_FIELD(obj, s32 *, 0x148) = func_00310490(M2C_FIELD(obj, s32 *, 0x148));
+        work = func_00359620(&D_00421AD0, 1, 0, 0x20, 1, 0, 0, -1, 0);
+        break;
+    case 1:
+        M2C_FIELD(obj, s32 *, 0x148) = func_00310520(M2C_FIELD(obj, s32 *, 0x148));
+        work = func_00359A90(&D_00421AD0, 0, 0, 0x20, 1, 0, 0, -1, 0);
+        break;
+    }
+    func_0030D1A0((s32) &bufA);
+    func_0030D1A0((s32) &bufB);
+    func_0030D4F0((s32) &bufC, obj);
+    func_0030D180(&bufB, &bufC);
+    func_0030D4F0((s32) &bufD, obj);
+    func_0030D180(&bufA, &bufD);
+    if (func_00356880(&bufB) == 0.0f) {
+        M2C_FIELD(obj, s32 *, 0x154) = M2C_FIELD(obj, s32 *, 0x154) + 1;
+    }
+    if (func_00356480(&bufA, 0) != 0) {
+        cnt = M2C_FIELD(obj, s32 *, 0x154);
+        if (!(cnt < func_003568B0(&bufA))) {
+            goto push1;
+        }
+    }
+    if (func_003564C0(&bufA, 0) != 0) {
+        ratio = (f32) M2C_FIELD(obj, s32 *, 0x154) / (f32) work;
+        if (ratio < -func_00356880(&bufA)) {
+            goto test148;
+        }
+        goto push1;
+    }
+test148:
+    if (M2C_FIELD(obj, s32 *, 0x148) == 0) {
+        func_0030D5A0(obj, *(s64 *) func_00356910((char *) &bufF, 0));
+        M2C_FIELD(obj, s32 *, 0x148) = M2C_FIELD(obj, s32 *, 0x144);
+        M2C_FIELD(obj, s32 *, 0x14C) = 0;
+        return 1;
+    }
+    M2C_FIELD(obj, s32 *, 0x10C) = M2C_FIELD(obj, s32 *, 0x150);
+    return 1;
+push1:
+    func_0030D5A0(obj, *(s64 *) func_00356910((char *) &bufE, 1));
+    M2C_FIELD(obj, s32 *, 0x148) = M2C_FIELD(obj, s32 *, 0x144);
+    M2C_FIELD(obj, s32 *, 0x14C) = 0;
+    return 1;
+}

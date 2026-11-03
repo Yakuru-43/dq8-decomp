@@ -260,7 +260,10 @@ Fix: make the file a `.cpp` (functions inside `extern "C" { }`), declare the fla
 is 0/1, so it keeps the `daddiu` store and drops the mask.
 Example: src/SLES_539.74/func_00294F40.cpp
 Solved: func_00294F40 (1st try, 2026-10-27, Opus), func_00104890 (with the switch entry below),
-func_0029B6C0 (`bool ret` for the `daddiu $s1,$zero,1` before `break`), func_001053A0
+func_0029B6C0 (`bool ret` for the `daddiu $s1,$zero,1` before `break`), func_001053A0,
+func_00302890 (2026-11-03 Qwen factory-3; plain C works too: `u8` flag + **bare** `if (!flag)`
+keeps the `daddiu` and drops the `andi` — only `== 0`/`!= 0` gets the mask; declare it first
+so it takes `$s2`)
 
 ## `andi $r,$zero,0x1; sll $s,$r,N` in a bitfield RMW: the field is set to **0**, not 1
 Sign: a `u8 : 1` read-modify-write `lbu; addiu -mask; and; or; sb` whose inserted value
