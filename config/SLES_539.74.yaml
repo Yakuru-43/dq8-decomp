@@ -896,6 +896,8 @@ segments:
       - [0x74A10, asm, game_174A10]
       - [0x75310, c, func_00175310]
       - [0x75340, asm, game_175340]
+      - [0x758B0, c, func_001758B0]
+      - [0x75B20, asm, game_175B20]
       - [0x76010, c, func_00176010]
       - [0x76080, asm, game_176080]
       - [0x76230, c, func_00176230]
@@ -6442,6 +6444,8 @@ segments:
     align: 4
     subsegments:
       - [0x29E780, data, data_39E780]
+      - [0x2C2B50, .rodata, func_001758B0]
+      - [0x2C2B80, data, data_3C2B80]
       - [0x2C72A0, .rodata, func_001FA430]
       - [0x2C72BC, data, data_3C72BC]
       - [0x2C7880, .rodata, func_0020E1A0]
