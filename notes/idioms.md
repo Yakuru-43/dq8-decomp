@@ -1134,3 +1134,14 @@ loads, so CW keeps it behind them; const data is free to schedule early. Try it 
 Example: src/SLES_539.74/func_00213FB0.c
 Solved: func_00213FB0 (about 15 tries, 2026-11-03, Opus; Qwen at score 92)
 
+## `daddiu $sN,$zero,1` flag passed straight to a call (`daddu $tN,$sN` / `sd $sN,0($sp)`, no `andi`): `bool` flag AND `bool` parameters
+Sign: a 0/1 flag set with `daddiu`/`daddu $zero` (64-bit) that is only copied into call
+arguments, unmasked. `s32`/`s64` flags give `addiu`; a C++ `bool` flag gives the `daddiu`
+but, with the callee's parameters declared `s32`/`s64`, the bool->int promotion adds
+`andi $tN,$sN,0xFF` before the register/stack argument.
+Fix (.cpp): `bool flag = true; if (...) flag = false;` and declare the callee's matching
+parameters `bool` in its prototype too (`..., bool flag, bool arg8);`). Bool to bool needs
+no promotion, so the copy is a raw `daddu`/`sd`.
+Example: src/SLES_539.74/func_002937C0.cpp
+Solved: func_002937C0 (1st try, 2026-11-03, Opus; Qwen at score 1 with s64 params)
+
