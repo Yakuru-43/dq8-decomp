@@ -1,0 +1,110 @@
+// range: 0x3125C0 0x312910
+#include "common.h"
+
+typedef struct {
+    s32 field0;
+} Entry;
+
+typedef struct {
+    Entry *entry;
+} Item;
+
+void func_002D58C0(void *, s32, void *, s32);
+void func_002D4240(void *, s32, s32, s32);
+void func_0036F550(void *, s32, s32, s32);
+void func_002646C0(s32, void *);
+s32 *func_0036F280(void *);
+s32 func_0035E590(void *);
+void func_00364130(s32, u8 *, s32);
+void func_00131188(void *, s32, s32);
+void func_001339E0(char *, const char *, ...);
+s32 func_001FFC30(s32);
+void func_00313230(void);
+void func_00312DF0(void);
+void *func_002D34C0(void);
+
+extern Item *D_00452BE0[] __attribute__((section(".data")));
+extern s32 D_00452BF0[] __attribute__((section(".data")));
+extern s32 D_00452C00 __attribute__((section(".data")));
+extern s32 D_00452C08 __attribute__((section(".data")));
+extern s32 D_00452C10 __attribute__((section(".data")));
+extern char D_00452C20[] __attribute__((section(".data")));
+extern char D_00452DA0[] __attribute__((section(".data")));
+extern char D_003D0A10[] __attribute__((section(".data")));
+extern char D_003D0A18[] __attribute__((section(".data")));
+
+void func_003125C0(void) {
+    void *obj = func_002D34C0();
+    char buf2[128];
+    u8 buf1[96];
+    s32 idx;
+    u8 *p;
+    s32 n;
+    s32 kind;
+    s32 *res;
+    char *rec;
+    char *msg;
+    s32 m;
+    s32 bf;
+
+    if (D_00452C08 == 0) {
+        return;
+    }
+    func_00313230();
+    idx = D_00452C00;
+    func_00312DF0();
+    p = buf1;
+    n = 0x60;
+    if (p != 0) {
+        do {
+            *p++ = 0;
+            n--;
+        } while (n != 0);
+    }
+    kind = func_0035E590(D_00452BE0[idx]->entry);
+    func_00364130(D_00452BE0[idx]->entry->field0, buf1, kind);
+    res = func_0036F280(buf1);
+    switch (D_00452C08) {
+    case 1:
+        if (0 < D_00452C10) {
+            rec = D_00452C20 + idx * 0x60;
+            func_00131188(rec, 0, 0x60);
+            func_002646C0(res[0], buf2);
+            func_001339E0(rec, D_003D0A10, buf2, func_001FFC30(D_00452C10 + 0x270F));
+            func_0036F550(rec, 0, 0, 1);
+            m = idx * 2;
+            func_002D58C0(obj, m + 0x13AD, rec, 0);
+            if (D_00452BF0[idx] < 2) {
+                func_002D4240(obj, m + 0x13AE, 0, 0);
+            } else {
+                msg = D_00452DA0 + idx * 8;
+                func_001339E0(msg, D_003D0A18, D_00452BF0[idx]);
+                func_002D58C0(obj, m + 0x13AE, msg, 0);
+                func_002D4240(obj, m + 0x13AE, 1, 0);
+            }
+        }
+        break;
+    case 2:
+    case 4:
+        bf = D_00452BF0[idx];
+        rec = D_00452C20 + idx * 0x60;
+        if (bf < 2) {
+            func_002646C0(res[0], rec);
+            func_0036F550(rec, 0, 0, 1);
+            m = idx * 2;
+            func_002D4240(obj, m + 0x13AE, 0, 0);
+        } else {
+            func_002646C0(res[1], rec);
+            func_0036F550(rec, 1, 0, 1);
+            msg = D_00452DA0 + idx * 8;
+            func_001339E0(msg, D_003D0A18, bf);
+            m = idx * 2;
+            func_002D58C0(obj, m + 0x13AE, msg, 0);
+            func_002D4240(obj, m + 0x13AE, 1, 0);
+        }
+        func_002D58C0(obj, m + 0x13AD, rec, 0);
+        break;
+    default:
+        break;
+    }
+}
