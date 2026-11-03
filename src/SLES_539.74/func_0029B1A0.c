@@ -1,6 +1,4 @@
 // range: 0x29B1A0 0x29B3C0
-// Best attempt 2026-10-27 factory-2: CLASS structural score=101 (520 vs 536).
-// See func_0029B1A0.md for the remaining diff (register allocation).
 #include "common.h"
 
 struct Kind0029B1A0 {
@@ -31,8 +29,8 @@ struct Unit0029B1A0 {
 
 struct Owner0029B1A0 {
     char pad[0x54C];
-    s32 ids[8];
-    s32 vals[8];
+    s32 ids[2][4];
+    s32 vals[2][4];
 };
 
 struct Entry0029B1A0 {
@@ -61,13 +59,11 @@ extern struct Entry0029B1A0 D_00421AD0[] __attribute__((section(".data")));
 s32 func_0029B1A0(struct Owner0029B1A0 *owner, struct Unit0029B1A0 *unit)
 {
     s32 want;
+    s32 id;
     struct Entry0029B1A0 *entry;
     struct Sub0029B1A0 *sub;
-    s32 kind;
-    s32 *idSlot;
-    s32 *valSlot;
+    u8 kind;
     s32 idx;
-    struct Owner0029B1A0 *sel;
 
     sub = &unit->sub;
     if ((unit->sub.data->flags & 0x400) == 0) {
@@ -81,12 +77,10 @@ s32 func_0029B1A0(struct Owner0029B1A0 *owner, struct Unit0029B1A0 *unit)
     }
     idx = func_0035E590(unit);
     kind = sub->kind->b75;
-    sel = (struct Owner0029B1A0 *)((char *)owner + idx * 0x10);
-    idSlot = &sel->ids[kind];
-    valSlot = &sel->vals[kind];
-    want = *valSlot;
+    id = owner->ids[idx][kind];
+    want = owner->vals[idx][kind];
     if (kind != 0) {
-        entry = func_00359CF0(D_00421AD0, *idSlot);
+        entry = func_00359CF0(D_00421AD0, id);
         if (entry != 0) {
             if (entry->key == want) {
                 if (func_00201760(entry, 0) > 0) {
@@ -110,18 +104,19 @@ s32 func_0029B1A0(struct Owner0029B1A0 *owner, struct Unit0029B1A0 *unit)
     case 3:
         func_00296930(owner);
         break;
+    case 0:
     default:
-        *idSlot = -1;
-        *valSlot = -1;
+        owner->ids[idx][kind] = -1;
+        owner->vals[idx][kind] = -1;
         return 0;
     }
     entry = FindEntry__FP5Entryii(D_00421AD0, sub->f10, sub->f14);
     if (entry == 0) {
-        *idSlot = -1;
-        *valSlot = -1;
+        owner->ids[idx][kind] = -1;
+        owner->vals[idx][kind] = -1;
     } else {
-        *idSlot = entry->val;
-        *valSlot = entry->key;
+        owner->ids[idx][kind] = entry->val;
+        owner->vals[idx][kind] = entry->key;
     }
     return 1;
 }
