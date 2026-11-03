@@ -1046,3 +1046,20 @@ its delay slot was `n = K; if (x < K) n = x;` inside a `while`; the ternary `(x 
 top `blezl` guard and `beql` instead (100 words off).
 Example: src/SLES_539.74/func_00158CE0.c
 Solved: func_00158CE0 (8 tries, 2026-11-03, Opus; Qwen had u32 fields, 368 B)
+
+## A `b` to the very next instruction at the end of a switch arm (the original only; yours falls through): the switch sits in a `static inline` helper with an early `return -1;`
+Sign: a `b <join>; daddu $sN,$zero,$zero` stub (`ret = 0` arm) whose target is the next
+word; yours has the same arm one word short, falling through into the join, so every
+branch after it is off by one. Around it: a null-guard `beql $s0,$zero,<join>; addiu
+$s0,$zero,-1`, a compare chain whose default is `b <join>; addiu $s0,-1`, and the
+return value kept in the same `$s0` that held the pointer. Plain C in the caller (ret
+variable, if/else or switch, any case order, `return`s from every arm) all fall through.
+Fix: move the lookup + switch into a `static inline s32 helper(s32 id)` called as
+`ret = helper(arg0);`: `if (p == 0) { return -1; }`, then a switch whose arms all
+`break` and set a local (`case 0: ... ret = f(); break; case 2: case 4: case 1: ret = 0;
+break; default: ret = -1; break;`), then `return ret;`. `return` from each arm, or a
+`return -1;` after the switch, still falls through. CW 3.0.1 does not inline an inline
+called from an inline (the callee is emitted as a separate function): expand nested
+helpers (here the slot lookup) by hand inside the outer one.
+Example: src/SLES_539.74/func_00160350.c
+Solved: func_00160350 (17 tries, 2026-11-03, Opus; Qwen's switch form was 4 B short)
