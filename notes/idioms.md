@@ -1085,3 +1085,18 @@ Fix: `cur = G; off = G * K;` (the two loads CSE into one `lh`), then the calls u
 and `off`.
 Example: src/MENU/func_00463CF0.c
 Solved: func_00463CF0 (2026-11-03, Opus)
+
+## Two slot addresses `base = idx*16 + owner; addiu +0x54C; addiu +0x56C; sll k,kind,2; addu; addu` kept in `$s` registers, temporaries one register up in yours: index the 2D members directly at every use, no slot pointer locals
+Sign: the original computes a row sum once (`addu $v0,$v0,$sOwner`, index term first),
+both member bases from it (`addiu $v1,$v0,0x54C; addiu $v0,$v0,0x56C`), then one `kind*4`
+added to each into two `$s` registers that the later loads/stores use. Pointer locals
+(`p = &o->ids[idx][kind]`, or bases then `p += kind`) either fold the member offset into the
+`lw` (`lw $s7,0x56C($v0)`, 4 to 16 bytes short) or give the right shape with every
+temporary rotated (`kind*4` coloured first, `$v0` instead of `$a0`).
+Fix: declare the members as 2D arrays (`s32 ids[2][4]; s32 vals[2][4];`) and write
+`o->ids[idx][kind]` / `o->vals[idx][kind]` at each read and store, with no slot locals;
+CW's CSE then keeps the two addresses in `$s` registers in the original's order and colours
+the temporaries right. A `switch` on the same index there may also need `case 0: default:`
+(a `beqz` before the compare chain).
+Example: src/SLES_539.74/func_0029B1A0.c
+Solved: func_0029B1A0 (2026-11-03, Opus, 10 min; Qwen had pointer locals at score 101)
