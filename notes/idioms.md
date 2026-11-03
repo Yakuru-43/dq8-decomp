@@ -1100,3 +1100,18 @@ the temporaries right. A `switch` on the same index there may also need `case 0:
 (a `beqz` before the compare chain).
 Example: src/SLES_539.74/func_0029B1A0.c
 Solved: func_0029B1A0 (2026-11-03, Opus, 10 min; Qwen had pointer locals at score 101)
+
+## Float compare materialized into a register with no `andi` (`bc1f J; daddu $v0,$zero,$zero` / `daddiu $v0,$zero,1` / `J: beqz $v0`): an inline `bool` helper with a `false`-initialised local
+Sign: a float test whose 0/1 result is built in `$v0` and then tested, with the 0 in the
+`bc1f` delay slot and `daddiu` (64-bit) for the 1, no `andi 0xFF`. `bool hit = a <= b;`,
+`? 1 : 0`, and `return a <= b;` helpers give `bc1t; addiu 1; daddu 0; andi`; a bool
+local in the caller (`hit = false; if (a <= b) hit = true;`) is coalesced into a saved
+register; an inline helper with two `return`s folds into a plain `bc1f` branch.
+`daddiu reg,$zero,1` is how CW loads `true`, so `daddiu` vs `addiu` on a 1 also means
+`bool` (a `ret = true;` flag, and then the function returns `bool` so the final
+`daddu $v0,$s4` has no `andi`).
+Fix (.cpp): `static inline bool Roll(f32 roll, f32 rate) { bool ok = false; if (roll <= rate)
+{ ok = true; } return ok; }`, called as `if (Roll(func(...), rate))` with the values as
+arguments. Return type and the `ret` flag `bool` when the 1 is `daddiu`.
+Example: src/SLES_539.74/func_0029B870.cpp
+Solved: func_0029B870 (about 12 tries, 2026-11-03, Opus; Qwen at score 107 in .c)
