@@ -967,3 +967,14 @@ Fix: move `*p = K;` below the statement holding the `/` (inside the same case or
 Example: src/SLES_539.74/func_0015DA00.c
 Solved: func_0015DA00 (2nd try, 2026-11-03, Opus; Qwen had tried "before vs after the /2"
 only with the `return` form, and its best C file was lost)
+
+## `xori r,r,K; sltiu r,r,1; bnez` (an `==` compare kept as a value before the branch), mine `li; beq`: a C++ `bool` local tested `== false`
+Sign: one word short at an equality test: the original computes `x == K` into a register
+(`xori $v1,$v1,K; sltiu $v1,$v1,0x1`) and branches on it with `bnez`/`beqz`; mine loads
+`K` with `addiu` and branches with `beq`/`bne`. In C every form folds (`x != K`,
+`!(x == K)`, `(x == K) == 0`, an `s32` local, a `static inline s32` helper).
+Fix: make the file `.cpp` (functions inside `extern "C" { }`) and write
+`bool spare = x == K; if (spare == false) { ... }`. The `bool` local survives as a value.
+Example: src/SLES_539.74/func_00159A40.cpp
+Solved: func_00159A40 (1st .cpp try after 3 C forms, 2026-11-03, Opus; Qwen had tried
+4 C forms)
