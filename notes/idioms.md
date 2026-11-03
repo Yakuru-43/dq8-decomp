@@ -927,3 +927,15 @@ Fix: before touching the C, rerun with the whole set:
 (or just `tools/verify.py`, which reads the `// flags:` line). Qwen's draft was already a match.
 Example: src/SLES_539.74/func_0014E640.c
 Solved: func_0014E640 (1st try, 2026-11-03, Opus; Qwen's best C matched unchanged)
+
+## Frameless virtual tail call `lw $t9; lw $t9; jr $t9; nop`: `// flags: -Cpp_exceptions off`
+Sign: a 16-byte thunk `lw $t9,N($a0); lw $t9,S($t9); jr $t9; nop` (often a vtable entry, or
+two functions merged in one asm region). The `.cpp` virtual call gives the right `$t9` loads
+but always a 0x10 frame + `jalr` + epilogue; `return o->f();`, `void`, `-O4,p` change nothing.
+Plain C function pointers do tail-call but use `$v0`.
+Fix: keep the C++ virtual call (vptr at N, slot S, see the `$t9` entry above) and add
+`// flags: -Cpp_exceptions off` in the first 5 lines. With exceptions on, mwccps2 C++ never
+tail-calls (even a plain `extern "C"` call gets `jal` + frame). The rest of the file was
+unchanged by the flag here. Test: `try_match.py ... -- -O3 -Cpp_exceptions off`.
+Example: src/SLES_539.74/func_00167060.cpp
+Solved: func_00167060 (1st try with the flag, 2026-11-03, Opus)
