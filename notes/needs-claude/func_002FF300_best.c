@@ -1,4 +1,5 @@
 // range: 0x2FF300 0x2FF6E0
+// flags: -flag divbyzerocheck
 #include "common.h"
 
 struct Float4 { f32 a, b, c, d; };
@@ -7,9 +8,9 @@ struct Src {                /* arg0: int fields +0..0xC, arr at +0x10, mode at +
     s32 arr[4];
     s32 mode;
 };
-struct Prim {               /* 8-aligned: hole at sp+0xC0 */
+struct Prim {               /* 8-byte: bytes at sp+0xC8..0xCB */
     u8 r, g, b, a;
-    s64 unk;
+    s32 unk4;
 };
 
 void func_002E2970(s32, u8 *);
@@ -34,11 +35,10 @@ static inline s32 GetArr(struct Src *a, s32 idx) {
 
 void func_002FF300(struct Src *a, void *obj, struct Float4 *def, s32 color,
                    s32 arg4, s32 arg5) {
+    struct Prim p;
     struct Float4 d;
     s32 c[4];
-    struct Prim p;
     s32 div;
-    s32 v;
     s32 q;
     s32 x;
     s32 y;
@@ -50,34 +50,34 @@ void func_002FF300(struct Src *a, void *obj, struct Float4 *def, s32 color,
     if (obj == 0) {
         return;
     }
-    v = a->x0;
-    if (v < 0) {
-        v = *(s32 *)&d.a;
+    if (0 <= a->x0) {
+        c[0] = a->x0;
+    } else {
+        c[0] = *(s32 *)&d.a;
     }
-    c[0] = v;
-    v = a->x1;
-    if (v < 0) {
-        v = *(s32 *)&d.b;
+    if (0 <= a->x1) {
+        c[1] = a->x1;
+    } else {
+        c[1] = *(s32 *)&d.b;
     }
-    c[1] = v;
-    v = a->x2;
-    if (v < 0) {
-        v = *(s32 *)&d.c;
+    if (0 <= a->x2) {
+        c[2] = a->x2;
+    } else {
+        c[2] = *(s32 *)&d.c;
     }
-    c[2] = v;
-    v = a->x3;
-    if (v < 0) {
-        v = *(s32 *)&d.d;
+    if (0 <= a->x3) {
+        c[3] = a->x3;
+    } else {
+        c[3] = *(s32 *)&d.d;
     }
-    c[3] = v;
     c[0] += 2;
     c[1] += 2;
     c[2] -= 4;
     c[3] -= 4;
     func_002FFAD0(obj, c, arg4, c[1]);
-    p.r = 0x80;
-    p.g = 0x80;
     p.b = 0x80;
+    p.g = 0x80;
+    p.r = 0x80;
     p.a = (u8)color;
     c[0] -= 2;
     c[1] -= 2;
@@ -115,10 +115,12 @@ void func_002FF300(struct Src *a, void *obj, struct Float4 *def, s32 color,
     func_0013F6C0(obj, 6);
     func_0013EB30(obj, func_002E3410());
     func_0013ECD0(obj, 0x80, 0x80, 0x80, (color << 7) / 0x80);
-    for (i = 0; i < 4; i++) {
+    i = 0;
+    do {
         if (0 <= GetArr(a, i)) {
             func_002FF890(obj, y, GetArr(a, i) + z - 3, x, color);
         }
-    }
+        i++;
+    } while (i < 4);
     func_0013F450(obj);
 }
