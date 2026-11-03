@@ -23,3 +23,15 @@ have no mwccps2 intrinsics; there is no C to write (nothing but VU0 ops and
 the symbol as `asm`.
 
 **Tried:** nothing (correctly skipped per the 0x13B900 precedent note).
+
+## Opus attempt 2026-11-03
+
+Best C: none. Re-read `asm/SLES_539.74/game_13C500.s:728-797` (0x114 code +
+3 nops of padding to 0x13D010): 16 `lqc2` (4x4 from each of `a1`, `a2`, `a3`,
+`t0`), three 16-op `vmulax`/`vmadday`/`vmaddaz`/`vmaddw` chains, 4 `sqc2` to
+`a0` (last in the `jr $ra` delay slot); no GPR/FPU op at all. It is
+`out = ((A*B)*C)*D` for four 4x4 matrices. Remaining diff: everything —
+mwccps2 emits no COP2 macro ops from C, so the only byte-exact form is an
+`asm` block (asmfunc stub, earns no progress). notes/idioms.md has no VU0
+entry; the MH2 catalogue does not apply (no C to tune). Same verdict as
+func_0013B900/func_0013B970: leave as `asm` or map to the existing asmfunc stub.
