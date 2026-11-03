@@ -1,7 +1,9 @@
 // range: 0x2937C0 0x293A30
 #include "common.h"
 
-M2C_UNK func_002AFFB0();                            /* extern */
+extern "C" {
+
+s32 func_002AFFB0(M2C_UNK *tbl, s32 key);           /* extern */
 extern M2C_UNK D_004392A0 __attribute__((section(".data")));   /* extern */
 
 typedef struct S_Opt {
@@ -58,7 +60,7 @@ struct Entry {
 };
 
 extern s32 func_00297BA0(S_arg0 *arg0, s32 mode, s32 id, s32 arg3, s32 arg4,
-                         s32 count, struct Entry *recs, s64 flag, s64 arg8);
+                         s32 count, struct Entry *recs, bool flag, bool arg8);
 extern s32 func_00292C60(S_arg0 *arg0);
 extern u8 func_0029CCC0(S_arg0 *arg0, S_Node *node);
 extern u8 func_0029CD30(S_arg0 *arg0, S_Node *node);
@@ -68,7 +70,7 @@ extern u8 func_0029CD30(S_arg0 *arg0, S_Node *node);
 s32 func_002937C0(S_arg0 *arg0) {
     S_Tbl *tbl;
     struct Entry recs[2];
-    s64 flag;
+    bool flag;
     s32 count;
     u32 sum;
     s32 i;
@@ -85,9 +87,9 @@ s32 func_002937C0(S_arg0 *arg0) {
     s32 k;
 
     tbl = &arg0->unk58C->tbl;
-    flag = 1;
+    flag = true;
     if (tbl->opt != 0 && tbl->opt->unk60 == 0) {
-        flag = 0;
+        flag = false;
     }
     mode = arg0->unk58C->tbl.unkE0;
     arg3 = arg0->unk58C->unk10;
@@ -148,4 +150,6 @@ s32 func_002937C0(S_arg0 *arg0) {
         }
     }
     return (ret == sum);
+}
+
 }
