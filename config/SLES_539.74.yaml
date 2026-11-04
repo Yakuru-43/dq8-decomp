@@ -3174,6 +3174,8 @@ segments:
       - [0x14DB80, asm, game_24DB80]
       - [0x14DBD0, c, func_0024DBD0]
       - [0x14DBE0, asm, game_24DBE0]
+      - [0x14DD10, c, func_0024DD10]
+      - [0x14DE20, asm, game_24DE20]
       - [0x14E110, c, func_0024E110]
       - [0x14E140, asm, game_24E140]
       - [0x14E480, c, func_0024E480]
