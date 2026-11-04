@@ -1,0 +1,47 @@
+// range: 0x354160 0x3542C0
+#include "common.h"
+
+struct PutMonsterPos {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+};
+
+struct PutMonsterEntry {
+    s32 state;
+    struct PutMonsterPos pos __attribute__((aligned(16)));
+    s32 id;
+    s32 field_24;
+    s32 field_28;
+};
+
+extern char D_003D37E0[];
+extern char D_003D37F0[];
+extern char D_003D3810[];
+M2C_UNK DebugPrintf();
+
+void CPutMonster_Insert(struct PutMonsterEntry *arg0, char *arg1, s32 arg2) {
+    s32 i;
+
+    if (arg0[arg2].state == 1 || arg0[arg2].state == 2 || arg0[arg2].state == 4) {
+        for (i = 31; i > arg2; i--) {
+            arg0[i].state = arg0[i - 1].state;
+            arg0[i].pos = arg0[i - 1].pos;
+            arg0[i].id = arg0[i - 1].id;
+            arg0[i].field_24 = arg0[i - 1].field_24;
+            arg0[i].field_28 = arg0[i - 1].field_28;
+        }
+    }
+    arg0[arg2].state = 1;
+    arg0[arg2].id = *(s32 *)arg1;
+    arg0[arg2].field_24 = *(s16 *)(arg1 + 0xC);
+    arg0[arg2].field_28 = *(s16 *)(arg1 + 0x10);
+    DebugPrintf(D_003D3810, arg1, arg2);
+    for (i = 0; i < 32; i++) {
+        if (arg0[i].state != 0) {
+            DebugPrintf(D_003D37F0, i, arg0[i].id, arg0[i].field_24);
+        }
+    }
+    DebugPrintf(D_003D37E0);
+}
