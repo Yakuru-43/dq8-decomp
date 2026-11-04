@@ -6399,6 +6399,8 @@ segments:
       - [0x2869C0, asm, game_3869C0]
       - [0x286AF0, c, func_00386AF0]
       - [0x286B30, asm, game_386B30]
+      - [0x287E10, cpp, func_00387E10]
+      - [0x287F70, asm, game_387F70]
       - [0x288BA0, c, func_00388BA0]
       - [0x288BC0, c, func_00388BC0]
       - [0x288BE0, c, func_00388BE0]
