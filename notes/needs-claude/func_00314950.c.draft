@@ -1,0 +1,133 @@
+// range: 0x314950 0x314CD0
+#include "common.h"
+
+s32 func_0012C1A8(s32, s32, char *);
+s32 func_0012C6C0(s32, s32, s32 *);
+s32 func_0012C7E0(s32, s32, s32, s32, s32);
+int func_00131188(void *, s32, s32);
+char *func_001340C0(char *, char *);
+char *func_00130FD0(char *, char *, u32);
+s32 func_001629F0(char *, s32, s32 *);
+void func_00133CB8(char *, char *);
+s32 func_00314870(s32, s32, s32, s32);
+M2C_UNK DebugPrintf(); /* extern */
+
+extern char D_003D0B70[];
+extern char D_003D0BC0[];
+extern char D_003D0BE0[];
+extern char D_003D0BF8[];
+extern char D_003D0C10[];
+extern char D_003D0C20[];
+extern char D_003D0C30[];
+extern char D_003D0C40[];
+extern char D_003D0C60[];
+extern char D_003D0C80[];
+extern char D_003D0CA0[];
+
+typedef struct Vec4 {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+} Vec4;
+
+typedef struct CardInfo {
+    char *name;
+    s8 flag;
+    s32 size;
+    s32 list[16];
+    s32 arr2[12];
+    s32 arr3[12];
+    Vec4 vec;
+} CardInfo;
+
+typedef struct SaveBlock {
+    char label[12];
+    s32 size;
+    u8 data1[0x40];
+    u8 data2[0x30];
+    u8 data3[0x30];
+    u8 data4[0x10];
+    char tag[0x44];
+    char slot[0x40];
+    char slot2[0x40];
+    char slot3[0x40];
+} SaveBlock;
+
+extern CardInfo D_003AD8C0;
+extern s32 D_003E11D4;
+
+static inline s32 SlotReady(void) {
+    s32 code;
+
+    if (func_0012C7E0(0, 0, 0, 0, 0) < 0) {
+        return 0;
+    }
+    func_0012C6C0(0, 0, &code);
+    if (code >= -1) {
+        return 1;
+    }
+    return 0;
+}
+
+s32 func_00314950(void) {
+    s32 code2;
+    s32 count;
+    CardInfo info;
+    SaveBlock sav;
+    char path[0x100];
+    u8 backup[0x400];
+    s32 ok;
+
+    if (SlotReady() != 0) {
+        if (func_0012C1A8(0, 0, D_003D0BE0) < 0) {
+            return 0;
+        }
+        func_0012C6C0(0, 0, &code2);
+        if (code2 < 0) {
+            if (code2 != -4) {
+                return 0;
+            }
+        }
+        if (code2 != -4) {
+            DebugPrintf(D_003D0BF8, D_003D0C10);
+        }
+        ok = 1;
+        info = D_003AD8C0;
+        count = 0;
+        func_001629F0(D_003D0C20, D_003E11D4, &count);
+        func_00131188(&sav, 0, sizeof(SaveBlock));
+        func_001340C0(sav.label, D_003D0C30);
+        func_001340C0(sav.tag, info.name);
+        sav.size = info.size;
+        func_00130FD0((char *)sav.data1, (char *)info.list, 0x40);
+        func_00130FD0((char *)sav.data2, (char *)info.arr2, 0x30);
+        func_00130FD0((char *)sav.data3, (char *)info.arr3, 0x30);
+        func_00130FD0((char *)sav.data4, (char *)&info.vec, 0x10);
+        if (count > 0) {
+            func_001340C0(sav.slot, D_003D0C20);
+            func_001340C0(sav.slot2, D_003D0C20);
+            func_001340C0(sav.slot3, D_003D0C20);
+            func_001340C0(path, D_003D0C40);
+            func_00133CB8(path, D_003D0C20);
+            if (func_00314870((s32)(char *)path, D_003E11D4, count, 0x202) != 0) {
+                DebugPrintf(D_003D0C60);
+            } else {
+                ok = 0;
+            }
+        }
+        if (func_00314870((s32)&sav, (s32)D_003D0BC0, sizeof(SaveBlock), 0x202) != 0) {
+            DebugPrintf(D_003D0C80);
+        } else {
+            ok = 0;
+        }
+        func_00131188((char *)backup, 0, sizeof(backup));
+        if (func_00314870((s32)(char *)backup, (s32)D_003D0B70, sizeof(backup), 0x202) != 0) {
+            DebugPrintf(D_003D0CA0, D_003D0C10);
+        } else {
+            ok = 0;
+        }
+        return ok;
+    }
+    return 0;
+}

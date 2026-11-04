@@ -1,0 +1,114 @@
+// Draft for func_00316180 (not matched, see func_00316180.md). One attempt;
+// first half byte-exact, only the cold-block layout is off.
+// range: 0x316180 0x316460
+// flags: -flag divbyzerocheck
+#include "common.h"
+
+s32 func_00164100(M2C_UNK *, s32);               /* extern */
+void func_001340C0(void *, s32);                  /* extern */
+extern s32 func_001341D8(char *);
+extern M2C_UNK D_003FAFB0 __attribute__((section(".data")));
+extern char D_003AD870[] __attribute__((section(".data")));
+extern s32 D_003E11CC;
+
+typedef struct {
+    /* 0x00 */ char bytes[0x80];
+    /* 0x80 */ s32 idx;
+    /* 0x84 */ s32 *list;
+    /* 0x88 */ s32 count;
+    /* 0x8C */ s32 cursor;
+} NameEntry;
+
+void func_00316180(NameEntry *o) {
+    s32 dir;
+    s32 idx;
+    char buf[0x45];
+    char *dst;
+    char *src;
+    s32 n;
+    s32 i;
+    s8 ch;
+    char *pos;
+
+    if (o->list != 0) {
+        if (o->count > 1) {
+            idx = 0;
+            if (func_00164100(&D_003FAFB0, 8) != 0) {
+                idx = 1;
+                o->idx = o->idx + 1;
+            }
+            if (func_00164100(&D_003FAFB0, 4) != 0) {
+                idx = 1;
+                o->idx = o->idx - 1;
+            }
+            if (idx != 0) {
+                if (o->idx < 0) {
+                    o->idx = o->idx + o->count;
+                }
+                o->idx = o->idx % o->count;
+                func_001340C0(o, o->list[o->idx]);
+                o->cursor = -1;
+            }
+        }
+    }
+    if (func_00164100(&D_003FAFB0, 0x2020) != 0) {
+        o->cursor = o->cursor + 1;
+        D_003E11CC = 0;
+    }
+    if (func_00164100(&D_003FAFB0, 0x8040) != 0) {
+        o->cursor = o->cursor - 1;
+        D_003E11CC = 0;
+    }
+    idx = func_001341D8(o->bytes);
+    if (o->cursor < -1) {
+        o->cursor = -1;
+    }
+    if (o->cursor > idx) {
+        o->cursor = idx;
+    }
+    if (idx > 0x7E) {
+        return;
+    }
+    if (o->cursor < 0) {
+        return;
+    }
+    dir = 0;
+    if (func_00164100(&D_003FAFB0, 0x1000) != 0) {
+        dir = 1;
+    }
+    if (func_00164100(&D_003FAFB0, 0x4000) != 0) {
+        dir = -1;
+    }
+    if (dir != 0) {
+        pos = o->bytes + o->cursor;
+        ch = *pos;
+        dst = buf;
+        src = D_003AD870;
+        n = 0x45;
+        do {
+            *dst++ = *src++;
+            n--;
+        } while (n > 0);
+        for (i = 0; i < 0x44; i++) {
+            if (buf[i] == ch) {
+                break;
+            }
+        }
+        i = i + dir;
+        if (i < 0) {
+            i += 0x44;
+        }
+        if (i >= 0x44) {
+            i -= 0x44;
+        }
+        *pos = buf[i];
+        if (o->cursor == idx) {
+            o->bytes[o->cursor + 1] = 0;
+        }
+    }
+    if (func_00164100(&D_003FAFB0, 0x10) != 0) {
+        if (idx > 0) {
+            o->bytes[idx - 1] = 0;
+        }
+    }
+}

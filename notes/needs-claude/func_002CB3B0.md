@@ -79,6 +79,17 @@ Full `--show` tail reproducible with:
 1. if/else on `*(s32*)0x41000020 != 0` first, `return 2.0f*scale` tail.
 2. Twin order `== 0` first (the func_002CB310 best-C shape).
 3. goto-shared tail, mul written once between the two arms (above).
+Second session (2026-11-03, factory-2): same shapes plus:
+5. inverted flag polarity `if (flag == 0) {16D5B0 arm} else {B0A30 arm}` —
+   identical score/size; CW normalizes polarity (emits `bnel` on the flag and
+   puts the B0A30 arm out-of-line at +0x80 with `b -0xC; cvt.s.w` delay).
+6. same with `-O4,p` — identical (this bin's flag files use only
+   `-flag divbyzerocheck`; no -O4,p precedent here).
+All mine duplicate `lui $v0,0x4100` after the guard's delay-slot lui and place
+the B0A30 block at the bottom; the original CSEs that lui (8.0f bits == base
+0x41000000) into the beql delay slot and keeps MUL between the hot arm and the
+cold blocks. Third session confirming the wall for the whole family
+(twins 002CB310/002CB3B0).
 MH2 entry tried: index line 207 "One block reached from two cases or paths:
 a goto; MWCC doesn't merge tails (Switches)" — the goto form still re-ordered
 and did not fold the extra lui.

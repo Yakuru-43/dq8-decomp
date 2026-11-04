@@ -48,6 +48,8 @@ segments:
       - [0xC10, c, func_0045F8D0]
       - [0xC20, c, func_0045F8E0]
       - [0xC30, asm, text_45F8F0]
+      - [0x3ED0, c, func_00462B90]
+      - [0x3FE0, asm, text_462CA0]
       - [0x4C90, c, func_00463950]
       - [0x4CA0, c, func_00463960]
       - [0x4CB0, c, func_00463970]

@@ -1,0 +1,57 @@
+// range: 0x003569D0 0x00356B40
+// flags: -flag divbyzerocheck
+#include "common.h"
+
+typedef union ValUnion {
+    /* 0x0 */ s32 i;
+    /* 0x4 */ f32 f;
+} ValUnion;
+
+typedef struct Val {
+    /* 0x0 */ ValUnion v;
+    /* 0x4 */ s8 kind;
+} Val;
+
+void func_003569D0(Val *dst, Val *lhs, Val *rhs) {
+    Val out;
+    s8 *kp;
+    f32 g;
+    s32 n;
+
+    kp = &out.kind;
+    out.v.f = lhs->v.f;
+    *kp = lhs->kind;
+    if (rhs->kind == 0) {
+        n = rhs->v.i;
+        if (n == 0) {
+            out.v.i = 0;
+            *kp = -1;
+        } else if (*kp == 0) {
+            if (out.v.i % n != 0) {
+                out.v.f = (f32)out.v.i / (f32)n;
+                *kp = 1;
+            } else {
+                out.v.i = out.v.i / n;
+            }
+        } else if (*kp == 1) {
+            out.v.f = out.v.f / (f32)n;
+        } else {
+            out.v.i = 0;
+            *kp = -1;
+        }
+    } else if (rhs->kind == 1) {
+        g = rhs->v.f;
+        if (g == 0.0f) {
+            out.v.i = 0;
+            *kp = -1;
+        }
+        if (*kp == 0) {
+            out.v.f = (f32)out.v.i / g;
+            *kp = 1;
+        } else if (*kp == 1) {
+            out.v.f = out.v.f / g;
+        }
+    }
+    dst->v.f = out.v.f;
+    dst->kind = out.kind;
+}

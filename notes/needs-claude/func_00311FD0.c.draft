@@ -1,0 +1,128 @@
+// range: 0x311FD0 0x3123C0
+// flags: -flag divbyzerocheck
+#include "common.h"
+
+extern void func_00131188(void *, s32, s32);
+extern u32 func_00265500(s32);
+extern u32 func_00265190(s32, s32);
+extern s32 func_00312400(s32, s32 *, s32);
+extern u8 D_003DFFA8[];
+
+typedef struct {
+    /* 0x00 */ s16 f0;
+    /* 0x02 */ s16 pad02;
+    /* 0x04 */ s16 f4;
+    /* 0x06 */ s16 f6;
+    /* 0x08 */ s16 f8;
+    /* 0x0A */ s16 pad0A;
+    /* 0x0C */ s32 list[0x80];
+    /* 0x20C */ s16 out[0x80];
+} Msg;
+
+void func_00311FD0(Msg *msg, s32 kind) {
+    s16 *tab = (s16 *)func_00265500(msg->f0);
+    s32 count = 0;
+    s32 i;
+    s32 r;
+    s32 n;
+    s16 *e;
+    u32 alt;
+
+    func_00131188(msg->out, 0, 0x100);
+    msg->f6 = 0;
+    switch (kind) {
+    case 0:
+        i = 0;
+        do {
+            if (tab[i] > 0) {
+                r = func_00312400(tab[i], msg->list, msg->f4);
+                if (r >= 0) {
+                    n = D_003DFFA8[i % 6] + (msg->f6 / 6) * 6;
+                    if (count < n) {
+                        msg->out[n] = msg->list[i / 6];
+                        count = n;
+                    }
+                }
+                msg->f6++;
+            }
+            i++;
+        } while (i < 0x20);
+        msg->f8 = count + 1;
+        break;
+    case 1:
+        i = 0;
+        do {
+            if (tab[i + 0x20] > 0) {
+                r = func_00312400(tab[i + 0x20], msg->list, msg->f4);
+                if (r < 0) {
+                    alt = func_00265190(tab[i + 0x20], msg->f0);
+                    if (alt != 0) {
+                        r = func_00312400(*(s16 *)alt, msg->list, msg->f4);
+                    }
+                }
+                if (r >= 0) {
+                    n = D_003DFFA8[msg->f6 % 6] + (msg->f6 / 6) * 6;
+                    if (count < n) {
+                        msg->out[n] = msg->list[r];
+                        count = n;
+                    }
+                    msg->f6++;
+                }
+            }
+            i++;
+        } while (i < 0x18);
+        msg->f6 = count + 1;
+        msg->f8 = count + 1;
+        break;
+    case 2:
+        for (i = 0; i < 10; i++) {
+            e = &tab[i + 0x38];
+            if (*e <= 0) {
+                return;
+            }
+            r = func_00312400(*e, msg->list, msg->f4);
+            if (r >= 0) {
+                msg->out[msg->f6] = *e;
+                msg->f6++;
+            }
+        }
+        break;
+    case 3:
+        i = 0;
+        do {
+            e = &tab[i];
+            if (*e > 0) {
+                r = func_00312400(*e, msg->list, msg->f4);
+                if (r >= 0) {
+                    msg->out[msg->f6] = *e;
+                    msg->f6++;
+                }
+            }
+            i++;
+        } while (i < 0x20);
+        msg->f8 = msg->f6 + 1;
+        break;
+    case 4:
+        i = 0;
+        do {
+            e = &tab[i + 0x20];
+            if (*e > 0) {
+                r = func_00312400(*e, msg->list, msg->f4);
+                if (r < 0) {
+                    alt = func_00265190(*e, msg->f0);
+                    if (alt != 0) {
+                        e = (s16 *)alt;
+                        r = func_00312400(*e, msg->list, msg->f4);
+                    }
+                }
+                if (r >= 0) {
+                    msg->out[msg->f6] = *e;
+                    msg->f6++;
+                }
+            }
+            i++;
+        } while (i < 0x20);
+        msg->f8 = msg->f6 + 1;
+        break;
+    }
+}

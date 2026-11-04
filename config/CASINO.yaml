@@ -84,6 +84,8 @@ segments:
       - [0x8A60, c, func_00467720]
       - [0x8A70, c, func_00467730]
       - [0x8A90, asm, text_467750]
+      - [0xA1B0, c, func_00468E70]
+      - [0xA340, asm, text_469000]
       - [0xC9F0, c, func_0046B6B0]
       - [0xCB40, c, func_0046B800]
       - [0xCB60, c, func_0046B820]
