@@ -1,0 +1,52 @@
+// CLASS structural score=21 (19 words differ, 216 vs 224 bytes)  best attempt 2026-11-02
+// range: 0x338CC0 0x338DA0
+#include "common.h"
+
+struct Mgr {
+    char pad0[0x28];
+    char *items; /* +0x28 */
+    s32 count;   /* +0x2C */
+    char pad30[4];
+    s32 limit;   /* +0x34 */
+};
+
+struct Ctl {
+    char pad0[0xC];
+    char *cursor; /* +0xC */
+};
+
+extern struct Mgr *D_003E1248;
+extern struct Ctl *D_003E1250;
+
+s8 *func_00166760();                               /* extern */
+s32 func_003240F0(s8 *, char *, s32);               /* extern */
+s32 func_0014E130(struct Mgr *, s32);               /* extern */
+
+s32 func_00338CC0(void) {
+    char *cursor;
+    struct Mgr *mgr;
+    s8 *p;
+    s32 size;
+    s32 count;
+    u32 units;
+
+    if (D_003E1250 == NULL) {
+        return 0;
+    }
+    p = func_00166760();
+    mgr = D_003E1248;
+    if ((p == NULL) || (*p == 0)) {
+        cursor = NULL;
+    } else {
+        cursor = mgr->items + (mgr->count << 4);
+        size = func_003240F0(p, cursor, (mgr->limit - mgr->count) << 4);
+        if (size % 16 != 0) {
+            units = count = size / 16 + 1;
+        } else {
+            units = count = size / 16;
+        }
+        func_0014E130(mgr, units);
+    }
+    D_003E1250->cursor = cursor;
+    return 1;
+}

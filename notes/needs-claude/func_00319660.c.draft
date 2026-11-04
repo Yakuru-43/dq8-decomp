@@ -1,0 +1,78 @@
+// range: 0x319660 0x3197A0
+// best draft for func_00319660 (316/316 bytes, CLASS reorder+register score=22)
+// see notes/needs-claude/func_00319660.md for the diff and what was tried
+#include "common.h"
+
+typedef struct {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+} Vec4;
+
+typedef struct {
+    u128 lo;
+    u128 hi;
+} Quad;
+
+typedef struct {
+    /* 0x00 */ s32 field_00;
+    /* 0x04 */ s32 field_04;
+    /* 0x08 */ u8 pad_08[8];
+    /* 0x10 */ Vec4 field_10;
+    /* 0x20 */ s32 field_20[16];
+    /* 0x60 */ s32 field_60[16];
+    /* 0xA0 */ Vec4 field_A0;
+    /* 0xB0 */ Vec4 field_B0;
+    /* 0xC0 */ Vec4 field_C0;
+    /* 0xD0 */ Vec4 field_D0;
+    /* 0xE0 */ Quad field_E0[6];
+} BigStruct;
+
+BigStruct *func_00319660(BigStruct *dst, BigStruct *src) {
+    s32 n;
+    char *sp;
+    char *dp;
+
+    sp = (char *)src->field_20;
+    dp = (char *)dst->field_20;
+    n = 8;
+    dst->field_00 = src->field_00;
+    dst->field_04 = src->field_04;
+    dst->field_10 = src->field_10;
+    do {
+        *(s32 *)dp = *(s32 *)sp;
+        *(s32 *)(dp + 4) = *(s32 *)(sp + 4);
+        sp += 8;
+        dp += 8;
+        n--;
+    } while (n > 0);
+
+    sp = (char *)src->field_60;
+    dp = (char *)dst->field_60;
+    n = 8;
+    do {
+        *(s32 *)dp = *(s32 *)sp;
+        *(s32 *)(dp + 4) = *(s32 *)(sp + 4);
+        sp += 8;
+        dp += 8;
+        n--;
+    } while (n > 0);
+
+    dst->field_A0 = src->field_A0;
+    dst->field_B0 = src->field_B0;
+    dst->field_C0 = src->field_C0;
+    dst->field_D0 = src->field_D0;
+
+    sp = (char *)src->field_E0;
+    dp = (char *)dst->field_E0;
+    n = 6;
+    do {
+        *(Quad *)dp = *(Quad *)sp;
+        sp += 0x20;
+        dp += 0x20;
+        n--;
+    } while (n > 0);
+
+    return dst;
+}

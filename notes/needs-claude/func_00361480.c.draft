@@ -1,0 +1,118 @@
+// range: 0x361480 0x361660
+// Builds a quest/trigger record in dst from the template src: copies the
+// ids, zeroes the live-state fields, clears the seven 0x1F flags and
+// clears the text buffer at +0x7C.
+#include "common.h"
+
+typedef struct {
+    /* 00 */ char b0 : 1;
+    /* 01 */ char b1 : 1;
+    /* 02 */ char b2 : 1;
+    /* 03 */ char b3 : 1;
+    /* 04 */ char b4 : 1;
+    /* 05 */ char b5 : 1;
+    /* 06 */ char b6 : 1;
+    /* 07 */ char b7 : 1;
+} Flags1F;
+
+typedef struct {
+    /* 00 */ s32 f00;
+    /* 04 */ s16 f04;
+    /* 06 */ s16 f06;
+    /* 08 */ s16 f08;
+    /* 0A */ char pad0A[2];
+    /* 0C */ s32 f0C;
+    /* 10 */ s32 f10;
+    /* 14 */ s32 f14;
+    /* 18 */ s32 f18;
+    /* 1C */ u8 f1C;
+    /* 1D */ u8 f1D;
+    /* 1E */ u8 f1E;
+    /* 1F */ Flags1F flags;
+    /* 20 */ s32 f20;
+    /* 24 */ s32 f24;
+    /* 28 */ s64 f28;
+    /* 30 */ s32 f30;
+    /* 34 */ char pad34[4];
+    /* 38 */ s64 f38;
+    /* 40 */ s64 f40;
+    /* 48 */ s64 f48;
+    /* 50 */ s64 f50;
+    /* 58 */ s32 f58[2];
+    /* 60 */ s32 f60;
+    /* 64 */ char pad64[1];
+    /* 65 */ u8 f65;
+    /* 66 */ char pad66[2];
+    /* 68 */ void *f68;
+    /* 6C */ char pad6C[8];
+    /* 74 */ u8 f74[6];
+    /* 7A */ char pad7A[2];
+    /* 7C */ char f7C[0x1C];
+} Dest;
+
+typedef struct {
+    /* 00 */ s32 f00;
+    /* 04 */ char pad04[8];
+    /* 0C */ s16 f0C;
+    /* 0E */ char pad0E[0x64 - 0x0E];
+    /* 64 */ s32 f64;
+    /* 68 */ s32 f68;
+    /* 6C */ char pad6C[0xA6 - 0x6C];
+    /* A6 */ s16 fA6;
+    /* A8 */ char padA8[0x160 - 0xA8];
+    /* 160 */ s32 f160[2];
+} Src;
+
+extern s64 func_0035E320(void *arg0);
+extern int func_00131188(char *buf, s32 value, s32 size);
+
+void func_00361480(s32 arg0, Dest *dst, Src *src, s16 arg3) {
+    s32 temp[1];
+    s32 i;
+
+    if (dst == 0) { return; }
+    if (src == 0) { return; }
+    temp[0] = 0;
+    dst->f04 = arg3;
+    dst->f00 = src->f00;
+    dst->f06 = src->f0C;
+    dst->f08 = 0;
+    dst->f0C = 0;
+    dst->f10 = 0;
+    dst->f14 = 0;
+    dst->f1C = 0;
+    dst->f28 = 0;
+    dst->f30 = 0;
+    dst->f38 = 0;
+    dst->f40 = 0;
+    dst->f48 = 0;
+    dst->f20 = src->f68;
+    temp[0] = src->f64;
+    dst->f24 = temp[0];
+    dst->f50 = func_0035E320(src);
+    i = 0;
+    do {
+        dst->f58[i] = src->f160[i];
+        i++;
+    } while (i < 2);
+    dst->f60 = src->fA6;
+    dst->f65 = 0;
+    dst->flags.b0 = 0;
+    dst->flags.b1 = 0;
+    dst->flags.b2 = 0;
+    dst->flags.b3 = 0;
+    dst->flags.b4 = 0;
+    dst->flags.b5 = 0;
+    dst->flags.b6 = 0;
+    dst->f1D = 0;
+    dst->f68 = src;
+    dst->f18 = -1;
+    dst->f1E = 0;
+    dst->f74[0] = 0;
+    dst->f74[1] = 0;
+    dst->f74[2] = 0;
+    dst->f74[3] = 0;
+    dst->f74[4] = 0;
+    dst->f74[5] = 0;
+    func_00131188(dst->f7C, 0, 0x1C);
+}

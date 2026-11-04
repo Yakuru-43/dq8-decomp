@@ -1,0 +1,75 @@
+// range: 0x00359440 0x00359620
+#include "common.h"
+
+extern "C" {
+
+struct Mob {
+    /* 0x00 */ u32 id0;
+    /* 0x04 */ u32 id1;
+    /* 0x08 */ u32 pad08;
+    /* 0x0C */ s16 kind;
+    /* 0x0E */ s16 pad0E;
+    /* 0x10 */ s16 cat;
+    /* 0x12 */ u8 pad12[0x54E];
+    /* 0x560 */ u8 inUse;
+    /* 0x561 */ u8 pad561;
+    /* 0x562 */ u8 pad562[6];
+    /* 0x568 */ s32 score;
+    /* 0x56C */ u8 pad56C[0x590 - 0x56C];
+};
+
+extern s64 func_0029D170(void *);
+extern s32 func_00201760(void *, s32 *);
+extern bool func_0035E570(void *);
+extern M2C_UNK D_0042CDB0 __attribute__((section(".data")));
+
+s32 func_00359440(Mob *mobs, s32 id, u32 *counters, s32 altId, bool skipPower,
+                  bool needScore, s32 wantKind, bool skipInUse) {
+    s64 limit;
+    s32 count;
+    s32 i;
+    Mob *m;
+    bool match;
+
+    if (counters != 0) {
+        i = 0;
+        do {
+            counters[i++] = 0;
+        } while (i < 6);
+    }
+    limit = func_0029D170(&D_0042CDB0);
+    count = 0;
+    i = 0;
+    do {
+        m = mobs + i;
+        if ((skipInUse == 0) && (m->inUse != 0)) { continue; }
+        match = false;
+        if (altId != 0) {
+            if (m->id1 == id) { match = true; }
+        } else {
+            if (m->id0 == id) { match = true; }
+        }
+        if (match) {
+            if (skipPower == 0) {
+                if (func_00201760(m, 0) <= 0) {
+                    match = needScore && (m->score >= limit);
+                }
+            }
+        }
+        if (match) {
+            if (wantKind >= 0) {
+                if (m->kind == wantKind) { match = false; }
+            }
+        }
+        if (match) {
+            if (func_0035E570(m) != 0) { match = false; }
+        }
+        if (match) {
+            count++;
+            if (counters != 0) { counters[m->cat]++; }
+        }
+    } while (++i < 0x20);
+    return count;
+}
+
+}

@@ -1,0 +1,75 @@
+// range: 0x359280 0x359440
+// best attempt (attempt 6): CLASS structural score=30 (30 words differ, 448 vs
+// 448 bytes). Everything except the s-register rotation and one inverted
+// branch matches; see func_00359280.md.
+#include "common.h"
+
+extern "C" {
+
+s32 func_00201760(char *, s32);
+s32 func_0035E570(char *);
+
+s32 func_00359280(s32 arg0, s32 arg1, s32 arg2, s32 arg3, bool arg4, s32 arg5,
+                  s32 arg6, bool arg7) {
+    bool found;
+    char *p;
+    s32 i;
+    s32 count;
+
+    for (i = 0; i < arg3; i++) {
+        M2C_FIELD(arg2, s32 *, i * 4) = 0;
+    }
+    count = 0;
+    for (i = 0; i < 0x20; i++) {
+        p = (char *)(arg0 + (i * 0x590));
+        if (!arg7) {
+            if (M2C_FIELD(p, u8 *, 0x560)) {
+                continue;
+            }
+        }
+        found = false;
+        if (arg4) {
+            if (M2C_FIELD(p, s32 *, 4) == arg1) {
+                found = true;
+            }
+        } else {
+            if (M2C_FIELD(p, s32 *, 0) == arg1) {
+                found = true;
+            }
+        }
+        if (found) {
+            if (arg5 == 0) {
+                if (func_00201760(p, 0) <= 0) {
+                    found = false;
+                }
+            }
+            if (arg5 != 0) {
+                if (func_00201760(p, 0) > 0) {
+                    found = false;
+                }
+            }
+        }
+        if (found) {
+            if (arg6 >= 0) {
+                if (M2C_FIELD(p, s16 *, 0xC) == arg6) {
+                    found = false;
+                }
+            }
+        }
+        if (found) {
+            if (func_0035E570(p) != 0) {
+                found = false;
+            }
+        }
+        if (found) {
+            M2C_FIELD(arg2, s32 *, count * 4) = (s32)p;
+            count = count + 1;
+            if (count >= arg3) {
+                break;
+            }
+        }
+    }
+    return count;
+}
+
+} // extern "C"
