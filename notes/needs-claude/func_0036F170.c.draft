@@ -1,0 +1,47 @@
+// range: 0x0036F170 0x0036F280
+// Best attempt (score 18) for func_0036F170 — see func_0036F170.md
+#include "common.h"
+
+void func_001340C0(char *, void *);                   /* extern */
+u32 func_001341D8(void *);                            /* extern */
+void DebugPrintf(char *);                             /* extern */
+char D_003D5000[];                                    /* extern */
+
+void func_0036F170(char *arg0, char *arg1, s32 arg2) {
+    s32 i;
+    char *p;
+    char *dst;
+    s32 c;
+
+    if (0 < arg2) {
+        if (arg0 == 0 || arg1 == 0) {
+            DebugPrintf(D_003D5000);
+            return;
+        }
+        func_001340C0(arg1, arg0);
+        i = func_001341D8(arg1);
+        p = arg0 + i;
+        while (i > 0) {
+            p--;
+            if (*p == '.') {
+                goto found;
+            }
+            i--;
+        }
+        return;
+    found:
+        i = i - 1;
+        dst = arg1 + i;
+        *dst = '_';
+        dst[1] = (char)(arg2 + 0x30);
+        dst = dst + 2;
+        while ((c = *p) != 0) {
+            *dst = c;
+            p++;
+            dst++;
+        }
+        *dst = 0;
+    } else {
+        func_001340C0(arg1, arg0);
+    }
+}
