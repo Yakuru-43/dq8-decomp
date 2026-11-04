@@ -1,0 +1,43 @@
+// range: 0x355820 0x355930
+#include "common.h"
+
+extern void DebugPrintf(char *, ...);
+extern char D_003D37E0[];
+extern char D_003D37F0[];
+extern char D_003D38E0[];
+extern char D_003D39B0[];
+
+void func_00355820(char *arg0, s32 arg1) {
+    char *entry;
+    s32 index;
+    s32 i;
+
+    if (arg1 < 0) {
+        index = -1;
+    } else {
+        index = 0;
+        while (index < 0x20) {
+            if (*(s32 *)(arg0 + (index * 0x30) + 0x24) == arg1) {
+                goto found;
+            }
+            index++;
+        }
+        index = -1;
+    }
+found:
+    if (index < 0) {
+        DebugPrintf(D_003D38E0);
+        return;
+    }
+    *(s32 *)(arg0 + (index * 0x30)) = 2;
+    DebugPrintf(D_003D39B0);
+    i = 0;
+    do {
+        entry = arg0 + (i * 0x30);
+        if (*(s32 *)entry != 0) {
+            DebugPrintf(D_003D37F0, i, *(s32 *)(entry + 0x20), *(s32 *)(entry + 0x24));
+        }
+        i++;
+    } while (i < 0x20);
+    DebugPrintf(D_003D37E0);
+}
