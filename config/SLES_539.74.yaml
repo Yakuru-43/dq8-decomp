@@ -882,6 +882,8 @@ segments:
       - [0x71AB0, asm, game_171AB0]
       - [0x721F0, c, func_001721F0]
       - [0x72210, asm, game_172210]
+      - [0x723C0, c, func_001723C0]
+      - [0x72520, asm, game_172520]
       - [0x72910, c, func_00172910]
       - [0x72930, c, func_00172930]
       - [0x72960, asm, game_172960]
