@@ -1,0 +1,96 @@
+// range: 0x35ABD0 0x35AD80
+#include "common.h"
+
+struct Entry {
+    s32 count;
+    char pad0[8];
+    s16 kind;
+    char pad1[0x554 - 0xE];
+    u8 f554;
+    u8 f555;
+    u8 pad2;
+    u8 f557;
+    char pad3[0x560 - 0x558];
+    u8 f560;
+    char pad4[0x568 - 0x561];
+    s32 prio;
+    char pad5[0x590 - 0x56C];
+};
+
+s32 func_0035F5B0(void);                                  /* extern */
+s32 func_00201760(void *, s32 *);                         /* extern */
+void func_0035C640(void *, s32);                          /* extern */
+
+s32 func_0035ABD0(s8 *arg0) {
+    s32 limit;
+    s32 ret;
+    s32 pass;
+    s32 kind;
+    struct Entry *best;
+    s32 i;
+    struct Entry *e;
+    s32 sel;
+
+    limit = func_0035F5B0();
+    ret = -1;
+    pass = 1;
+    for (; pass < 3; pass++) {
+        for (kind = 0x80; kind < 0x90; kind++) {
+            best = 0;
+            sel = pass == 1;
+            for (i = 0; i < 0x20; i++) {
+                e = (struct Entry *)(arg0 + (i * 0x590));
+                if (e->count <= 0) {
+                    continue;
+                }
+                if (e->kind != kind) {
+                    continue;
+                }
+                if (pass == 1) {
+                    sel = 0;
+                    break;
+                }
+                if (func_00201760(e, NULL) > 0) {
+                    goto none;
+                }
+                if (!(e->prio < limit)) {
+                    goto none;
+                }
+                if (e->f554 != 0) {
+                    goto none;
+                }
+                if (e->f555 != 0) {
+                    goto none;
+                }
+                if (e->f557 != 0) {
+                    goto none;
+                }
+                sel = 1;
+                if (best == 0) {
+                    best = e;
+                } else if (e->prio < best->prio) {
+                    best = e;
+                }
+                continue;
+none:
+                sel = 0;
+                best = 0;
+                break;
+            }
+            if (sel == 0) {
+                continue;
+            }
+            ret = kind;
+            if (best != 0) {
+                func_0035C640(best, 1);
+                best->f560 = 1;
+                best->f557 = 1;
+            }
+            break;
+        }
+        if (ret >= 0x80 && ret < 0x90) {
+            break;
+        }
+    }
+    return ret;
+}

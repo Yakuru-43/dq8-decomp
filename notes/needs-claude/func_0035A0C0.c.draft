@@ -1,0 +1,85 @@
+// range: 0x35A0C0 0x35A270
+#include "common.h"
+
+typedef struct {
+    s32 unk0;
+    char pad4[0xC];
+    s16 unk10;
+    s16 unk12;
+    char pad14[0x540];
+    u8 unk554;
+    u8 unk555;
+    u8 pad556;
+    u8 unk557;
+    u8 pad558;
+    u8 unk559;
+    u8 pad55A[6];
+    u8 unk560;
+    u8 pad561[7];
+    s32 unk568;
+} SpawnSlot; /* 0x590 */
+
+s32 func_0035F5B0(void);
+s32 func_00201760(void *arg0, s32 *arg1);
+
+s32 func_0035A0C0(SpawnSlot *arg0, s32 arg1) {
+    s32 result;
+    s32 pass;
+    s32 col;
+    SpawnSlot *best;
+    s32 i;
+    SpawnSlot *slot;
+    s32 found;
+
+    if (arg1 < 0) {
+        return -1;
+    }
+    func_0035F5B0();
+    result = -1;
+    for (pass = 1; pass < 3; pass++) {
+        for (col = 0; col < 8; col++) {
+            best = 0;
+            found = (pass == 1);
+            for (i = 0; i < 0x20; i++) {
+                slot = arg0 + i;
+                if (slot->unk0 <= 0) {
+                    continue;
+                }
+                if (slot->unk560 != 0) {
+                    continue;
+                }
+                if (slot->unk10 != arg1) {
+                    continue;
+                }
+                if (slot->unk12 != col) {
+                    continue;
+                }
+                if (pass == 1) {
+                    found = 0;
+                    break;
+                }
+                if (func_00201760(slot, 0) > 0 || slot->unk554 != 0 ||
+                    slot->unk555 != 0 || slot->unk559 != 0) {
+                    found = 0;
+                    break;
+                }
+                found = 1;
+                if (best == 0) {
+                    best = slot;
+                }
+                else if (best->unk568 > slot->unk568) {
+                    best = slot;
+                }
+            }
+            if (found != 0) {
+                if (best == 0) {
+                    result = col;
+                }
+                else {
+                    best->unk560 = 1;
+                    best->unk557 = 1;
+                }
+                break;
+            }
+        }
+        if (result >= 0 && result < 8) {
