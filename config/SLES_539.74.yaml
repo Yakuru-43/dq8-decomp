@@ -852,6 +852,8 @@ segments:
       - [0x6E370, c, func_0016E370]
       - [0x6E3A0, c, func_0016E3A0]
       - [0x6E3B0, asm, game_16E3B0]
+      - [0x6E410, cpp, func_0016E410]
+      - [0x6E530, asm, game_16E530]
       - [0x6E800, c, func_0016E800]
       - [0x6E810, c, func_0016E810]
       - [0x6E870, c, func_0016E870]
