@@ -23,10 +23,10 @@ TITLE (overlay)  [█░░░░░░░░░░░░░░░░░░░] 
 SHOP (overlay)   [████░░░░░░░░░░░░░░░░] 17.8%     11/   60 KB   [█████████░░░░░░░░░░░]  45.4%   154/339  
 MENU (overlay)   [██░░░░░░░░░░░░░░░░░░] 11.6%     12/  103 KB   [█████████░░░░░░░░░░░]  43.4%   144/332  
 CASINO (overlay) [█░░░░░░░░░░░░░░░░░░░]  3.6%      4/  106 KB   [███████░░░░░░░░░░░░░]  34.7%    68/196  
-BATTLE (overlay) [██░░░░░░░░░░░░░░░░░░]  9.8%     14/  143 KB   [███████░░░░░░░░░░░░░]  35.6%   218/613  
-ALL game code    [███░░░░░░░░░░░░░░░░░] 13.7%    387/ 2828 KB   [██████████░░░░░░░░░░]  47.5%  5282/11120
+BATTLE (overlay) [██░░░░░░░░░░░░░░░░░░] 10.1%     15/  143 KB   [███████░░░░░░░░░░░░░]  35.7%   219/613  
+ALL game code    [███░░░░░░░░░░░░░░░░░] 13.7%    388/ 2828 KB   [██████████░░░░░░░░░░]  47.5%  5283/11120
 ```
-_(refreshed 2026-11-03 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
+_(refreshed 2026-11-04 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->
 
 The SDK regions of the main executable (`sdk_*`, `lib*`, GCC-built) are
