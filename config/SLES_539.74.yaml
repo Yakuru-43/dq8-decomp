@@ -3229,6 +3229,7 @@ segments:
       - [0x150A00, asm, game_250A00]
       - [0x151480, c, func_00251480]
       - [0x1514B0, asm, game_2514B0]
+      - [0x151C40, c, func_00251C40]
       - [0x151D60, c, func_00251D60]
       - [0x151DA0, c, func_00251DA0]
       - [0x151DE0, asm, game_251DE0]
