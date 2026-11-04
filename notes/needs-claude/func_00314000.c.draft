@@ -1,0 +1,127 @@
+// range: 0x314000 0x314310
+#include "common.h"
+
+typedef struct {
+    u8 tag[0x24];       /* 0x000 */
+    s32 h24;            /* 0x024 */
+    s32 pad_28;         /* 0x028 */
+    s32 value;          /* 0x02C */
+    s32 kind;           /* 0x034 */
+    char pad_38[0x8];   /* 0x038 */
+} Entry;                /* 0x040 */
+
+typedef struct {
+    void *objs[0x20];      /* 0x000 */
+    s32 idx[0x20];         /* 0x080 */
+    char pad_100[0x3A];    /* 0x100 */
+    s16 h13A;              /* 0x13A */
+    s16 h13C;              /* 0x13C */
+    char pad_13E[0x2];     /* 0x13E */
+    void *p140;            /* 0x140 */
+    char buf144[0x40];     /* 0x144 */
+} Item;                    /* 0x184 */
+
+extern s32 DebugPrintf(const char *fmt, ...);
+extern s32 func_00159FA0(char *);
+extern void func_00159A40(char *);
+extern s64 func_00159EB0(char *);
+extern void func_00159BA0(Entry *, char *, s32);
+extern s32 func_00159B90(u8 *);
+extern void func_0015A050(s32, char *, char *);
+extern s32 func_0015A920(s32, s32, void *, Entry *);
+extern s32 func_0015F450(void);
+extern void *func_00211680(s32);
+extern void *func_0014E540(void *, void *);
+extern void *func_0014E560(void *, void *);
+extern void func_00130FD0(void *, char *, s32);
+extern void func_00313F30(Item *, void *);
+extern void func_00314330(s32 *);
+extern s16 func_003143E0(s32);
+extern s32 func_00314310(s32 *, s32);
+
+extern char D_003D0A88[];
+extern char D_003D0A98[];
+
+s32 func_00314000(Item *item, void *unk1, char *table, s32 arg3, s32 *arr) {
+    Entry copyA;
+    Entry copyB;
+    Entry srcA;
+    Entry srcB;
+    s32 flag;
+    s32 f450;
+    char *str;
+    s64 count;
+    s32 distinct;
+    s32 best;
+    s32 last;
+    s32 slots;
+    s32 i;
+    s32 j;
+    void *obj;
+
+    if (func_00159FA0(table) != 3) {
+        DebugPrintf(D_003D0A88);
+        return 0;
+    }
+    distinct = 0;
+    func_00159A40(table);
+    best = -1;
+    count = func_00159EB0(table);
+    if (count >= 0x21) {
+        DebugPrintf(D_003D0A98);
+        return 0;
+    }
+    for (i = 0; i < count; i++) {
+        func_00159BA0(&srcA, table, i);
+        copyA = srcA;
+        if (copyA.value != best) {
+            best = copyA.value;
+            distinct++;
+        }
+    }
+    func_00314330(arr);
+    flag = 0;
+    item->h13A = func_003143E0(distinct);
+    item->h13C = distinct;
+    f450 = func_0015F450();
+    best = (s32)item->h13A;
+    last = -1;
+    slots = 0;
+    for (j = 0; j < count; j++) {
+        func_00159BA0(&srcB, table, j);
+        copyB = srcB;
+        if (func_00159B90(copyB.tag) != 0) {
+            continue;
+        }
+        if (copyB.value != last) {
+            if (last >= 0) {
+                best++;
+            }
+            last = copyB.value;
+        }
+        str = table + copyB.h24;
+        if (copyB.kind < 0xA000) {
+            obj = func_0014E540(unk1, func_00211680(copyB.kind));
+        } else {
+            obj = func_0014E560(unk1, func_00211680(copyB.kind));
+        }
+        if (obj == 0) {
+            flag = 1;
+            break;
+        }
+        func_00130FD0(obj, str, copyB.kind);
+        item->objs[slots] = obj;
+        item->idx[slots] = func_0015A920(f450, best, obj, &copyB);
+        slots++;
+        if (func_00314310(arr, copyB.value) != 0) {
+            arr[copyB.value] = best;
+            arr[copyB.value + 0x20] = 1;
+        }
+    }
+    func_0015A050(f450, table, item->buf144);
+    if (flag != 0) {
+        func_00313F30(item, unk1);
+        return 0;
+    }
+    return 1;
+}
