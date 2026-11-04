@@ -6022,6 +6022,7 @@ segments:
       - [0x261B20, asm, game_361B20]
       - [0x261CA0, c, func_00361CA0]
       - [0x261CE0, asm, game_361CE0]
+      - [0x261D40, cpp, func_00361D40]
       - [0x261E60, c, func_00361E60]
       - [0x261EE0, asm, game_361EE0]
       - [0x262230, c, func_00362230]
