@@ -143,6 +143,7 @@ segments:
       - [0xA3E0, asm, text_4690A0]
       - [0xA5B0, c, func_00469270]
       - [0xA600, asm, text_4692C0]
+      - [0xB910, c, func_0046A5D0]
       - [0xBB10, c, func_0046A7D0]
       - [0xBC30, c, func_0046A8F0]
       - [0xBD30, asm, text_46A9F0]
