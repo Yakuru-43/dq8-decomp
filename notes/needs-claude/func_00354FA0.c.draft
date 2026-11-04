@@ -1,0 +1,66 @@
+// range: 0x354FA0 0x3550B0
+// BEST ATTEMPT (try_match CLASS structural score=61, 55 words differ, 240 vs 264):
+// shape nearly right; wrong register map (counter in $v0, address in $a1; original
+// keeps the counter in $a2 and uses $v0/$v1). See notes/needs-claude/func_00354FA0.md
+#include "common.h"
+
+union Vec4 {
+    u128 q;
+    f32 f[4];
+};
+
+struct Entry {
+    /* 0x00 */ s32 type;
+    /* 0x04 */ u8 pad04[0x0C];
+    /* 0x10 */ union Vec4 vec;
+    /* 0x20 */ s32 unk20;
+    /* 0x24 */ s32 key;
+    /* 0x28 */ s32 unk28;
+    /* 0x2C */ u8 pad2C[4];
+};
+
+static inline s32 FindSlot(char *base, s32 key) {
+    s32 i;
+
+    if (key < 0) {
+        return -1;
+    }
+    for (i = 0; i < 0x20; i++) {
+        if (*(s32 *)(base + i * 0x30 + 0x24) == key) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+s32 func_00354FA0(char *arg0, s32 arg1) {
+    s32 i;
+    struct Entry *entry;
+
+    i = FindSlot(arg0, arg1);
+    if (i < 0) {
+        return 0;
+    }
+    entry = (struct Entry *)(arg0 + i * 0x30);
+    entry->type = 0;
+    entry->unk20 = -1;
+    entry->key = -1;
+    entry->unk28 = -1;
+    entry->vec.q = 0;
+    while (i < 0x1F) {
+        entry = (struct Entry *)(arg0 + i * 0x30);
+        entry->type = entry[1].type;
+        entry->vec = entry[1].vec;
+        entry->unk20 = entry[1].unk20;
+        entry->key = entry[1].key;
+        entry->unk28 = entry[1].unk28;
+        i++;
+    }
+    entry = (struct Entry *)(arg0 + 0x5D0);
+    entry->type = 0;
+    entry->unk20 = -1;
+    entry->key = -1;
+    entry->unk28 = -1;
+    entry->vec.q = 0;
+    return 1;
+}
