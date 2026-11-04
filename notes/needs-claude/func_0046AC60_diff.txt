@@ -1,0 +1,111 @@
+  +000  addiu       $sp, $sp, -0x60        addiu       $sp, $sp, -0x60
+  +004  addiu       $v1, $zero, 0x1        addiu       $v1, $zero, 0x1
+  +008  sd          $ra, 0x50($sp)         sd          $ra, 0x50($sp)
+  +00C  sq          $s4, 0x40($sp)         sq          $s4, 0x40($sp)
+  +010  sq          $s3, 0x30($sp)         sq          $s3, 0x30($sp)
+  +014  daddu       $s4, $a0, $zero        daddu       $s4, $a0, $zero
+  +018  sq          $s2, 0x20($sp)         sq          $s2, 0x20($sp)
+  +01C  daddu       $s3, $a1, $zero        daddu       $s3, $a1, $zero
+  +020  sq          $s1, 0x10($sp)         sq          $s1, 0x10($sp)
+  +024  daddu       $s2, $a2, $zero        daddu       $s2, $a2, $zero
+  +028  sq          $s0, 0x0($sp)          sq          $s0, 0x0($sp)
+  +02C  daddu       $s1, $zero, $zero      daddu       $s1, $zero, $zero
+  +030  daddu       $a0, $zero, $zero      daddu       $a0, $zero, $zero
+  +034  slt         $v0, $s4, $v1          slt         $v0, $s4, $v1
+  +038  bnez        $v0, . + 4 + (0x2 << 2) bnez        $v0, . + 4 + (0x2 << 2)
+  +03C  nop                                nop
+  +040  addiu       $s1, $s1, 0x1          addiu       $s1, $s1, 0x1
+  +044  sll         $v0, $v1, 2            sll         $v0, $v1, 2
+  +048  addiu       $a0, $a0, 0x1          addiu       $a0, $a0, 0x1
+  +04C  addu        $v1, $v0, $v1          addu        $v1, $v0, $v1
+  +050  slti        $v0, $a0, 0x8          slti        $v0, $a0, 0x8
+  +054  bnez        $v0, . + 4 + (-0x9 << 2) bnez        $v0, . + 4 + (-0x9 << 2)
+  +058  sll         $v1, $v1, 1            sll         $v1, $v1, 1
+  +05C  bnel        $s1, $zero, . + 4 + (0x3 << 2) bnel        $s1, $zero, . + 4 + (0x3 << 2)
+  +060  sll         $a0, $s1, 2            sll         $a0, $s1, 2
+  +064  b           . + 4 + (0x4B << 2)    b           . + 4 + (0x4B << 2)
+  +068  daddu       $v0, $zero, $zero      daddu       $v0, $zero, $zero
+* +06C  jal         func_000000            jal         func_100860
+  +070  nop                                nop
+  +074  daddu       $s0, $v0, $zero        daddu       $s0, $v0, $zero
+  +078  beql        $s0, $zero, . + 4 + (0x46 << 2) beql        $s0, $zero, . + 4 + (0x46 << 2)
+  +07C  daddu       $v0, $zero, $zero      daddu       $v0, $zero, $zero
+  +080  b           . + 4 + (0x24 << 2)    b           . + 4 + (0x24 << 2)
+* +084  addiu       $a0, $s1, -0x1         addiu       $v0, $s1, -0x1
+* +088  blezl       $a0, . + 4 + (0x3F << 2) blezl       $v0, . + 4 + (0x3F << 2)
+* +08C  sll         $v0, $a0, 2            sll         $v1, $v0, 2
+  +090  addiu       $a2, $zero, 0xA        addiu       $a2, $zero, 0xA
+  +094  daddu       $a1, $zero, $zero      daddu       $a1, $zero, $zero
+  +098  b           . + 4 + (0x5 << 2)     b           . + 4 + (0x5 << 2)
+* +09C  addiu       $v1, $a0, -0x1         addiu       $a0, $v0, -0x1
+* +0A0  sll         $v0, $a2, 2            sll         $v1, $a2, 2
+  +0A4  addiu       $a1, $a1, 0x1          addiu       $a1, $a1, 0x1
+* +0A8  addu        $v0, $v0, $a2          addu        $v1, $v1, $a2
+* +0AC  sll         $a2, $v0, 1            sll         $a2, $v1, 1
+* +0B0  slt         $v0, $a1, $v1          slt         $v1, $a1, $a0
+* +0B4  bnez        $v0, . + 4 + (-0x6 << 2) bnez        $v1, . + 4 + (-0x6 << 2)
+  +0B8  nop                                nop
+* +0BC  sll         $v0, $a0, 2            sll         $v1, $v0, 2
+* +0C0  addu        $a1, $s0, $v0          addu        $a1, $s0, $v1
+  +0C4  bnez        $a2, . + 4 + (0x2 << 2) bnez        $a2, . + 4 + (0x2 << 2)
+  +0C8  div         $zero, $s4, $a2        div         $zero, $s4, $a2
+  +0CC  break       0, 7                   break       0, 7
+* +0D0  mflo        $v0                    mflo        $v1
+* +0D4  addiu       $a2, $zero, 0xA        addiu       $a3, $zero, 0xA
+* +0D8  daddu       $a3, $zero, $zero      daddu       $a2, $zero, $zero
+* +0DC  addiu       $v1, $a0, -0x1         addiu       $a0, $v0, -0x1
+  +0E0  b           . + 4 + (0x5 << 2)     b           . + 4 + (0x5 << 2)
+* +0E4  sw          $v0, 0x0($a1)          sw          $v1, 0x0($a1)
+* +0E8  sll         $v0, $a2, 2            sll         $v1, $a3, 2
+* +0EC  addiu       $a3, $a3, 0x1          addiu       $a2, $a2, 0x1
+* +0F0  addu        $v0, $v0, $a2          addu        $v1, $v1, $a3
+* +0F4  sll         $a2, $v0, 1            sll         $a3, $v1, 1
+* +0F8  slt         $v0, $a3, $v1          slt         $v1, $a2, $a0
+* +0FC  bnez        $v0, . + 4 + (-0x6 << 2) bnez        $v1, . + 4 + (-0x6 << 2)
+  +100  nop                                nop
+* +104  lw          $v0, 0x0($a1)          lw          $v1, 0x0($a1)
+* +108  mult        $v0, $a2, $v0          mult        $v1, $v1, $a3
+* +10C  subu        $s4, $s4, $v0          subu        $s4, $s4, $v1
+* +110  addiu       $a0, $a0, -0x1         addiu       $v0, $v0, -0x1
+* +114  bgez        $a0, . + 4 + (-0x24 << 2) bgez        $v0, . + 4 + (-0x24 << 2)
+  +118  nop                                nop
+  +11C  daddu       $a2, $s2, $zero        daddu       $a2, $s2, $zero
+  +120  daddu       $a0, $s3, $zero        daddu       $a0, $s3, $zero
+* +124  jal         func_000000            jal         func_131188
+  +128  daddu       $a1, $zero, $zero      daddu       $a1, $zero, $zero
+  +12C  daddu       $a2, $zero, $zero      daddu       $a2, $zero, $zero
+  +130  b           . + 4 + (0xF << 2)     b           . + 4 + (0xF << 2)
+  +134  addiu       $a1, $s1, -0x1         addiu       $a1, $s1, -0x1
+  +138  addu        $v1, $s3, $a2          addu        $v1, $s3, $a2
+  +13C  addu        $a0, $s0, $v0          addu        $a0, $s0, $v0
+  +140  addiu       $a2, $a2, 0x2          addiu       $a2, $a2, 0x2
+  +144  lw          $v0, 0x0($a0)          lw          $v0, 0x0($a0)
+  +148  addiu       $a1, $a1, -0x1         addiu       $a1, $a1, -0x1
+  +14C  addiu       $v0, $v0, 0x7FFF       addiu       $v0, $v0, 0x7FFF
+  +150  addiu       $v0, $v0, 0x250        addiu       $v0, $v0, 0x250
+  +154  andi        $v0, $v0, 0xFF00       andi        $v0, $v0, 0xFF00
+  +158  srl         $v0, $v0, 8            srl         $v0, $v0, 8
+  +15C  sb          $v0, 0x0($v1)          sb          $v0, 0x0($v1)
+  +160  lw          $v0, 0x0($a0)          lw          $v0, 0x0($a0)
+  +164  addiu       $v0, $v0, 0x7FFF       addiu       $v0, $v0, 0x7FFF
+  +168  addiu       $v0, $v0, 0x250        addiu       $v0, $v0, 0x250
+  +16C  sb          $v0, 0x1($v1)          sb          $v0, 0x1($v1)
+  +170  bgezl       $a1, . + 4 + (-0xF << 2) bgezl       $a1, . + 4 + (-0xF << 2)
+  +174  sll         $v0, $a1, 2            sll         $v0, $a1, 2
+* +178  jal         func_000000            jal         func_100780
+  +17C  daddu       $a0, $s0, $zero        daddu       $a0, $s0, $zero
+  +180  b           . + 4 + (0x4 << 2)     b           . + 4 + (0x4 << 2)
+  +184  daddu       $v0, $s1, $zero        daddu       $v0, $s1, $zero
+* +188  addu        $v0, $s0, $v0          addu        $v1, $s0, $v1
+  +18C  b           . + 4 + (-0x20 << 2)   b           . + 4 + (-0x20 << 2)
+* +190  sw          $s4, 0x0($v0)          sw          $s4, 0x0($v1)
+  +194  ld          $ra, 0x50($sp)         ld          $ra, 0x50($sp)
+  +198  lq          $s4, 0x40($sp)         lq          $s4, 0x40($sp)
+  +19C  lq          $s3, 0x30($sp)         lq          $s3, 0x30($sp)
+  +1A0  lq          $s2, 0x20($sp)         lq          $s2, 0x20($sp)
+  +1A4  lq          $s1, 0x10($sp)         lq          $s1, 0x10($sp)
+  +1A8  lq          $s0, 0x0($sp)          lq          $s0, 0x0($sp)
+  +1AC  jr          $ra                    jr          $ra
+  +1B0  addiu       $sp, $sp, 0x60         addiu       $sp, $sp, 0x60
+DIFF at +0x84: mine 2624FFFF orig 2622FFFF  (436 bytes)
+CLASS reorder+register score=29 (29 words differ, 436 vs 436 bytes)
