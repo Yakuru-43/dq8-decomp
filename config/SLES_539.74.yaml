@@ -6139,6 +6139,7 @@ segments:
       - [0x270B30, asm, game_370B30]
       - [0x270D20, c, func_00370D20]
       - [0x270D40, asm, game_370D40]
+      - [0x270E00, c, func_00370E00]
       - [0x270F60, c, func_00370F60]
       - [0x270F90, c, func_00370F90]
       - [0x270FA0, c, func_00370FA0]
