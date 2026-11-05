@@ -129,6 +129,8 @@ segments:
       - [0x16A00, c, func_004756C0]
       - [0x16A30, c, func_004756F0]
       - [0x16AD0, asm, text_475790]
+      - [0x17A40, c, func_00476700]
+      - [0x17B10, asm, text_4767D0]
       - [0x1BAC0, data, data_47A780]
       - [0x1F8A0, .rodata, func_0045ED10]
       - [0x1F8C8, data, data_47E588]
