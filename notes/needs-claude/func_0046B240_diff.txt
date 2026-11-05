@@ -1,0 +1,78 @@
+  +000  addiu       $sp, $sp, -0x30        addiu       $sp, $sp, -0x30
+  +004  sd          $ra, 0x0($sp)          sd          $ra, 0x0($sp)
+* +008  lw          $v0, 0x0($a0)          sq          $zero, 0x20($sp)
+* +00C  beql        $v0, $zero, . + 4 + (0x3 << 2) sq          $zero, 0x10($sp)
+* +010  lwc1        $f0, 0x4($a0)          lw          $v0, 0x0($a0)
+* +014  b           . + 4 + (0x2 << 2)     bnel        $v0, $zero, . + 4 + (0x3 << 2)
+  +018  lwc1        $f0, 0x4($a0)          lwc1        $f0, 0x4($a0)
+* +01C  cvt.s.w     $f0, $f0               lwc1        $f0, 0x4($a0)
+* +020  swc1        $f0, 0x20($sp)         cvt.s.w     $f0, $f0
+* +024  lw          $v0, 0x8($a0)          swc1        $f0, 0x20($sp)
+* +028  beql        $v0, $zero, . + 4 + (0x3 << 2) lw          $v0, 0x8($a0)
+* +02C  lwc1        $f0, 0xC($a0)          bnez        $v0, . + 4 + (0x4 << 2)
+* +030  b           . + 4 + (0x2 << 2)     addiu       $v1, $a0, 0x8
+* +034  lwc1        $f0, 0xC($a0)          lwc1        $f0, 0x4($v1)
+* +038  cvt.s.w     $f0, $f0               b           . + 4 + (0x2 << 2)
+* +03C  swc1        $f0, 0x24($sp)         cvt.s.w     $f0, $f0
+* +040  lw          $v0, 0x10($a0)         lwc1        $f0, 0x4($v1)
+* +044  beql        $v0, $zero, . + 4 + (0x3 << 2) swc1        $f0, 0x24($sp)
+* +048  lwc1        $f0, 0x14($a0)         lw          $v0, 0x10($a0)
+* +04C  b           . + 4 + (0x2 << 2)     bnel        $v0, $zero, . + 4 + (0x3 << 2)
+  +050  lwc1        $f0, 0x14($a0)         lwc1        $f0, 0x14($a0)
+* +054  cvt.s.w     $f0, $f0               lwc1        $f0, 0x14($a0)
+* +058  lui         $v0, 0x3F80            cvt.s.w     $f0, $f0
+* +05C  swc1        $f0, 0x28($sp)         lui         $v0, 0x3F80
+* +060  sw          $v0, 0x2C($sp)         swc1        $f0, 0x28($sp)
+* +064  lw          $v0, 0x18($a0)         sw          $v0, 0x2C($sp)
+* +068  beql        $v0, $zero, . + 4 + (0x3 << 2) lw          $v0, 0x18($a0)
+* +06C  lwc1        $f0, 0x1C($a0)         bnez        $v0, . + 4 + (0x4 << 2)
+* +070  b           . + 4 + (0x2 << 2)     addiu       $a1, $a0, 0x18
+* +074  lwc1        $f0, 0x1C($a0)         lwc1        $f0, 0x4($a1)
+* +078  cvt.s.w     $f0, $f0               b           . + 4 + (0x2 << 2)
+* +07C  swc1        $f0, 0x10($sp)         cvt.s.w     $f0, $f0
+* +080  lw          $v0, 0x20($a0)         lwc1        $f0, 0x4($a1)
+* +084  beql        $v0, $zero, . + 4 + (0x3 << 2) swc1        $f0, 0x10($sp)
+* +088  lwc1        $f0, 0x24($a0)         lw          $v0, 0x8($a1)
+* +08C  b           . + 4 + (0x2 << 2)     bnez        $v0, . + 4 + (0x4 << 2)
+* +090  lwc1        $f0, 0x24($a0)         addiu       $v1, $a1, 0x8
+* +094  cvt.s.w     $f0, $f0               lwc1        $f0, 0x4($v1)
+* +098  swc1        $f0, 0x14($sp)         b           . + 4 + (0x2 << 2)
+* +09C  lw          $v0, 0x28($a0)         cvt.s.w     $f0, $f0
+* +0A0  beql        $v0, $zero, . + 4 + (0x3 << 2) lwc1        $f0, 0x4($v1)
+* +0A4  lwc1        $f0, 0x2C($a0)         swc1        $f0, 0x14($sp)
+* +0A8  b           . + 4 + (0x2 << 2)     lw          $v0, 0x10($a1)
+* +0AC  lwc1        $f0, 0x2C($a0)         bnel        $v0, $zero, . + 4 + (0x3 << 2)
+* +0B0  cvt.s.w     $f0, $f0               lwc1        $f0, 0x14($a1)
+* +0B4  lui         $v0, 0x3F80            lwc1        $f0, 0x14($a1)
+* +0B8  sw          $v0, 0x1C($sp)         cvt.s.w     $f0, $f0
+* +0BC  swc1        $f0, 0x18($sp)         lui         $v0, 0x3F80
+* +0C0  lw          $v1, 0x30($a0)         sw          $v0, 0x1C($sp)
+* +0C4  addiu       $v0, $zero, 0x1        swc1        $f0, 0x18($sp)
+* +0C8  bnel        $v1, $v0, . + 4 + (0x4 << 2) lw          $v1, 0x30($a0)
+* +0CC  lw          $a3, 0x34($a0)         addiu       $v0, $zero, 0x1
+* +0D0  lwc1        $f0, 0x34($a0)         bne         $v1, $v0, . + 4 + (0x6 << 2)
+* +0D4  .word       0x46000024                   # cvt.w.s     $f0, $f0 # 00000000 <InstrIdType: CPU_COP1_FPUS> addiu       $a1, $a0, 0x30
+* +0D8  mfc1        $a3, $f0               lwc1        $f0, 0x4($a1)
+* +0DC  lw          $v1, 0x38($a0)         .word       0x46000024                   # cvt.w.s     $f0, $f0 # 00000000 <InstrIdType: CPU_COP1_FPUS>
+* +0E0  addiu       $v0, $zero, 0x1        mfc1        $a3, $f0
+* +0E4  bnel        $v1, $v0, . + 4 + (0x4 << 2) b           . + 4 + (0x3 << 2)
+* +0E8  lw          $t0, 0x3C($a0)         lw          $v1, 0x38($a0)
+* +0EC  lwc1        $f0, 0x3C($a0)         lw          $a3, 0x4($a1)
+* +0F0  .word       0x46000024                   # cvt.w.s     $f0, $f0 # 00000000 <InstrIdType: CPU_COP1_FPUS> lw          $v1, 0x38($a0)
+* +0F4  mfc1        $t0, $f0               addiu       $v0, $zero, 0x1
+* +0F8  lw          $v0, 0x40($a0)         bne         $v1, $v0, . + 4 + (0x6 << 2)
+* +0FC  beql        $v0, $zero, . + 4 + (0x3 << 2) addiu       $a1, $a0, 0x38
+* +100  lwc1        $f0, 0x44($a0)         lwc1        $f0, 0x4($a1)
+* +104  b           . + 4 + (0x2 << 2)     .word       0x46000024                   # cvt.w.s     $f0, $f0 # 00000000 <InstrIdType: CPU_COP1_FPUS>
+* +108  lwc1        $f12, 0x44($a0)        mfc1        $t0, $f0
+* +10C  cvt.s.w     $f12, $f0              b           . + 4 + (0x3 << 2)
+* +110  lw          $a0, 0x0($gp)          lw          $v0, 0x40($a0)
+* +114  addiu       $a1, $sp, 0x20         lw          $t0, 0x4($a1)
+* +118  jal         func_000000            lw          $v0, 0x40($a0)
+* +11C  addiu       $a2, $sp, 0x10         bnel        $v0, $zero, . + 4 + (0x3 << 2)
+* +120  ld          $ra, 0x0($sp)          lwc1        $f12, 0x44($a0)
+* +124  addiu       $v0, $zero, 0x1        lwc1        $f0, 0x44($a0)
+* +128  jr          $ra                    cvt.s.w     $f12, $f0
+* +12C  addiu       $sp, $sp, 0x30         lw          $a0, -0x56D4($gp)
+DIFF at +0x8: mine 8C820000 orig 7FA00020  (304 bytes)
+CLASS structural score=79 (72 words differ, 304 vs 332 bytes)

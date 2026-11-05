@@ -1,0 +1,66 @@
+// range: 0x36ECC0 0x36EE40
+#include "common.h"
+
+extern s32 func_00130F38(void *, void *, s32);
+extern u8 D_003E0084;
+extern u8 D_003E0085;
+
+char *func_0036ECC0(char **base, char *p, char *end) {
+    char set[2];
+    s32 count;
+    char *sep;
+    char **out;
+    s32 n;
+    s8 c;
+    char *dest;
+    char *tab;
+
+    set[0] = D_003E0084;
+    set[1] = D_003E0085;
+    count = 0;
+    while (p < end) {
+        if (func_00130F38(p, set, 2) == 0) {
+            p += 2;
+            break;
+        }
+        if (func_00130F38(p, set, 1) == 0) {
+            p += 1;
+            break;
+        }
+        if (func_00130F38(p, set + 1, 1) == 0) {
+            p += 1;
+            break;
+        }
+        out = &base[count];
+        n = 0;
+        while (p < end) {
+            if (func_00130F38(p, set, 2) != 0) {
+                if (func_00130F38(p, set, 1) != 0) {
+                    if (func_00130F38(p, set + 1, 1) != 0) {
+                        c = *p;
+                        if (c == 9) {
+                            tab = out[1];
+                            p++;
+                            if (tab != 0) {
+                                *tab = 0;
+                            }
+                            break;
+                        }
+                        dest = out[0];
+                        if (dest != 0) {
+                            dest[n] = c;
+                            n++;
+                        }
+                    }
+                }
+            }
+            p++;
+        }
+        dest = out[0];
+        if (dest != 0) {
+            dest[n] = 0;
+            count++;
+        }
+    }
+    return p;
+}
