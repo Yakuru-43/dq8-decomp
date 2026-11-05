@@ -6126,6 +6126,7 @@ segments:
       - [0x264C40, c, func_00364C40]
       - [0x264CE0, asm, game_364CE0]
       - [0x265E70, asm, game_365E70]
+      - [0x268890, c, func_00368890]
       - [0x268920, c, func_00368920]
       - [0x268930, asm, game_368930]
       - [0x26AFC0, c, func_0036AFC0]
