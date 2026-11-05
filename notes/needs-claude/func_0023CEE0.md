@@ -10,7 +10,7 @@ What it does: `kind != 5 → return 0`; `idx` from `args[0]` (tag==1 → (s32)f,
 `if (args[k].tag == 3) *(f32 *)(args[k].value.i + 4) = slot->f(0x30+4*(k-1));`
 and `return 1`. Same Arg/SlotList family as func_0023B820/B910/BDE0/BEB0 (all matched).
 
-Best C: src/SLES_539.74/func_0023CEE0.c (4 ifs; variants: with `v` local, without,
+Best C: src/SLES_539.74/func_0023CEE0.c (untracked leftover; 4 ifs; variants: with `v` local, without,
 with `Arg *ap = &args[k]` used for the store).
 
 Diff, original vs mine (after the slot=beql block):
