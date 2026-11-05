@@ -155,7 +155,7 @@ segments:
       - [0xC1C0, c, func_0046AE80]
       - [0xC250, asm, text_46AF10]
       - [0xC340, c, func_0046B000]
-      - [0xC430, asm, text_46B0F0]
+      - [0xC430, c, func_0046B0F0]
       - [0xC4E0, c, func_0046B1A0]
       - [0xC580, asm, text_46B240]
       - [0xC6D0, c, func_0046B390]
