@@ -840,6 +840,8 @@ segments:
       - [0x6C660, c, func_0016C660]
       - [0x6C6C0, c, func_0016C6C0]
       - [0x6C6F0, asm, game_16C6F0]
+      - [0x6CEE0, cpp, func_0016CEE0]
+      - [0x6CFA0, asm, game_16CFA0]
       - [0x6D120, c, func_0016D120]
       - [0x6D130, asm, game_16D130]
       - [0x6D540, c, func_0016D540]
