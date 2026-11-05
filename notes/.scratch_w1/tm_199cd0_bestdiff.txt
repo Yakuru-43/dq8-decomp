@@ -1,0 +1,4 @@
+* +0AC  jal         func_000000            jal         func_129CC0
+* +0C4  jal         func_000000            jal         func_129CC0
+* +114  bc1f        . + 4 + (0x2 << 2)     bc1fl       . + 4 + (0x2 << 2)
+* +138  bc1f        . + 4 + (0x2 << 2)     bc1fl       . + 4 + (0x2 << 2)
