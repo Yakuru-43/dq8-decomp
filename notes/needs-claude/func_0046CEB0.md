@@ -85,6 +85,31 @@ mh2 catalogue: read "Arguments loaded in another order" (line 1811), the
 "A float argument set up last in yours and first in the original" entry —
 tried the real-parameter-position fix (attempt 3), it did not move lwc1.
 
-Untried leads: `#pragma schedule off`? an inline helper returning the f32
-(pass the value, "Inline helpers" idiom); permuter (`tools/permute.py
-func_0046CEB0 --run 600`) — the diff is exactly one movable load.
+## factory-6, 2026-11-05 (re-tried, same score 4)
+
+Reproduced the score-4 attempt above exactly (best C in
+`func_0046CEB0_best.c`; overlay needs `--bin MENU` on try_match, without it
+the target reads 0 bytes and the CLASS line says `structural score=42`).
+
+More shapes tried, all one load off:
+
+5. `menu->f18->fA = func_202530() - 1;` then `f32 scale;` assigned between the
+   store and the call — `lwc1` sinks *too late*: original has it at +0x34
+   (between `addiu $a3` and `addiu $t0`), mine at +0x44 (after `sh` and the
+   second `lw $v0,0x18($s1)`). score 5, only the +0x34..+0x44 window differs.
+6. Same, with `scale` replaced by `D_003DF744` inline at parameter 5 — score 5,
+   identical diff.
+7. `static inline f32 GetScale(void) { return D_003DF744; }` called at the
+   parameter — score 5, identical diff (the inline helper does not pin the load).
+
+The load wants to sit between `addiu $a3, $zero, -0xE` and `addiu $t0, $zero,
+0x12`: after the four `$a` args, before the two `$t` args. `lwc1 $f12` is the
+5th parameter (an f32 in `$f12`), so the parameter order is right; CW just
+schedules the global load early when the value is a plain local.
+
+Still untried: `#pragma schedule off`; the permuter (`tools/permute.py
+func_0046CEB0 --bin MENU --run 600`) — **it cannot run here**: it shells out
+to `cpp`, which does not exist on this host, and patching
+`.toolchain/permuter/src/preprocess.py` is outside what this run permits. A
+`cpp` shim that forwards to `mwccps2 -preprocess_only` would be enough.
+
