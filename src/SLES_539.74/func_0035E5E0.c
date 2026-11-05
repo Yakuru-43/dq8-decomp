@@ -1,0 +1,96 @@
+// range: 0x35E5E0 0x35E6D0
+#include "common.h"
+
+typedef struct {
+    s32 unk00;
+    s32 unk04;
+    s32 unk08;
+    s16 unk0C;
+    s16 unk0E;
+    s16 unk10;
+    s16 unk12;
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    char pad1A[0x6];
+    s32 unk20;
+    char pad24[0x360];
+    s32 unk384;
+    u8 unk388;
+    u8 unk389;
+    u8 unk38A;
+    u8 unk38B;
+    char pad38C[0x1A4];
+    f32 unk530;
+    s32 unk534;
+    s32 unk538;
+    f32 unk53C;
+    char pad540[0xC];
+    s32 unk54C;
+    char pad550[0xC];
+    s32 unk55C;
+    u8 unk560;
+    u8 unk561;
+    char pad562[0x2];
+    s32 unk564;
+    s32 unk568;
+    s16 unk56C;
+    u8 unk56E;
+    u8 unk56F;
+    u8 unk570;
+    u8 unk571;
+    s32 unk574;
+    u8 unk578;
+    char pad579[0x3];
+    s32 unk57C;
+    s32 unk580;
+    s32 unk584;
+} S_val;
+
+void func_00131188(S_val *, s32, s32);
+void func_0035E6D0(void *, char *);
+void func_0030ECD0(void *, char *);
+extern char D_003D3A80[];
+extern char D_003CB170[];
+
+void func_0035E5E0(S_val *arg0) {
+    func_00131188(arg0, 0, 0x590);
+    arg0->unk00 = -1;
+    arg0->unk04 = -1;
+    arg0->unk08 = -1;
+    arg0->unk0C = -1;
+    arg0->unk0E = -1;
+    arg0->unk10 = -1;
+    arg0->unk12 = -1;
+    arg0->unk14 = -1;
+    arg0->unk20 = 0;
+    arg0->unk16 = 1;
+    arg0->unk18 = 1;
+    func_0035E6D0((char *)arg0 + 0x60, D_003D3A80);
+    func_0030ECD0((char *)arg0 + 0xE0, D_003CB170);
+    arg0->unk384 = 0;
+    arg0->unk388 = 1;
+    arg0->unk389 = 0;
+    arg0->unk38A = 1;
+    arg0->unk530 = 1.0f;
+    arg0->unk38B = 0;
+    arg0->unk534 = 0;
+    arg0->unk538 = 0;
+    arg0->unk53C = 1.0f;
+    arg0->unk54C = 0;
+    arg0->unk55C = 0;
+    arg0->unk560 = 0;
+    arg0->unk561 = 0;
+    arg0->unk56E = 0;
+    arg0->unk564 = 0;
+    arg0->unk568 = 0;
+    arg0->unk56C = 0;
+    arg0->unk56F = 0;
+    arg0->unk570 = 0;
+    arg0->unk571 = 0;
+    arg0->unk574 = -1;
+    arg0->unk578 = 0;
+    arg0->unk57C = -1;
+    arg0->unk580 = 0;
+    arg0->unk584 = 0;
+}
