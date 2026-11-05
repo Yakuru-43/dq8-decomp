@@ -181,6 +181,8 @@ segments:
       - [0xECE0, c, func_0046D9A0]
       - [0xEE70, c, func_0046DB30]
       - [0xEEA0, asm, text_46DB60]
+      - [0xF270, c, func_0046DF30]
+      - [0xF330, asm, text_46DFF0]
       - [0xF610, c, func_0046E2D0]
       - [0xF6B0, asm, text_46E370]
       - [0xF980, c, func_0046E640]
