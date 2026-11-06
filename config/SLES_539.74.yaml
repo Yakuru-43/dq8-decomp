@@ -3311,6 +3311,8 @@ segments:
       - [0x155E20, c, func_00255E20]
       - [0x155E40, c, func_00255E40]
       - [0x155E50, asm, game_255E50]
+      - [0x155EA0, cpp, func_00255EA0]
+      - [0x155F30, asm, game_255F30]
       - [0x156290, c, func_00256290]
       - [0x1562A0, c, func_002562A0]
       - [0x1562C0, asm, game_2562C0]
