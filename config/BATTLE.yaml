@@ -327,6 +327,8 @@ segments:
       - [0x1CFC0, asm, text_47BC80]
       - [0x1D4D0, c, func_0047C190]
       - [0x1D4E0, asm, text_47C1A0]
+      - [0x1D620, c, func_0047C2E0]
+      - [0x1D720, asm, text_47C3E0]
       - [0x1D840, c, func_0047C500]
       - [0x1D850, asm, text_47C510]
       - [0x1D8E0, c, func_0047C5A0]
