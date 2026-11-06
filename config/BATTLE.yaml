@@ -276,7 +276,7 @@ segments:
       - [0x193D0, asm, text_478090]
       - [0x19D80, c, func_00478A40]
       - [0x19DA0, c, func_00478A60]
-      - [0x19DB0, asm, text_478A70]
+      - [0x19DB0, c, func_00478A70]
       - [0x19EB0, c, func_00478B70]
       - [0x19EC0, asm, text_478B80]
       - [0x19FE0, c, func_00478CA0]
