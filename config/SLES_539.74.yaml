@@ -1018,7 +1018,7 @@ segments:
       - [0x82620, c, func_00182620]
       - [0x82630, asm, game_182630]
       - [0x82B80, c, func_00182B80]
-      - [0x82C60, asm, game_182C60]
+      - [0x82C60, c, func_00182C60]
       - [0x82F50, c, func_00182F50]
       - [0x82F60, asm, game_182F60]
       - [0x83150, c, func_00183150]
