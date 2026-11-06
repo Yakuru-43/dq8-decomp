@@ -18,13 +18,13 @@ moved into matching C one at a time. Porting that code to PC is the long-term go
 <!-- progress:start -->
 ```
                  code bytes                                     functions
-SLES_539.74      [███░░░░░░░░░░░░░░░░░] 15.4%    369/ 2397 KB   [██████████░░░░░░░░░░]  49.8%  4787/9604 
+SLES_539.74      [███░░░░░░░░░░░░░░░░░] 15.4%    370/ 2397 KB   [██████████░░░░░░░░░░]  49.9%  4792/9604 
 TITLE (overlay)  [█░░░░░░░░░░░░░░░░░░░]  4.5%      1/   19 KB   [████████░░░░░░░░░░░░]  38.9%    14/36   
-SHOP (overlay)   [████░░░░░░░░░░░░░░░░] 18.6%     11/   60 KB   [█████████░░░░░░░░░░░]  46.0%   156/339  
-MENU (overlay)   [███░░░░░░░░░░░░░░░░░] 13.2%     14/  103 KB   [█████████░░░░░░░░░░░]  45.5%   151/332  
+SHOP (overlay)   [████░░░░░░░░░░░░░░░░] 18.8%     11/   60 KB   [█████████░░░░░░░░░░░]  46.3%   157/339  
+MENU (overlay)   [███░░░░░░░░░░░░░░░░░] 13.3%     14/  103 KB   [█████████░░░░░░░░░░░]  45.8%   152/332  
 CASINO (overlay) [█░░░░░░░░░░░░░░░░░░░]  4.9%      5/  106 KB   [████████░░░░░░░░░░░░]  38.3%    75/196  
 BATTLE (overlay) [███░░░░░░░░░░░░░░░░░] 14.0%     20/  143 KB   [████████░░░░░░░░░░░░]  40.8%   250/613  
-ALL game code    [███░░░░░░░░░░░░░░░░░] 14.8%    420/ 2828 KB   [██████████░░░░░░░░░░]  48.9%  5433/11120
+ALL game code    [███░░░░░░░░░░░░░░░░░] 14.9%    421/ 2828 KB   [██████████░░░░░░░░░░]  48.9%  5440/11120
 ```
 _(refreshed 2026-11-06 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->
