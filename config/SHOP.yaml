@@ -72,6 +72,8 @@ segments:
       - [0x20A0, c, func_00460D60]
       - [0x20B0, c, func_00460D70]
       - [0x20C0, asm, text_460D80]
+      - [0x2130, c, func_00460DF0]
+      - [0x2210, asm, text_460ED0]
       - [0x29B0, c, func_00461670]
       - [0x29C0, c, func_00461680]
       - [0x29D0, c, func_00461690]
