@@ -1294,6 +1294,7 @@ segments:
       - [0x978A0, c, func_001978A0]
       - [0x978B0, c, func_001978B0]
       - [0x978C0, asm, game_1978C0]
+      - [0x979F0, cpp, func_001979F0]
       - [0x97A80, c, func_00197A80]
       - [0x97AB0, asm, game_197AB0]
       - [0x98120, c, func_00198120]
