@@ -83,6 +83,7 @@ segments:
       - [0x2AD0, c, func_00461790]
       - [0x2B10, c, func_004617D0]
       - [0x2B70, asm, text_461830]
+      - [0x2DB0, c, func_00461A70]
       - [0x2EB0, c, func_00461B70]
       - [0x2F20, asm, text_461BE0]
       - [0x38D0, c, func_00462590]
