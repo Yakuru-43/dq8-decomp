@@ -1118,6 +1118,7 @@ segments:
       - [0x8CBB0, asm, game_18CBB0]
       - [0x8CCF0, c, func_0018CCF0]
       - [0x8CD50, c, func_0018CD50]
+      - [0x8CDE0, asm, game_18CDE0]
       - [0x8D1F0, c, func_0018D1F0]
       - [0x8D2C0, c, func_0018D2C0]
       - [0x8D350, c, func_0018D350]
