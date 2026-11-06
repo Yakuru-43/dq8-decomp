@@ -1,4 +1,8 @@
 // range: 0x310C60 0x310CF0
+// best score 25 (attempt 1 of 2026-11-06 session, factory-3): the float is
+// read as func_00168160's f32 return — func_00310CF0 proves f12 is really an
+// INPUT arg (its mov.s f20,f12 sits in a branch delay slot before the call),
+// so the arg version below is the honest C even though it scored 29.
 #include "common.h"
 
 struct Owner {
@@ -16,27 +20,28 @@ struct Entry {
     struct EntryVtbl *vptr;
 };
 
+extern f32 func_00168160(void);
 extern s32 func_0015F490(void);
-extern M2C_UNK *func_00168160(void);
-extern struct Entry *func_0016D5B0(s32, s32);
+extern struct Entry *func_0016D5B0(void *, s32);
 
 void func_00310C60(struct Owner *o, f32 val) {
-    struct Entry *entry;
+    f32 t;
     s32 handle;
-    s32 ctx;
+    void *obj;
+    struct Entry *entry;
 
-    func_00168160();
+    t = func_00168160();
     handle = func_0015F490();
-    ctx = handle;
+    obj = (void *)handle;
+    if (obj == 0) {
+        return;
+    }
     if (handle == 0) {
         return;
     }
-    if (ctx == 0) {
-        return;
-    }
-    entry = func_0016D5B0(handle, o->field60[o->field60[2]]);
+    entry = func_0016D5B0(obj, o->field60[o->field60[2]]);
     if (entry == 0) {
         return;
     }
-    entry->vptr->field44(entry, val);
+    entry->vptr->field44(entry, t);
 }
