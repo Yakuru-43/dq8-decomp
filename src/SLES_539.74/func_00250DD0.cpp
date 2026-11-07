@@ -9,7 +9,7 @@ typedef struct Stream {
     volatile s32 sema; // thread-shared: the stream thread signals it
     u32 writePos;
     u32 readPos;
-    u8 full;
+    u8 empty;
     u8 pad19[7];
     volatile u32 pos; // thread-shared: advanced by the stream thread
     volatile u32 end; // thread-shared: set by the stream thread
@@ -34,7 +34,7 @@ inline bool IsDrained(Stream *s) {
 inline u32 Filled(Stream *s) {
     s32 n = s->writePos - s->readPos;
 
-    if (n == 0 && s->full) {
+    if (n == 0 && s->empty) {
         return 0;
     }
     if (n <= 0) {
