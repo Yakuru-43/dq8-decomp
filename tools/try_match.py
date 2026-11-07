@@ -100,6 +100,8 @@ def main():
                             "-nostdinc", "-stderr", f"-I{ROOT / 'include'}", a.src, "-o", obj], capture_output=True, text=True)
         if r.returncode:
             sys.exit(r.stdout + r.stderr)
+        # as in the build: drops unused C++ inline copies, which sit in a second `.text`
+        subprocess.run([sys.executable, ROOT / "tools/set_abi.py", obj], check=True)
         start, mine = func_bytes(obj, a.symbol)
         rel = relocs(obj)
     orig = orig_all[a.vram - base:a.vram - base + len(mine)]

@@ -569,6 +569,10 @@ def set_why_dir(path):
 def error_line(text):
     """The line of a compiler or linker message that says why, temp paths cut."""
     lines = [l.strip() for l in text.splitlines() if l.strip()]
+    # mwcc puts a caret under the source line on `#   Error:` and the message on the next line
+    for i, l in enumerate(lines[:-1]):
+        if l.startswith("#   Error:"):
+            return lines[i + 1].lstrip("# ")[:200]
     best = next((l for l in lines if re.search(r"undefined reference|relocation truncated|error", l, re.I)),
                 lines[0] if lines else "")
     return re.sub(r"\S*/tmp\w*/", "", best)[:200]

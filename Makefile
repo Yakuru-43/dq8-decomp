@@ -67,14 +67,14 @@ RODATA_MERGE = @if grep -q '^// rodata:' $<; then $(LD) -EL -m elf32ltsmip -r -o
 $(BUILD)/%.cpp.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(WIBO) $(MWCC) -c $(CFLAGS) $(shell sed -n '1,5s|^// flags: ||p' $<) $< -o $@
-	$(RODATA_MERGE)
 	$(PYTHON) tools/set_abi.py $@
+	$(RODATA_MERGE)
 
 $(BUILD)/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	$(WIBO) $(MWCC) -c $(CFLAGS) $(shell sed -n '1,5s|^// flags: ||p' $<) $< -o $@
-	$(RODATA_MERGE)
 	$(PYTHON) tools/set_abi.py $@
+	$(RODATA_MERGE)
 
 $(BUILD)/%.bin.o: %.bin
 	@mkdir -p $(dir $@)
