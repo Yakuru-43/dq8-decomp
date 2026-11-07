@@ -945,3 +945,33 @@ tail-calls (even a plain `extern "C"` call gets `jal` + frame). The rest of the 
 unchanged by the flag here. Test: `try_match.py ... -- -O3 -Cpp_exceptions off`.
 Example: src/SLES_539.74/func_00167060.cpp
 Solved: func_00167060 (1st try with the flag, 2026-11-03, Opus)
+
+## Scoped semaphore lock (sound streams): C++ `SemaLock` from `include/sema_lock.h`
+Sign: `addiu $vX,$s0,N` stored to the top of the frame (`sw $vX,0x2C/0x3C($sp)`) in the
+delay slot of `bgtz` on the id at N (that branch goes to `jal WaitSema`), and before every
+return `lw $v1,0x3C($sp); lw $v0,0($v1); blez; nop; jal SignalSema; lw $a0,0($v1)`: one
+re-load of the id per return path. A value returned through the unlock sits in `$s1`.
+Plain C with explicit Wait/Signal calls never gives the stack slot. Two slots (0x38 and
+0x3C) = two lock scopes: `{ SemaLock lock(...); ... }` blocks or inline helpers.
+Fix: a `.cpp` file with `// flags: -Cpp_exceptions off` (add `-flag divbyzerocheck` when the
+asm has `break 0, 7`), a header below, and `SemaLock lock(&obj->sema);` as the first
+statement of the locked scope; write the returns plainly, the destructor signals on each.
+Headers (C++ only):
+- `include/stream_channel.h`: the six stream channels (D_0041CBC0, game_25AC00/25BE20):
+  `GetChannel`, `PushCommand` (24-slot ring; a function returning `andi $v0,$s1,0xFF`
+  after the unlock is `return PushCommand(ch, N);` through the inline `bool`),
+  `PushParams`/`PopParams` (4-slot float ring at 0x7C).
+- `include/sound_voice.h`: a voice (sema at 0x40, game_24F440..24F9F0) and
+  `PushVoiceCommand` (16-slot ring with explicit Wait/Signal and a PollSema wake).
+- stream buffers (game_250A00/2514B0, sema at 0xC, ring at 0x10/0x14): struct in each
+  file for now, see func_002517D0.cpp / func_00251600.cpp.
+Thread-shared fields: when the original loads a field again where your code reuses the
+value (the ring positions, `pos`/`end`, a user count), declare it `volatile` with
+`// thread-shared`; volatile loads keep source order, so `a >= b` loads a first.
+Needs tools from 2026-11-07: set_abi.py drops the uncalled out-of-line destructor
+(CodeWarrior's linker dead-stripped it) and try_match/verify read C++ objects right.
+Example: src/SLES_539.74/func_0025ADC0.cpp, src/SLES_539.74/func_0025CE70.cpp,
+src/SLES_539.74/func_002517D0.cpp
+Solved: func_0025CCF0, func_00250F50, func_0024F440, func_0025ADC0, func_0025AEF0,
+func_0025B020, func_0025B270, func_0025D230, func_0025CE70, func_0025D050, func_0025B3A0,
+func_0024F4F0, func_00250DD0, func_002517D0, func_00251600, func_0024FAC0 (2026-11-07, Opus)
