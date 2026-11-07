@@ -2,15 +2,7 @@
 // rodata: 0x3C9650 0x3C9674
 // flags: -Cpp_exceptions off
 #include "common.h"
-#include "sema_lock.h"
-
-typedef struct Channel {
-    u8 pad0[0xC];
-    volatile s32 sema; // thread-shared: the stream thread signals it
-    u8 pad10[0x3C];
-    s8 state;
-    u8 closing;
-} Channel;
+#include "stream_channel.h"
 
 extern "C" s32 func_0025CCF0(Channel *ch) {
     SemaLock lock(&ch->sema);
