@@ -10,7 +10,8 @@
    binding 13 (multiply defined). CodeWarrior's linker drops such a function when
    nothing calls it; GNU ld would place it in the binary. A section like that which
    no relocation of the object's code or data points at is emptied, with its
-   relocations and its `.mwcats` entry.
+   relocations and its `.mwcats` entry. Binding 13 becomes weak, so the copies in
+   several objects don't clash.
 
 Run it before any `ld -r` (the Makefile's rodata merge): that merges the `.text`
 sections into one and the dead function can't be told apart any more.
@@ -23,7 +24,7 @@ EF_MIPS_ABI_O64 = 0x00002000
 
 SHT_SYMTAB, SHT_RELA, SHT_REL = 2, 4, 9
 SHF_ALLOC, SHF_EXECINSTR = 0x2, 0x4
-STB_MULTIDEF, STT_FUNC = 13, 2
+STB_WEAK, STB_MULTIDEF, STT_FUNC = 2, 13, 2
 SH = struct.Struct("<10I")  # name type flags addr offset size link info addralign entsize
 
 
@@ -71,6 +72,12 @@ def main():
             if i in dead:
                 s[8] = 1
             SH.pack_into(data, shoff + i * SH.size, *s)
+    # GNU ld reads binding 13 as global, so two objects with the same inline copy
+    # clash; multidef means "keep one", which is ELF's weak
+    symtab = next(s for s in secs if s[1] == SHT_SYMTAB)
+    for off in range(symtab[4], symtab[4] + symtab[5], 16):
+        if data[off + 12] >> 4 == STB_MULTIDEF:
+            data[off + 12] = STB_WEAK << 4 | data[off + 12] & 0xF
     with open(sys.argv[1], "wb") as f:
         f.write(data)
 

@@ -78,6 +78,8 @@ bodies in source order, `switch (x - 0xFA00)` from a split constant, the
 - C++ scoped lock (func_0025CCF0): a class with an inline destructor matches
   the shape but emits `.exceptix` and an out-of-line destructor that the
   linker scripts don't place; needs a decision on C++ exception sections.
+  Solved 2026-11-07: `-Cpp_exceptions off` and set_abi.py's dead-strip, see
+  notes/unblock/cpp-path.md (func_0025CCF0 matches, 15 more of its family).
 
 ### Next
 The factory can take queue blocker `jumptable`. Stage C moves on to `hilo`.
