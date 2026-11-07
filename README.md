@@ -26,7 +26,7 @@ CASINO (overlay) [█░░░░░░░░░░░░░░░░░░░] 
 BATTLE (overlay) [███░░░░░░░░░░░░░░░░░] 14.2%     20/  143 KB   [████████░░░░░░░░░░░░]  40.9%   251/613  
 ALL game code    [███░░░░░░░░░░░░░░░░░] 15.0%    424/ 2828 KB   [██████████░░░░░░░░░░]  49.1%  5457/11120
 ```
-_(refreshed 2026-11-06 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
+_(refreshed 2026-11-07 by `tools/readme_progress.py`; only files in the repo count -- `src/*/asmfunc/` is generated asm and uncommitted work is not progress; run `tools/progress.py` for the per-region table)_
 <!-- progress:end -->
 
 The SDK regions of the main executable (`sdk_*`, `lib*`, GCC-built) are
