@@ -328,7 +328,11 @@ tail; Qwen's if/else-if chain gave the same tests but the wrong block order); fu
 case-9 loop fall into the shared exit), func_00327810 (2026-11-01, Qwen factory-3: tests
 0x50,0x4F,0x4E,0x1A8 in reverse source order; the default value assigned before the `switch`),
 func_00468610 (2026-11-02, Qwen factory-6: two cases, tests 0x22 then 0x21, `case 0x21:` written
-first; m2c's `/* irregular */` switch already lists the arms in this order)
+first; m2c's `/* irregular */` switch already lists the arms in this order), func_0029C320
+(2026-11-03, Opus, 3 tries: tests 1,4,2,3,0 = `case 0: case 3: case 2: case 4: <shared body>`
+then `case 1:` last; the grouped labels reverse too. A "dead" `addiu $v0,$zero,K` in the first
+`beql` delay slot that a later `jal` delay slot stores (`sw $v0,N($sp)`) is the case body's
+first statement `x = K;`, placed before the call)
 
 ## Small then-block placed cold (after a return stub, `b` back) where the original has it inline
 Sign: the original falls through a short `if` body (`bne a0,v1,skip; <body>; skip:`), but
@@ -908,8 +912,12 @@ Sign: register-only diff, one local (`addiu`/`slti`/`sw` triplet) in `$a1` where
 and a `DebugPrintf`/`DebugPrintf2` call later on the same path with only `$a0` set up in your C.
 Fix: read the format string in `asm/<BIN>/data/` (`D_003D2078` is `"execode %d\n"`): declare the
 print variadic, `M2C_UNK DebugPrintf2(M2C_UNK *, ...);`, and pass the value, `DebugPrintf2(&D_x, n);`.
-Example: src/SLES_539.74/func_00324210.c
-Solved: func_00324350 func_00324210 (2026-10-29, Qwen factory-3)
+Also: parameters stored at the entry and then never read, and the whole body's loop temps start at
+`$a3`/`$t0`/`$t1` (yours `$a1`/`$a2`), a print with only `$a0` set at the end: the parameters are
+still live in `$a1`/`$a2` for the print (`"vram %d - %d\n"`, `DebugPrintf(D_x, arg1, arg2);`).
+Example: src/SLES_539.74/func_00324210.c, src/SLES_539.74/func_0015B3F0.c
+Solved: func_00324350 func_00324210 (2026-10-29, Qwen factory-3), func_0015B3F0 (2026-11-03, Opus;
+Qwen's note blamed allocation; also needed typed struct fields and an entry pointer local in loop 1)
 
 ## `bltzl $vN; srl` then `andi 1; or; mtc1; cvt.s.w; add.s f,f,f`: a plain `(f32)(u32)x`; read the constant's bits
 Sign: after a `lbu`/`lhu`/`lw`, `bltzl $v1,<near>` with `srl $a3,$v1,1` in its delay slot, a
@@ -975,3 +983,197 @@ src/SLES_539.74/func_002517D0.cpp
 Solved: func_0025CCF0, func_00250F50, func_0024F440, func_0025ADC0, func_0025AEF0,
 func_0025B020, func_0025B270, func_0025D230, func_0025CE70, func_0025D050, func_0025B3A0,
 func_0024F4F0, func_00250DD0, func_002517D0, func_00251600, func_0024FAC0 (2026-11-07, Opus)
+## `bnel p,$zero,<tail>` (delay slot = the arm's first load) where mine has `beql p,$zero` with the other arm out of line: a bare `if (p)`
+Sign: a two-way pointer test where both arms end in a return. The original has
+`bnel $v0,$zero,<far>; lw $t9,0($s0)`, the `p == 0` arm falling through inline and the `p != 0`
+arm (often a virtual call) at the tail; an earlier out-of-line then-block sits after the
+inline arm's closing `b`. Mine gets `beql $v0,$zero,<far>` with the `p == 0` arm out of line,
+same size, a block rotation (~39 words). Source order, `if/else` in either order, early return,
+`goto` past a `return`, a join variable, inline helpers and `-O4,p` all give the same layout.
+Fix: test the pointer bare, `if (reader->gptr()) { ...; return ...; }` then the other arm, not
+`if (reader->gptr() != 0)`. CW decides which arm falls through from the test's spelling.
+Try `if (p)` / `if (!p)` against `!= 0` / `== 0` whenever an arm swap no source order moves.
+(Aside: CW places an out-of-line then-block after the next block that ends in a `b`, so the
+fall-through arm decides where the other cold blocks land.)
+Example: src/SLES_539.74/func_00104EB0.cpp
+Solved: func_00104EB0 (2 Qwen passes at 39 words; about 12 tries, 2026-11-03, Opus)
+
+## Constant store (`addiu $vN,$zero,K; ...; sw`) emitted after a `bgez`/`sra` signed-divide expansion, mine has it above the `bgez`: write the store after the arithmetic
+Sign: same size, a few words in one block differ: the original runs the `/2^n` expansion
+(`bgez r; sra` / `addiu; sra`) first and loads the constant + `sw` after its join; mine
+loads the constant before the `bgez` and puts the `sw` in its delay slot. CW keeps the
+source order of a store against the branchy divide expansion.
+Fix: move `*p = K;` below the statement holding the `/` (inside the same case or arm).
+Example: src/SLES_539.74/func_0015DA00.c
+Solved: func_0015DA00 (2nd try, 2026-11-03, Opus; Qwen had tried "before vs after the /2"
+only with the `return` form, and its best C file was lost)
+
+## `xori r,r,K; sltiu r,r,1; bnez` (an `==` compare kept as a value before the branch), mine `li; beq`: a C++ `bool` local tested `== false`
+Sign: one word short at an equality test: the original computes `x == K` into a register
+(`xori $v1,$v1,K; sltiu $v1,$v1,0x1`) and branches on it with `bnez`/`beqz`; mine loads
+`K` with `addiu` and branches with `beq`/`bne`. In C every form folds (`x != K`,
+`!(x == K)`, `(x == K) == 0`, an `s32` local, a `static inline s32` helper).
+Fix: make the file `.cpp` (functions inside `extern "C" { }`) and write
+`bool spare = x == K; if (spare == false) { ... }`. The `bool` local survives as a value.
+Example: src/SLES_539.74/func_00159A40.cpp
+Solved: func_00159A40 (1st .cpp try after 3 C forms, 2026-11-03, Opus; Qwen had tried
+4 C forms)
+
+## `lbu; addiu -0x21; and; or; sb` then `lhu; addiu -0x1C1; and; or; sh` at the same offset: one `u16` bitfield struct, the masks are `~0x20`/`~0x1C0`
+Sign: byte and halfword RMWs on the same member offset, masks like `-0x21`, `-0x1C1`,
+`-0x3`. Read them as `~(mask << pos)`: `-0x21 == ~0x20` (a 1-bit field at bit 5),
+`-0x1C1 == ~0x1C0` (a 3-bit field at bits 6..8). They do **not** clear bit 0; a note that
+says "two fields share bit 0" or "same bitfield stored twice" misread the mask. A field
+that spans the byte boundary gets the `lhu`/`sh`; fields inside the low byte get
+`lbu`/`sb`; a read of bits 2..4 gives `lbu; dsll32 27; dsrl32 29`.
+Fix: one struct of `u16` bitfields, LSB first, e.g. `u16 b0:2; u16 mode:3; u16 flag:1;
+u16 state:3; u16 rest:7;`, and plain `o->flag = 1; o->state = 4;` writes. No union, no
+second view. Constant-0 values keep `andi $zero` (entry above). For a `switch`, CW
+compares the cases high to low (`beq 2`, `beq 1`, `beql 0`) but lays the bodies out in
+source order, so the first body after the compares is the case written first; a body
+that falls into the next one is a missing `break`.
+Check with `tools/verify.py`: `try_match.py` defaults to `-O2` and an older compiler, so
+its diff showed unscheduled blocks and +28 bytes for C that `verify.py` matched.
+Example: src/SLES_539.74/func_0015BDE0.c
+Solved: func_0015BDE0 (2nd try, 2026-11-03, Opus; Qwen had a union and two typed views)
+
+## Member-array copy loop in the library area stays indexed at `-O3` (`sll; addu; sq 0x120(...)`), the original walks `obj` itself (`sq 0x120($t3)`, `$t3 = $a0` stepped): `-O4,p`
+Sign: 0x100000-0x108000 (MSL/library). The original copy loop stores through a copy of the
+struct pointer with the member offset in the store (`daddu $t3,$a0,$zero` ... `sq $t2,0x120($t3)`;
+`addiu $t3,$t3,0x10` in the back-edge delay slot; or `$a0` itself stepped when it is dead after);
+mine recomputes `sll i; addu obj` every pass in every C form (index, `*dst++`, `ptr[i]`,
+do-while). Also `lwu` field loads followed by `dsll32/dsra32` before pointer adds, `daddiu`
+on a counter, and `sltu` loop tests on a `dsll32/dsra32`-extended `int i`.
+Fix: put `// flags: -O4,p` on line 2 (`try_match.py --show src sym vram -- -O4,p`); at
+`-O4,p` the plain `for (i = 0; i < n; i++) obj->q120[i] = *ptr++;` gives the reduced walker and
+the `sltu $at,$zero,n` guard, where the guarded do-while does not. The `lwu`/extend/`daddiu`/
+`sltu` signs are `u64` locals (`u64 count = obj->count;` from a `u32`/`s32` field) with an
+`s32 i`. With everything else matching, the entry load order is the reverse of the
+statement order (`f224 = ...; f220 = ...; count = ...;` came out `count, f220, f224`).
+Example: src/SLES_539.74/func_00102840.c
+Solved: func_00102840 (about 15 tries, 2026-11-03, Opus; Qwen had -O3 and s32/u32 locals)
+
+## `sltiu $at, vN, -1` + `bnez $at` guard (yours `addiu -1` + `bne`): `x > max - 1`; three `lwc1` then three `swc1`: a 3-float struct assignment
+Sign: the original tests a `u32` against all-ones with `sltiu $at,$v0,-0x1; bnez $at` (skip
+when below 0xFFFFFFFF); every C form of `>= 0xFFFFFFFF`/`== -1` becomes `addiu $v0,$zero,-1` +
+`bne` (one word more, everything after shifted). Typical of MSL container length checks
+(`"tree::insert length error"`, `"... length error"` strings next to the warn call).
+Fix: `if (size > max_size() - 1)` with `static inline u32 max_size() { return 0xFFFFFFFF; }`
+(CW folds `>=` to `==` but keeps `>` as `sltiu -1`). Second sign in the same family: a
+copy that loads all three words into `$f2/$f1/$f0` before storing (the first `lwc1` in a
+`beql` slot), yours load/store pairs through `$f0`: assign a `struct { f32 w[3]; }` in one
+statement (`*(StrWords *)buf = *(const StrWords *)&v;`). Also, Qwen's 1-arg-shifted saved
+registers came from try_match run without `-- -O3`.
+Example: src/SLES_539.74/func_002756D0.cpp
+Solved: func_002756D0 (3 tries, 2026-11-03, Opus; twins 0x275880/0x275A30/0x275BE0 likely)
+
+## GS A+D packet built as u32 words: `ori 0xFFFF; dsll 16; ori 0xFFFF` mask, `and`/`dsrl32` + `dsll32; dsra32` per word, `or` source registers swapped: SDK `SCE_GS_SET_*` values through one reused `u64` local
+Sign: 32-bit params widened with `dsll32 0; dsra32 0` then shifted by 32/48/56 (`dsll32 0/16/24`) and
+`or`ed (GS BITBLTBUF/TRXPOS/TRXREG: A+D addresses 0x50..0x53 stored next to them); each 64-bit value is
+stored as two words, `and v,mask` and `dsrl32; and`, each followed by a `dsll32 0; dsra32 0`. Written
+inline the `or` operands come out evaluated in the other order or with rs/rt swapped (register-only,
+3 words); with three separate locals the colouring moves the constants (`0x3F` into `$a3` not `$t6`).
+Fix: SDK-shaped macros (`((u64)(dbp) << 32) | ((u64)(dbw) << 48) | ...`), `LO32(v)` =
+`(u32)((v) & 0xFFFFFFFFUL)` and `HI32(v)` = `(u32)(((v) >> 32) & 0xFFFFFFFFUL)` (the `UL` mask on a
+`u64` is not a noop and passes the lint; a plain `(u32)` cast drops the `and` and is 36 B short),
+and ONE `u64 reg;` assigned before each LO/HI pair: `reg = GS_TRXPOS(0, 0, dsax, dsay, 0);`. Also
+here: a `bgtzl` loop test reached by an entry `b` with the clamp `slti $at; beqz $at` + `addiu K` in
+its delay slot was `n = K; if (x < K) n = x;` inside a `while`; the ternary `(x < K) ? x : K` gave a
+top `blezl` guard and `beql` instead (100 words off).
+Example: src/SLES_539.74/func_00158CE0.c
+Solved: func_00158CE0 (8 tries, 2026-11-03, Opus; Qwen had u32 fields, 368 B)
+
+## A `b` to the very next instruction at the end of a switch arm (the original only; yours falls through): the switch sits in a `static inline` helper with an early `return -1;`
+Sign: a `b <join>; daddu $sN,$zero,$zero` stub (`ret = 0` arm) whose target is the next
+word; yours has the same arm one word short, falling through into the join, so every
+branch after it is off by one. Around it: a null-guard `beql $s0,$zero,<join>; addiu
+$s0,$zero,-1`, a compare chain whose default is `b <join>; addiu $s0,-1`, and the
+return value kept in the same `$s0` that held the pointer. Plain C in the caller (ret
+variable, if/else or switch, any case order, `return`s from every arm) all fall through.
+Fix: move the lookup + switch into a `static inline s32 helper(s32 id)` called as
+`ret = helper(arg0);`: `if (p == 0) { return -1; }`, then a switch whose arms all
+`break` and set a local (`case 0: ... ret = f(); break; case 2: case 4: case 1: ret = 0;
+break; default: ret = -1; break;`), then `return ret;`. `return` from each arm, or a
+`return -1;` after the switch, still falls through. CW 3.0.1 does not inline an inline
+called from an inline (the callee is emitted as a separate function): expand nested
+helpers (here the slot lookup) by hand inside the outer one.
+Example: src/SLES_539.74/func_00160350.c
+Solved: func_00160350 (17 tries, 2026-11-03, Opus; Qwen's switch form was 4 B short)
+
+## `bnel cond,$zero,<next insn>; sh $zero,G` or `bltzl v,<out>; lh v,H` + out-of-line `b back; sh v,G`: plain conditional stores (likely-branch slots are nullified)
+Sign: a likely branch whose target is the very next instruction, a store in its delay slot
+(`slt; bnel $v0,$zero,.+8; sh $zero,G`): it looks unconditional but a `bnel`/`beql` slot only
+runs when the branch is taken, so it is `if (cond) G = 0;`. Same for a `bltzl` whose slot
+loads a *different* global and whose target is a 2-word block `b <back>; sh $v0,G`: the store
+writes that other global, `if (G < 0) G = H;` (a menu cursor wrap), not `G = 0`. Read the
+delay-slot register before guessing the stored value.
+Fix: `if (G < 0) { G = max; } if (max < G) { G = 0; }` as written; no special spelling.
+Example: src/MENU/func_00463CF0.c
+Solved: func_00463CF0 (2026-11-03, Opus; Qwen read the wrap as a second clamp to 0)
+
+## Product of a global copy kept in an `$sX` across calls (`lh $s2,G; sll/addu/sll $s0 = $s2*12` before the `jal`), mine computes it after the calls: read the global in the product
+Sign: the original loads a global into `$sX`, computes `x * K` into another `$sY` before
+the first `jal` and only adds it after the calls (frame one saved register bigger); mine,
+with `cur = G; off = cur * K;`, sinks the multiply to its use after the calls and keeps
+`cur` live instead (one `$sX` short, frame 0x10 smaller). A pure function of a local is
+sunk; one that reads memory cannot move past a call.
+Fix: `cur = G; off = G * K;` (the two loads CSE into one `lh`), then the calls using `cur`
+and `off`.
+Example: src/MENU/func_00463CF0.c
+Solved: func_00463CF0 (2026-11-03, Opus)
+
+## Two slot addresses `base = idx*16 + owner; addiu +0x54C; addiu +0x56C; sll k,kind,2; addu; addu` kept in `$s` registers, temporaries one register up in yours: index the 2D members directly at every use, no slot pointer locals
+Sign: the original computes a row sum once (`addu $v0,$v0,$sOwner`, index term first),
+both member bases from it (`addiu $v1,$v0,0x54C; addiu $v0,$v0,0x56C`), then one `kind*4`
+added to each into two `$s` registers that the later loads/stores use. Pointer locals
+(`p = &o->ids[idx][kind]`, or bases then `p += kind`) either fold the member offset into the
+`lw` (`lw $s7,0x56C($v0)`, 4 to 16 bytes short) or give the right shape with every
+temporary rotated (`kind*4` coloured first, `$v0` instead of `$a0`).
+Fix: declare the members as 2D arrays (`s32 ids[2][4]; s32 vals[2][4];`) and write
+`o->ids[idx][kind]` / `o->vals[idx][kind]` at each read and store, with no slot locals;
+CW's CSE then keeps the two addresses in `$s` registers in the original's order and colours
+the temporaries right. A `switch` on the same index there may also need `case 0: default:`
+(a `beqz` before the compare chain).
+Example: src/SLES_539.74/func_0029B1A0.c
+Solved: func_0029B1A0 (2026-11-03, Opus, 10 min; Qwen had pointer locals at score 101)
+
+## Float compare materialized into a register with no `andi` (`bc1f J; daddu $v0,$zero,$zero` / `daddiu $v0,$zero,1` / `J: beqz $v0`): an inline `bool` helper with a `false`-initialised local
+Sign: a float test whose 0/1 result is built in `$v0` and then tested, with the 0 in the
+`bc1f` delay slot and `daddiu` (64-bit) for the 1, no `andi 0xFF`. `bool hit = a <= b;`,
+`? 1 : 0`, and `return a <= b;` helpers give `bc1t; addiu 1; daddu 0; andi`; a bool
+local in the caller (`hit = false; if (a <= b) hit = true;`) is coalesced into a saved
+register; an inline helper with two `return`s folds into a plain `bc1f` branch.
+`daddiu reg,$zero,1` is how CW loads `true`, so `daddiu` vs `addiu` on a 1 also means
+`bool` (a `ret = true;` flag, and then the function returns `bool` so the final
+`daddu $v0,$s4` has no `andi`).
+Fix (.cpp): `static inline bool Roll(f32 roll, f32 rate) { bool ok = false; if (roll <= rate)
+{ ok = true; } return ok; }`, called as `if (Roll(func(...), rate))` with the values as
+arguments. Return type and the `ret` flag `bool` when the 1 is `daddiu`.
+Example: src/SLES_539.74/func_0029B870.cpp
+Solved: func_0029B870 (about 12 tries, 2026-11-03, Opus; Qwen at score 107 in .c)
+
+## Table `lh`/`lw` loads scheduled after every other argument and stack store, all else right: declare the table `extern const`
+Sign: a call whose arguments include two reads from a global data table
+(`lui; addiu %lo(T); addu; lh $t2,0(..); lh $t3,2(..)`); the original issues the table
+loads early (before the last `sd` stack argument, the `cvt.w.s`, the reload of a struct field
+for another argument), yours issues them last, right before the `jal`. Opcodes and registers
+otherwise identical. Locals for the two values, a pointer to the row, a struct-pair type,
+`s16` prototype parameters, explicit casts: none move them to the right place (a local moves
+them too far up).
+Fix: `extern const s16 T[];`. A non-const table load may alias the stack stores and the other
+loads, so CW keeps it behind them; const data is free to schedule early. Try it on any
+`.rodata`-looking table (address in the 0x3Cxxxx range) whose loads land late.
+Example: src/SLES_539.74/func_00213FB0.c
+Solved: func_00213FB0 (about 15 tries, 2026-11-03, Opus; Qwen at score 92)
+
+## `daddiu $sN,$zero,1` flag passed straight to a call (`daddu $tN,$sN` / `sd $sN,0($sp)`, no `andi`): `bool` flag AND `bool` parameters
+Sign: a 0/1 flag set with `daddiu`/`daddu $zero` (64-bit) that is only copied into call
+arguments, unmasked. `s32`/`s64` flags give `addiu`; a C++ `bool` flag gives the `daddiu`
+but, with the callee's parameters declared `s32`/`s64`, the bool->int promotion adds
+`andi $tN,$sN,0xFF` before the register/stack argument.
+Fix (.cpp): `bool flag = true; if (...) flag = false;` and declare the callee's matching
+parameters `bool` in its prototype too (`..., bool flag, bool arg8);`). Bool to bool needs
+no promotion, so the copy is a raw `daddu`/`sd`.
+Example: src/SLES_539.74/func_002937C0.cpp
+Solved: func_002937C0 (1st try, 2026-11-03, Opus; Qwen at score 1 with s64 params)
+

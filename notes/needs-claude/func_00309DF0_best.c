@@ -1,5 +1,6 @@
-/* Best attempt (score 47, 528 = 528 bytes) — see the CLASS line and
- * "Remaining diff" notes in func_00309DF0.md. Compile-check with:
+/* Best attempt (score 1, 528 = 528 bytes; Opus 2026-11-03) — the only diff is
+ * +0x54 `blez` (mine, from `<= 0`) vs `beqz` (original); `== 0` there gives
+ * score 47. See "Opus attempt 2026-11-03" in func_00309DF0.md. Compile-check with:
  *   tools/try_match.py <this file copied into src/SLES_539.74/> func_00309DF0 0x309DF0 --show -- -O3
  */
 // range: 0x309DF0 0x30A000
@@ -26,13 +27,13 @@ struct Pool {
     /* 0x18 */ s32 thread;
 };
 
-s32 PollSema(s32);                                      /* extern */
-M2C_UNK SignalSema(s32);                                /* extern */
-M2C_UNK DeleteSema(s32);                                /* extern */
-M2C_UNK TerminateThread(s32);                           /* extern */
-M2C_UNK DeleteThread(s32);                              /* extern */
-s32 func_0015F450();                                    /* extern */
-M2C_UNK func_00159810(s32, s32, s32);                   /* extern */
+s32 PollSema(s32);
+M2C_UNK SignalSema(s32);
+M2C_UNK DeleteSema(s32);
+M2C_UNK TerminateThread(s32);
+M2C_UNK DeleteThread(s32);
+s32 func_0015F450();
+M2C_UNK func_00159810(s32, s32, s32);
 
 static inline s32 IdValid(s32 id) {
     return 0 <= id;
@@ -42,11 +43,31 @@ static inline u8 EntryBusy(struct Entry *entry) {
     return entry->inUse != 0 && entry->state == 1;
 }
 
-void func_00309DF0(struct Pool *pool) {
+/* func_003098B0's body, inlined */
+static inline s32 PoolBusy(struct Pool *pool) {
     struct Entry *entries;
-    struct Entry *entry;
-    s32 active;
     s32 total;
+    s32 i;
+
+    entries = pool->entries;
+    if (entries == 0) {
+        return 0;
+    }
+    if (IdValid(pool->thread) <= 0) {
+        return 0;
+    }
+    if (pool->sema < 0) {
+        return 0;
+    }
+    total = 0;
+    for (i = 0; i < pool->count; i++) {
+        total += EntryBusy(&entries[i]);
+    }
+    return 0 < total;
+}
+
+void func_00309DF0(struct Pool *pool) {
+    struct Entry *entry;
     s32 i;
     s32 handle;
 
@@ -54,27 +75,7 @@ void func_00309DF0(struct Pool *pool) {
         return;
     }
     if (0 <= pool->thread) {
-        for (;;) {
-            entries = pool->entries;
-            if (entries == 0) {
-                active = 0;
-            } else if (IdValid(pool->thread) == 0) {
-                active = 0;
-            } else if (pool->sema < 0) {
-                active = 0;
-            } else {
-                total = 0;
-                for (i = 0; i < pool->count; i++) {
-                    entry = &entries[i];
-                    total += EntryBusy(entry);
-                }
-                active = 0 < total;
-            }
-            if (active == 0) {
-                TerminateThread(pool->thread);
-                DeleteThread(pool->thread);
-                break;
-            }
+        while (PoolBusy(pool)) {
             if (IdValid(pool->thread) == 0) {
                 continue;
             }
@@ -86,6 +87,8 @@ void func_00309DF0(struct Pool *pool) {
             }
             SignalSema(pool->sema);
         }
+        TerminateThread(pool->thread);
+        DeleteThread(pool->thread);
     }
     pool->thread = -1;
     if (0 <= pool->sema) {
