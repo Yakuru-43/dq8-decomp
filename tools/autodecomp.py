@@ -21,6 +21,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from collections import Counter
 from functools import lru_cache
 from multiprocessing import Pool
 from pathlib import Path
@@ -215,9 +216,9 @@ def fix_externs(c, asm):
 
 def sections(obj):
     r = subprocess.run([BIN / "mips64-linux-gnu-readelf", "-SW", obj], capture_output=True, text=True).stdout
-    out = {}
+    out = Counter()  # a C++ object can have several sections of one name (a second .text per inline copy)
     for m in re.finditer(r"\]\s+(\S+)\s+\S+\s+[0-9a-f]+\s+[0-9a-f]+\s+([0-9a-f]+)", r):
-        out[m.group(1)] = int(m.group(2), 16)
+        out[m.group(1)] += int(m.group(2), 16)
     return out
 
 
@@ -569,6 +570,10 @@ def set_why_dir(path):
 def error_line(text):
     """The line of a compiler or linker message that says why, temp paths cut."""
     lines = [l.strip() for l in text.splitlines() if l.strip()]
+    # mwcc puts a caret under the source line on `#   Error:` and the message on the next line
+    for i, l in enumerate(lines[:-1]):
+        if l.startswith("#   Error:"):
+            return lines[i + 1].lstrip("# ")[:200]
     best = next((l for l in lines if re.search(r"undefined reference|relocation truncated|error", l, re.I)),
                 lines[0] if lines else "")
     return re.sub(r"\S*/tmp\w*/", "", best)[:200]
@@ -591,6 +596,8 @@ def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c", rodata=None, out
         if r.returncode:
             last_error = error_line(r.stdout + r.stderr)
             return "compile"
+        # first, as in the Makefile: it empties uncalled C++ inline copies, which count in the size
+        subprocess.run([sys.executable, ROOT / "tools/set_abi.py", obj], check=True)
         secs = sections(obj)
         if any(secs.get(s, 0) for s in (".data", ".sdata", ".sbss", ".bss", ".sdata2", ".rdata")):
             return "data"
@@ -599,7 +606,6 @@ def verify(c, start, end, syms_ld, orig, flags=(), suffix=".c", rodata=None, out
         size = secs.get(".text", 0)
         if not size or size > end - start:
             return "size"
-        subprocess.run([sys.executable, ROOT / "tools/set_abi.py", obj], check=True)
         place = [f"--section-start=.rodata=0x{rodata[0]:X}"] if rodata else []
         r = subprocess.run([BIN / "mips64-linux-gnu-ld", "-EL", "-m", "elf32ltsmip", "--no-check-sections",
                             "-nostdlib", "--unresolved-symbols=report-all", "-Ttext", hex(start), *place,

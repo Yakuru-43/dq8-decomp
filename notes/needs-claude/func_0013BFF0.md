@@ -52,3 +52,23 @@ score=190 (150 words differ, 620 vs 460 bytes)`. Confirmed no committed
 non-asmfunc src file anywhere uses `lqc2/sqc2/vmul.xyzw/vwaitq` — the VU0
 chunks are not C-expressible. The row had reverted to `todo`; re-marked
 `needs-claude`.
+
+## Opus attempt 2026-11-03
+
+**Blocked by policy, not by the compiler.** No pure-C variant can emit the
+VU0 words (`lqc2`/`sqc2`/`vmul`/`vsqrt`/`vdiv`/`qmfc2.ni`/`qmtc2.ni`), and
+`lint_contrived.py` rule `inline-asm` refuses every `__asm__`. Remaining diff
+is unchanged from Qwen's: every VU0 chunk missing (564 vs 460 B, 139 words).
+
+The route that should match, once the inline-asm policy allows it, is the one
+proven byte-exact on `func_0013D630` (see that note, "Opus attempt
+2026-11-03"): -O3 C with `static inline` VU0 helpers, each a GCC-style
+`__asm__` block whose first line is `.set noreorder` (`VecDot` with
+`qmfc2`→`mtc1`, a `VecNeg` via `qmtc2` -1.0 + `vmulx`, `VecLerp` via two
+`vmulx` + `vadd`, `VecNormalize` with `vsqrt`/`vwaitq`/`vdiv`/`vmulq`). Use
+`try_match.py -- -O3` (its default -O2 empties delay slots). The CPU side
+(`dot < 0` negate, `dot <= 0.97f` u8 test, the func_0012A008/func_00129E60
+slerp branch, shared epilogue) is ordinary C as in Qwen's best C.
+Not attempted here: it couldn't be committed. Decision needed from the user
+(allow VU0 inline helpers, e.g. a shared `include/` header whitelisted in the
+lint, or keep the 0x13B9xx/0x13D6xx family in asm).
