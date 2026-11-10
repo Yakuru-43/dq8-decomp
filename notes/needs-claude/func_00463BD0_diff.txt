@@ -1,0 +1,92 @@
+  +000  addiu       $sp, $sp, -0x2B0       addiu       $sp, $sp, -0x2B0
+  +004  sd          $ra, 0x40($sp)         sd          $ra, 0x40($sp)
+  +008  sq          $s3, 0x30($sp)         sq          $s3, 0x30($sp)
+  +00C  sq          $s2, 0x20($sp)         sq          $s2, 0x20($sp)
+  +010  sq          $s1, 0x10($sp)         sq          $s1, 0x10($sp)
+* +014  jal         func_000000            jal         func_181420
+  +018  sq          $s0, 0x0($sp)          sq          $s0, 0x0($sp)
+* +01C  jal         func_000000            jal         func_2D34C0
+* +020  nop                                daddu       $s2, $v0, $zero
+  +024  daddu       $s1, $v0, $zero        daddu       $s1, $v0, $zero
+* +028  addiu       $a0, $gp, 0x0          addiu       $a0, $gp, -0x58D0
+  +02C  addiu       $a1, $zero, -0x1       addiu       $a1, $zero, -0x1
+* +030  jal         func_000000            jal         func_131188
+  +034  addiu       $a2, $zero, 0x5        addiu       $a2, $zero, 0x5
+  +038  sb          $zero, 0xB0($sp)       sb          $zero, 0xB0($sp)
+* +03C  daddu       $s0, $zero, $zero      b           . + 4 + (0x17 << 2)
+* +040  b           . + 4 + (0x17 << 2)    daddu       $s0, $zero, $zero
+* +044  addiu       $s2, $sp, 0xB0         daddu       $a0, $s2, $zero
+* +048  jal         func_000000            addu        $s3, $v0, $s0
+* +04C  daddu       $a1, $s0, $zero        jal         func_205D30
+* +050  addiu       $v1, $gp, 0x0          daddu       $a1, $s0, $zero
+* +054  addu        $s3, $v1, $s0          beqz        $s0, . + 4 + (0x5 << 2)
+* +058  beqz        $s0, . + 4 + (0x5 << 2) sb          $v0, 0x0($s3)
+* +05C  sb          $v0, 0x0($s3)          lui         $a1, 0x47
+* +060  lui         $a1, 0x0               addiu       $a0, $sp, 0xB0
+* +064  daddu       $a0, $s2, $zero        jal         func_133CB8
+* +068  jal         func_000000            addiu       $a1, $a1, 0x37C0
+* +06C  addiu       $a1, $a1, 0x0          lb          $a1, 0x0($s3)
+* +070  lb          $a1, 0x0($s3)          jal         func_205250
+* +074  jal         func_000000            daddu       $a0, $s2, $zero
+* +078  daddu       $a0, $s1, $zero        daddu       $a0, $v0, $zero
+* +07C  daddu       $a0, $v0, $zero        jal         func_36F4D0
+* +080  jal         func_000000            addiu       $a1, $sp, 0x50
+* +084  addiu       $a1, $sp, 0x50         jal         func_2F4150
+* +088  jal         func_000000            addiu       $a0, $sp, 0x50
+* +08C  addiu       $a0, $sp, 0x50         addiu       $a0, $sp, 0xB0
+* +090  daddu       $a0, $s2, $zero        jal         func_133CB8
+* +094  jal         func_000000            addiu       $a1, $sp, 0x50
+* +098  addiu       $a1, $sp, 0x50         addiu       $s0, $s0, 0x1
+* +09C  addiu       $s0, $s0, 0x1          jal         func_202530
+* +0A0  jal         func_000000            nop
+* +0A4  nop                                slt         $v0, $s0, $v0
+* +0A8  slt         $v0, $s0, $v0          bnel        $v0, $zero, . + 4 + (-0x1A << 2)
+* +0AC  bnel        $v0, $zero, . + 4 + (-0x1A << 2) addiu       $v0, $gp, -0x58D0
+* +0B0  daddu       $a0, $s1, $zero        addiu       $v0, $gp, -0x58D0
+* +0B4  addiu       $v0, $gp, 0x0          lui         $a1, 0x47
+* +0B8  lui         $a1, 0x0               addiu       $v1, $zero, 0x4
+  +0BC  addu        $v0, $v0, $s0          addu        $v0, $v0, $s0
+* +0C0  addiu       $v1, $zero, 0x4        addiu       $a0, $sp, 0xB0
+* +0C4  addiu       $s0, $sp, 0xB0         sb          $v1, 0x0($v0)
+* +0C8  sb          $v1, 0x0($v0)          jal         func_133CB8
+* +0CC  daddu       $a0, $s0, $zero        addiu       $a1, $a1, 0x37C0
+* +0D0  jal         func_000000            jal         func_1FFC30
+* +0D4  addiu       $a1, $a1, 0x0          addiu       $a0, $zero, 0x130
+* +0D8  jal         func_000000            daddu       $a1, $v0, $zero
+* +0DC  addiu       $a0, $zero, 0x130      jal         func_133CB8
+* +0E0  daddu       $a1, $v0, $zero        addiu       $a0, $sp, 0xB0
+* +0E4  jal         func_000000            jal         func_464420
+* +0E8  daddu       $a0, $s0, $zero        addiu       $a0, $sp, 0xB0
+* +0EC  jal         func_000000            daddu       $a0, $s1, $zero
+* +0F0  daddu       $a0, $s0, $zero        addiu       $a1, $zero, 0x2733
+* +0F4  daddu       $a0, $s1, $zero        addiu       $a2, $zero, 0x10E
+* +0F8  addiu       $a1, $zero, 0x2733     jal         func_2D7120
+* +0FC  addiu       $a2, $zero, 0x10E      addiu       $a3, $zero, 0x50
+* +100  jal         func_000000            jal         func_37EB00
+* +104  addiu       $a3, $zero, 0x50       addiu       $a0, $zero, 0x1
+* +108  jal         func_000000            daddu       $a0, $s1, $zero
+* +10C  addiu       $a0, $zero, 0x1        addiu       $a1, $zero, 0x1797
+* +110  daddu       $a0, $s1, $zero        addiu       $a2, $zero, 0x1
+* +114  addiu       $a1, $zero, 0x1797     jal         func_2D38E0
+* +118  addiu       $a2, $zero, 0x1        addiu       $a3, $zero, -0x1
+* +11C  jal         func_000000            daddu       $a0, $s1, $zero
+* +120  addiu       $a3, $zero, -0x1       addiu       $a1, $zero, 0x1798
+* +124  daddu       $a0, $s1, $zero        addiu       $a2, $zero, 0xFC
+* +128  addiu       $a1, $zero, 0x1798     jal         func_2D4FC0
+* +12C  addiu       $a2, $zero, 0xFC       addiu       $a3, $zero, 0x66
+* +130  jal         func_000000            daddu       $a0, $s1, $zero
+* +134  addiu       $a3, $zero, 0x66       addiu       $a1, $zero, 0x1797
+* +138  daddu       $a0, $s1, $zero        addiu       $a2, $zero, 0x10E
+* +13C  addiu       $a1, $zero, 0x1797     jal         func_2D7120
+* +140  addiu       $a2, $zero, 0x10E      addiu       $a3, $zero, 0xF6
+* +144  jal         func_000000            ld          $ra, 0x40($sp)
+* +148  addiu       $a3, $zero, 0xF6       lq          $s3, 0x30($sp)
+* +14C  ld          $ra, 0x40($sp)         lq          $s2, 0x20($sp)
+* +150  lq          $s3, 0x30($sp)         lq          $s1, 0x10($sp)
+* +154  lq          $s2, 0x20($sp)         lq          $s0, 0x0($sp)
+* +158  lq          $s1, 0x10($sp)         jr          $ra
+* +15C  lq          $s0, 0x0($sp)          addiu       $sp, $sp, 0x2B0
+* +160  jr          $ra                    addiu       $v0, $gp, -0x58D0
+* +164  addiu       $sp, $sp, 0x2B0        addu        $v0, $v0, $a0
+DIFF at +0x20: mine 00000000 orig 0040902D  (360 bytes)
+CLASS structural score=74 (72 words differ, 360 vs 352 bytes)
