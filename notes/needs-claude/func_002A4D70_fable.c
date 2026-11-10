@@ -244,6 +244,19 @@ typedef struct {
     char unk78[0x58];
 } Member;
 
+typedef struct {
+    s32 id;
+    char unk4[0x64];
+    s32 unk68;
+    char unk6C[0x31C];
+    s8 unk388;
+} Fighter;
+
+typedef struct {
+    char unk0[0x2DEC];
+    s32 unk2DEC;
+} BattleUi;
+
 struct Actor {
     u8 pad0[0x1B0];
     virtual void v0();
@@ -516,7 +529,7 @@ void func_002A4D70(char *arg0) {
     s32 *temp_v0_23;
     s32 *temp_v0_25;
     s32 *temp_v0_28;
-    s32 *temp_v0_36;
+    Fighter *temp_v0_36;
     s32 *temp_v0_4;
     char *var_v1;
     char *var_v1_2;
@@ -529,6 +542,7 @@ void func_002A4D70(char *arg0) {
     s32 temp_v0_20;
     s32 temp_v0_21;
     char *temp_v0_2;
+    s32 mode;
     s32 temp_v0_37;
     s32 temp_v0_38;
     s32 temp_v0_39;
@@ -588,7 +602,7 @@ void func_002A4D70(char *arg0) {
     char *temp_v0_33;
     M2C_UNK *temp_v0_35;
     s16 *temp_s1_4;
-    s16 temp_s1;
+    s32 temp_s1;
     s32 var_s1;
     s32 var_s1_3;
     s32 var_s1_4;
@@ -676,12 +690,10 @@ void func_002A4D70(char *arg0) {
         var_s1_2 = false;
         temp_s0_3 = func_002C17B0();
         if (func_002C17F0() != 0) {
-            if ((temp_s0_3 != 0x234C) && ((u32) (temp_s0_3 - 0x2368) > 5U)) {
-                if ((temp_s0_3 == 0x235C) || (temp_s0_3 == 0x235E) || (temp_s0_3 == 0x2360) || (temp_s0_3 == 0x2362) || (temp_s0_3 == 0x2364) || (temp_s0_3 == 0x2366) || (temp_s0_3 == 0x236E)) {
-                    var_s1_2 = true;
-                }
-            } else {
+            if ((temp_s0_3 == 0x234C) || ((u32) (temp_s0_3 - 0x2368) <= 5U)) {
                 var_s2_3 = false;
+            } else if ((temp_s0_3 == 0x235C) || (temp_s0_3 == 0x235E) || (temp_s0_3 == 0x2360) || (temp_s0_3 == 0x2362) || (temp_s0_3 == 0x2364) || (temp_s0_3 == 0x2366) || (temp_s0_3 == 0x236E)) {
+                var_s1_2 = true;
             }
         }
         if (var_s2_3) {
@@ -765,8 +777,7 @@ void func_002A4D70(char *arg0) {
             var_s0_5 += 1;
         } while (var_s0_5 < 4);
         if (D_00421A68 > 0) {
-            temp_v0_13 = func_0016D5B0(arg0, D_00421A68);
-            if ((temp_v0_13 != NULL) && (func_001E7360(temp_v0_13 + 0x1F0, -1) != 0)) {
+            if (((temp_v0_13 = func_0016D5B0(arg0, D_00421A68)) != NULL) && (func_001E7360(temp_v0_13 + 0x1F0, -1) != 0)) {
                 func_001EA0A0(temp_v0_13, &D_003CC418, 4);
             }
         }
@@ -898,8 +909,9 @@ void func_002A4D70(char *arg0) {
                 D_003E0F0C = 0;
                 D_003E0F04 = 0;
                 D_003E0F08 = 0;
-                M2C_FIELD(D_003E1BD0, s32 *, 0x2DEC) = 0;
-                if (D_0042E910.mode == 3) {
+                mode = D_0042E910.mode;
+                ((BattleUi *) D_003E1BD0)->unk2DEC = 0;
+                if (mode == 3) {
                     func_46E8E0(D_003E1BD0);
                     func_474D50(0, 0, 0xEB);
                 }
@@ -915,7 +927,10 @@ void func_002A4D70(char *arg0) {
         } else {
             D_00421AB0 = 0;
             temp_v0_22 = func_00359CF0(&D_00421AD0, M2C_FIELD(D_0042186C, s16 *, 2));
-            if (temp_v0_22 != NULL) {
+            if (temp_v0_22 == NULL) {
+                D_0042148C = 0x16;
+                func_0036E6E0(&D_0042D390, 1);
+            } else {
                 var_s0_9 = ActorModelId(*temp_v0_22);
                 DebugPrintf(&D_003CC460, (s32) M2C_FIELD(D_0042186C, s16 *, 2), var_s0_9, M2C_FIELD(D_0042186C, s16 *, 0xC));
                 func_0036D580(&D_0042D390, M2C_FIELD(D_0042186C, s16 *, 0), 1);
@@ -936,7 +951,10 @@ void func_002A4D70(char *arg0) {
                             D_0042148C = 0x3C;
                             break;
                         }
-                        if (D_0042186C != NULL) {
+                        if (D_0042186C == NULL) {
+                            D_0042148C = 0x16;
+                            func_0036E6E0(&D_0042D390, 1);
+                        } else {
                             func_00357110(&D_00421AD0, arg0, M2C_FIELD(D_0042186C, s16 *, 2));
                             sp5A0.unk0 = func_002A1980();
                             sp5A0.unk4 = D_0042186C;
@@ -948,15 +966,22 @@ void func_002A4D70(char *arg0) {
                                 M2C_FIELD(temp_v0_23, s32 **, 0x9C) = temp_s0_5;
                             }
                             temp_a2 = M2C_FIELD(D_0042186C, u8 *, 0x1B);
-                            if (temp_a2 != 0) {
-                                var_v0_3 = func_0029F460(arg0, &sp5A0, temp_a2);
-                            } else {
+                            switch (temp_a2) {
+                            case 0:
                                 var_v0_3 = func_0029F6B0(arg0, &sp5A0, temp_a2);
+                                break;
+                            default:
+                                var_v0_3 = func_0029F460(arg0, &sp5A0, temp_a2);
+                                break;
                             }
                             if (sp5A0.unk0 != NULL) {
-                                temp_a0_3 = *sp5A0.unk0;
-                                if ((temp_a0_3 != 0x1B) && (temp_a0_3 != 6)) {
+                                switch (*sp5A0.unk0) {
+                                default:
                                     func_0036D670(&D_0042D390, 1);
+                                    break;
+                                case 6:
+                                case 0x1B:
+                                    break;
                                 }
                             }
                             if (var_v0_3 == 0) {
@@ -985,21 +1010,18 @@ void func_002A4D70(char *arg0) {
                             if (M2C_FIELD(D_0042186C, s16 *, 0xC) == 0x21) {
                                 func_00357110(&D_00421AD0, arg0, M2C_FIELD(D_0042186C, s16 *, 2));
                             }
-                        } else {
-                            D_0042148C = 0x16;
-                            func_0036E6E0(&D_0042D390, 1);
                         }
                     }
                 }
-            } else {
-                D_0042148C = 0x16;
-                func_0036E6E0(&D_0042D390, 1);
             }
         }
         break;
-    case 0x1F:                                      /* switch 1 */
+    case 0x1F:                                     /* switch 1 */
         temp_v0_25 = func_00359CF0(&D_00421AD0, M2C_FIELD(D_0042186C, s16 *, 2));
-        if (temp_v0_25 != NULL) {
+        if (temp_v0_25 == NULL) {
+            D_0042148C = 0x16;
+            func_0036E6E0(&D_0042D390, 1);
+        } else {
             var_s0_10 = ActorModelId(*temp_v0_25);
             func_0036D4B0(&D_0042D390);
             if (func_46D590(D_003E1BC4, var_s0_10, M2C_FIELD(D_0042186C, s16 *, 0xC)) != NULL) {
@@ -1016,12 +1038,9 @@ void func_002A4D70(char *arg0) {
                     D_0042148C = 0x20;
                 }
             }
-        } else {
-            D_0042148C = 0x16;
-            func_0036E6E0(&D_0042D390, 1);
         }
         break;
-    case 0x20:                                      /* switch 1 */
+    case 0x20:                                     /* switch 1 */
         D_0042188C = 0;
         func_0017A7A0(arg0, 0);
         func_0017A9D0(1);
@@ -1361,10 +1380,10 @@ void func_002A4D70(char *arg0) {
             } while (var_s3 < 4);
             var_s0_17 = 0;
             do {
-                temp_v0_36 = func_00359CF0(&D_00421AD0, var_s0_17);
-                if ((temp_v0_36 != NULL) && (M2C_FIELD(temp_v0_36, s32 *, 0x68) > 0)) {
-                    M2C_FIELD(temp_v0_36, s8 *, 0x388) = 1;
-                    D_00452500[var_s0_17].unk4 = (s32) M2C_FIELD(temp_v0_36, s32 *, 0x68);
+                temp_v0_36 = (Fighter *) func_00359CF0(&D_00421AD0, var_s0_17);
+                if ((temp_v0_36 != NULL) && (temp_v0_36->unk68 > 0)) {
+                    temp_v0_36->unk388 = 1;
+                    D_00452500[var_s0_17].unk4 = temp_v0_36->unk68;
                 }
                 var_s0_17 += 1;
             } while (var_s0_17 < 4);
@@ -1712,8 +1731,9 @@ void func_002A4D70(char *arg0) {
             }
             if (D_00421490 != 1) {
                 func_0036D4B0(&D_0042D390);
-                if (D_003E0EC8 != 0) {
-                    func_0036D530(&D_0042D390, D_003E0EC8);
+                temp_v0_39 = D_003E0EC8;
+                if (temp_v0_39 != 0) {
+                    func_0036D530(&D_0042D390, temp_v0_39);
                 }
                 temp_v0_39 = func_0036E260(&D_0042D390);
                 switch (temp_v0_39) {               /* switch 9; irregular */
