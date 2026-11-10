@@ -201,7 +201,7 @@ M2C_UNK func_467790(...);
 M2C_UNK func_46B960(...);
 M2C_UNK func_46BEA0(...);
 M2C_UNK func_46D170(...);
-s32 func_46D590(...);
+char *func_46D590(...);
 s32 func_46DBD0(...);
 s32 func_46DCB0(...);
 s32 func_46DD00(...);
@@ -528,7 +528,7 @@ void func_002A4D70(char *arg0) {
     s32 temp_v0_17;
     s32 temp_v0_20;
     s32 temp_v0_21;
-    s32 temp_v0_2;
+    char *temp_v0_2;
     s32 temp_v0_37;
     s32 temp_v0_38;
     s32 temp_v0_39;
@@ -920,7 +920,7 @@ void func_002A4D70(char *arg0) {
                 DebugPrintf(&D_003CC460, (s32) M2C_FIELD(D_0042186C, s16 *, 2), var_s0_9, M2C_FIELD(D_0042186C, s16 *, 0xC));
                 func_0036D580(&D_0042D390, M2C_FIELD(D_0042186C, s16 *, 0), 1);
                 func_462AE0();
-                if (func_46D590(D_003E1BC4, var_s0_9, M2C_FIELD(D_0042186C, s16 *, 0xC)) != 0) {
+                if (func_46D590(D_003E1BC4, var_s0_9, M2C_FIELD(D_0042186C, s16 *, 0xC)) != NULL) {
                     func_0017A7A0(arg0, 0);
                     M2C_FIELD(D_003E1B8C, s8 *, 0x248) = 1;
                     func_46E760(D_003E1BD0, arg0, D_0042186C);
@@ -1002,19 +1002,19 @@ void func_002A4D70(char *arg0) {
         if (temp_v0_25 != NULL) {
             var_s0_10 = ActorModelId(*temp_v0_25);
             func_0036D4B0(&D_0042D390);
-            if (func_46D590(D_003E1BC4, var_s0_10, M2C_FIELD(D_0042186C, s16 *, 0xC)) == 0) {
+            if (func_46D590(D_003E1BC4, var_s0_10, M2C_FIELD(D_0042186C, s16 *, 0xC)) != NULL) {
+                if ((func_46DBD0(D_003E1BD0) != 0) && (func_461510() != 0) && (func_0036E1D0(&D_0042D390, M2C_FIELD(D_0042186C, s16 *, 0)) != 0)) {
+                    func_00361280(&D_00439560);
+                    D_0042148C = 0x20;
+                }
+            } else {
                 func_002A1A10(sp560, func_002A31C0(sp560, 0x10));
                 if ((func_002A18D0() != 0) && (func_0036E1D0(&D_0042D390, M2C_FIELD(D_0042186C, s16 *, 0)) != 0)) {
                     sp530.unk0 = func_002A1980();
                     sp530.unk4 = D_0042186C;
                     func_0029F360(arg0, &sp530);
                     D_0042148C = 0x20;
-                    break;
                 }
-            } else if ((func_46DBD0(D_003E1BD0) != 0) && (func_461510() != 0) && (func_0036E1D0(&D_0042D390, M2C_FIELD(D_0042186C, s16 *, 0)) != 0)) {
-                func_00361280(&D_00439560);
-                D_0042148C = 0x20;
-                break;
             }
         } else {
             D_0042148C = 0x16;
@@ -1559,12 +1559,12 @@ void func_002A4D70(char *arg0) {
         }
         break;
     case 0x32:                                      /* switch 1 */
-        temp_v0_2 = func_0018D7D0(arg0, 4);
+        temp_v0_2 = (char *) func_0018D7D0(arg0, 4);
         var_s0 = 0;
-        if (temp_v0_2 == 0) {
+        if (temp_v0_2 == NULL) {
             var_s0 = 1;
         }
-        if (temp_v0_2 != 0) {
+        if (temp_v0_2 != NULL) {
             if (func_002F60A0(temp_v0_2) == 3) {
                 var_s0 = 1;
             }
